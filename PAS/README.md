@@ -6,12 +6,4 @@ All content is intended for use with Progress Application Server for OpenEdge (P
 
 ## Areas ##
 
-**Deployment** - Strategies for deployment and configuration of PAS instances.
-
-**Load Balancing** - Utilizing PASOE within a Load Balanced environment.
-
-**Load Testing** - Examples of performance or stress tests against PAS transports.
-
 **Management** - Includes both monitoring and management for a running PAS instance.
-
-**Migration** - Utilities and configurations useful for migrating Classic AS to PAS.
