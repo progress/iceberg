@@ -1,6 +1,6 @@
 # OEManager #
 
-For a running instance, obtain status information and manage agents/sessions.
+For a running instance, obtain status information, and manage agents/sessions.
 
 ----------
 
