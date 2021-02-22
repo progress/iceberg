@@ -24,20 +24,24 @@
 
         <echo message="${line.separator}"/>
         <echo message="Utilities for easy operation and maintenance of a PASOE instance."/>
-        <echo message="Run from a PROENV session or with DLC and DLC/bin in your PATH."/>
+        <echo message="Run from a PROENV session or with DLC and DLC/bin in your OS PATH."/>
+		<echo message="Tasks denoted with [RO] are read-only and do not impact operation."/>
         <echo message="${line.separator}Usage Instructions:"/>
-        <echo message="${line.separator} proant startup - Use TCMAN to start a PAS instance"/>
-        <echo message="${line.separator} proant query - Use TCMAN to query a PAS instance"/>
-        <echo message="${line.separator} proant shutdown - Use TCMAN to stop a PAS instance"/>
-        <echo message="${line.separator} proant inventory - Bundle useful PAS instance files for support tickets"/>
+        <echo message="${line.separator} TCMAN Shortcuts:"/>
+		<echo message="${line.separator} proant startup - Use TCMAN to start the ${instance} PAS instance"/>
+        <echo message="${line.separator} proant query - Use TCMAN to query the ${instance} PAS instance"/>
+        <echo message="${line.separator} proant shutdown - Use TCMAN to stop the ${instance} PAS instance"/>
         <echo message="${line.separator}"/>
-        <echo message="${line.separator} proant compile - Compile all utility procedures to r-code"/>
+		<echo message="${line.separator} Internal Tools:"/>
+		<echo message="${line.separator} proant inventory - Bundle useful PAS instance files (as .zip) for support tickets"/>
+        <echo message="${line.separator} proant compile - Compile all utility procedures to r-code (for production use)"/>
         <echo message="${line.separator}"/>
-        <echo message="${line.separator} proant status - Obtain MSAgent/connection status information for an ABL App"/>
-        <echo message="${line.separator} proant stacks - Obtain stack information for all MSAgents for an ABL App"/>
-        <echo message="${line.separator} proant flush - Flush the available deferred log buffer to agent log file"/>
+		<echo message="${line.separator} Status/Management:"/>
+        <echo message="${line.separator} proant status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
+        <echo message="${line.separator} proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
+        <echo message="${line.separator} proant flush - [RO] Flush the available deferred log buffer to agent log file"/>
         <echo message="${line.separator} proant trimhttp - Trim all Session Manager and Tomcat HTTP sessions for an ABL/Web App"/>
-        <echo message="                [OPTIONAL] -Dterminateopt=${terminateopt} (0 for graceful termination and 1 for forced termination)"/>
+        <echo message="                   [OPTIONAL] -Dterminateopt=${terminateopt} (0 for graceful termination and 1 for forced termination)"/>
         <echo message="${line.separator} proant trimidle - Trim all IDLE ABL Sessions for each MSAgent for an ABL App"/>
         <echo message="${line.separator} proant trimall - Trim all ABL Sessions for each MSAgent for an ABL App"/>
         <if>
@@ -49,17 +53,17 @@
         <echo message="${line.separator} proant clean - Perform a 'soft restart' (status, flush, trimhttp, stop) of an ABL App"/>
         <echo message="                [OPTIONAL] -Dsleep={sleep time in minutes} (Default: 1)"/>
         <echo message="${line.separator} proant stop - Gracefully stops all MSAgents (+stacks output) for an ABL App"/>
-        <echo message="                [OPTIONAL] -Dwaitfinish=${waitfinish} (How long to wait in milliseconds if the MSAgent is busy serving a request)"/>
-        <echo message="                [OPTIONAL] -Dwaitafter=${waitafter} (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)"/>
-        <echo message="${line.separator} proant locks - Display database users and their table locks related to an MSAgent-Session"/>
+        <echo message="               [OPTIONAL] -Dwaitfinish=${waitfinish} (How long to wait in milliseconds if the MSAgent is busy serving a request)"/>
+        <echo message="               [OPTIONAL] -Dwaitafter=${waitafter} (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)"/>
+        <echo message="${line.separator} proant locks - [RO] Display database users and their table locks related to an MSAgent-Session"/>
         <echo message="                This utilizes a single DBConnection; edit build.xml to add more as needed"/>
         <echo message="                Note: will only provide session data if using self-service DB connections"/>
-        <echo message="                  [OPTIONAL] -Ddb.name=${db.name} (Database name to check)"/>
-        <echo message="                  [OPTIONAL] -Ddb.host=${db.host} (Database host to check)"/>
-        <echo message="                  [OPTIONAL] -Ddb.port=${db.port} (Database port to check)"/>
-        <echo message="${line.separator} proant users - Alias for 'locks' target"/>
+        <echo message="                [OPTIONAL] -Ddb.name=${db.name} (Database name to check)"/>
+        <echo message="                [OPTIONAL] -Ddb.host=${db.host} (Database host to check)"/>
+        <echo message="                [OPTIONAL] -Ddb.port=${db.port} (Database port to check)"/>
+        <echo message="${line.separator} proant users - [RO] Alias for 'locks' target"/>
         <echo message="${line.separator}"/>
-        <echo message="${line.separator}Available parameters with their defaults:"/>
+        <echo message="${line.separator}Available parameters with their defaults, override as necessary:"/>
         <echo message="  -Dscheme=${scheme}"/>
         <echo message="    -Dhost=${host}"/>
         <echo message="    -Dport=${port}"/>
@@ -68,8 +72,8 @@
         <echo message="  -Dpas.root=${pas.root} (PAS parent directory)"/>
         <echo message="  -Dinstance=${instance} (Physical instance name)"/>
         <echo message="  -Dablapp=${ablapp}"/>
-        <echo message="  -Dwebapp=${webapp} (Used by trimhttp/clean)"/>
-        <echo message="  -Ddebug=${debug} (When enabled, outputs OEManager REST API URL's and enables ABL (HTTP) Client logging)"/>
+        <echo message="  -Dwebapp=${webapp} (Used by trimhttp/clean to access the Tomcat manager webapp)"/>
+        <echo message="  -Ddebug=${debug} (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)"/>
         <echo message="${line.separator}NOTE: The name of the ABLApp is case-sensitive!"/>
         <echo message="${line.separator}"/>
         <echo message="CATALINA_HOME: ${dlcHome}${delim}servers${delim}pasoe"/>

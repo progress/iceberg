@@ -14,26 +14,32 @@ Simply run **proant** from this directory to obtain usage information as shown b
 
      [echo] Usage Instructions:
      [echo]
-     [echo]  proant startup - Use TCMAN to start a PAS instance
+     [echo]  TCMAN Shortcuts:
      [echo]
-     [echo]  proant query - Use TCMAN to query a PAS instance
+     [echo]  proant startup - Use TCMAN to start the oepas1 PAS instance
      [echo]
-     [echo]  proant shutdown - Use TCMAN to stop a PAS instance
+     [echo]  proant query - Use TCMAN to query the oepas1 PAS instance
      [echo]
-     [echo]  proant inventory - Bundle useful PAS instance files for support tickets
-     [echo]
-     [echo]
-     [echo]  proant compile - Compile all utility procedures to r-code
+     [echo]  proant shutdown - Use TCMAN to stop the oepas1 PAS instance
      [echo]
      [echo]
-     [echo]  proant status - Obtain MSAgent/connection status information for an ABL App
+     [echo]  Internal Tools:
      [echo]
-     [echo]  proant stacks - Obtain stack information for all MSAgents for an ABL App
+     [echo]  proant inventory - Bundle useful PAS instance files (as .zip) for support tickets
      [echo]
-     [echo]  proant flush - Flush the available deferred log buffer to agent log file
+     [echo]  proant compile - Compile all utility procedures to r-code (for production use)
+     [echo]
+     [echo]
+     [echo]  Status/Management:
+     [echo]
+     [echo]  proant status - [RO] Obtain MSAgent/connection status information for an ABL App
+     [echo]
+     [echo]  proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App
+     [echo]
+     [echo]  proant flush - [RO] Flush the available deferred log buffer to agent log file
      [echo]
      [echo]  proant trimhttp - Trim all Session Manager and Tomcat HTTP sessions for an ABL/Web App
-     [echo]                 [OPTIONAL] -Dterminateopt=0 (0 for graceful termination and 1 for forced termination)
+     [echo]                    [OPTIONAL] -Dterminateopt=0 (0 for graceful termination and 1 for forced termination)
      [echo]
      [echo]  proant trimidle - Trim all IDLE ABL Sessions for each MSAgent for an ABL App
      [echo]
@@ -45,20 +51,20 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]                 [OPTIONAL] -Dsleep={sleep time in minutes} (Default: 1)
      [echo]
      [echo]  proant stop - Gracefully stops all MSAgents (+stacks output) for an ABL App
-     [echo]                 [OPTIONAL] -Dwaitfinish=120000 (How long to wait in milliseconds if the MSAgent is busy serving a request)
-     [echo]                 [OPTIONAL] -Dwaitafter=60000 (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)
+     [echo]                [OPTIONAL] -Dwaitfinish=120000 (How long to wait in milliseconds if the MSAgent is busy serving a request)
+     [echo]                [OPTIONAL] -Dwaitafter=60000 (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)
      [echo]
-     [echo]  proant locks - Display database users and their table locks related to an MSAgent-Session
+     [echo]  proant locks - [RO] Display database users and their table locks related to an MSAgent-Session
      [echo]                 This utilizes a single DBConnection; edit build.xml to add more as needed
      [echo]                 Note: will only provide session data if using self-service DB connections
-     [echo]                   [OPTIONAL] -Ddb.name=Sports2020 (Database name to check)
-     [echo]                   [OPTIONAL] -Ddb.host=localhost (Database host to check)
-     [echo]                   [OPTIONAL] -Ddb.port=8600 (Database port to check)
+     [echo]                 [OPTIONAL] -Ddb.name=Sports2020 (Database name to check)
+     [echo]                 [OPTIONAL] -Ddb.host=localhost (Database host to check)
+     [echo]                 [OPTIONAL] -Ddb.port=8600 (Database port to check)
      [echo]
-     [echo]  proant users - Alias for 'locks' target
+     [echo]  proant users - [RO] Alias for 'locks' target
      [echo]
      [echo]
-     [echo] Available parameters with their defaults:
+     [echo] Available parameters with their defaults, override as necessary:
      [echo]   -Dscheme=http
      [echo]     -Dhost=localhost
      [echo]     -Dport=8810
@@ -67,8 +73,8 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]   -Dpas.root=C:\OpenEdge\WRK (PAS parent directory)
      [echo]   -Dinstance=oepas1 (Physical instance name)
      [echo]   -Dablapp=oepas1
-     [echo]   -Dwebapp=ROOT (Used by trimhttp/clean)
-     [echo]   -Ddebug=false (When enabled, outputs OEManager REST API URL's and enables ABL (HTTP) Client logging)
+     [echo]   -Dwebapp=ROOT (Used by trimhttp/clean to access the Tomcat manager webapp)
+     [echo]   -Ddebug=false (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)
      [echo]
      [echo] NOTE: The name of the ABLApp is case-sensitive!
      [echo]
