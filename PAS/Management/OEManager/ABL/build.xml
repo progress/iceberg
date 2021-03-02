@@ -259,7 +259,7 @@
     <!-- Support Tools -->
 
     <target name="compile">
-        <init_env/> <!-- Set standard environment variables. -->
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
         <PCTVersion/>
@@ -280,7 +280,7 @@
     </target>
 
     <target name="bundle">
-        <init_env/> <!-- Set standard environment variables. -->
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
         <PCTVersion/>
