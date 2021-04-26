@@ -58,9 +58,11 @@
         <echo message="${line.separator} proant locks - [RO] Display database users and their table locks related to an MSAgent-Session"/>
         <echo message="                This utilizes a single DBConnection; edit build.xml to add more as needed"/>
         <echo message="                Note: will only provide session data if using self-service DB connections"/>
-        <echo message="                [OPTIONAL] -Ddb.name=${db.name} (Database name to check)"/>
-        <echo message="                [OPTIONAL] -Ddb.host=${db.host} (Database host to check)"/>
-        <echo message="                [OPTIONAL] -Ddb.port=${db.port} (Database port to check)"/>
+        <echo message="                [OPTIONAL]  -Dcodepage=${codepage} (Codepage)"/>
+		<echo message="                [OPTIONAL] -Dcollation=${collation} (Collation)"/>
+		<echo message="                [OPTIONAL]  -Ddb.name=${db.name} (Database name to check)"/>
+        <echo message="                [OPTIONAL]  -Ddb.host=${db.host} (Database host to check)"/>
+        <echo message="                [OPTIONAL]  -Ddb.port=${db.port} (Database port to check)"/>
         <echo message="${line.separator} proant users - [RO] Alias for 'locks' target"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator}Available parameters with their defaults, override as necessary:"/>
@@ -132,6 +134,8 @@
             <property name="instance" value="oepas1"/>
             <property name="ablapp" value="oepas1"/>
             <property name="webapp" value="ROOT"/>
+            <property name="codepage" value="UTF-8"/>
+			<property name="collation" value="BASIC"/>
             <property name="db.name" value="Sports2020"/>
             <property name="db.host" value="localhost"/>
             <property name="db.port" value="8600"/>
@@ -259,7 +263,7 @@
     <!-- Support Tools -->
 
     <target name="compile">
-        <init_env/> <!-- Set standard environment variables. -->
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
         <PCTVersion/>
@@ -280,7 +284,7 @@
     </target>
 
     <target name="bundle">
-        <init_env/> <!-- Set standard environment variables. -->
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
         <PCTVersion/>
@@ -556,7 +560,11 @@
                dlcHome="${dlcHome}"
                graphicalMode="false"
                procedure="getLocks${proc.ext}"
-               stackSize="4096">
+               stackSize="4096"
+			   cpStream="${codepage}"
+			   cpInternal="${codepage}"
+			   cpColl="${collation}"
+			   cpCase="${collation}">
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
