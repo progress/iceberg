@@ -38,6 +38,7 @@
         <echo message="${line.separator}"/>
 		<echo message="${line.separator} Status/Management:"/>
         <echo message="${line.separator} proant status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
+        <echo message="                   [OPTIONAL] -Dbasemem=${basemem} (Minimum memory threshold, in bytes, of unused agent sessions)"/>
         <echo message="${line.separator} proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
         <echo message="${line.separator} proant flush - [RO] Flush the available deferred log buffer to agent log file"/>
         <echo message="${line.separator} proant trimhttp - Trim all Session Manager and Tomcat HTTP sessions for an ABL/Web App"/>
@@ -145,6 +146,7 @@
             <property name="terminateopt" value="0"/>
             <property name="waitfinish" value="120000"/>
             <property name="waitafter" value="60000"/>
+			<property name="basemem" value="819200"/>
         </sequential>
     </macrodef>
 
@@ -391,6 +393,7 @@
             <Parameter name="PassWD" value="${passwd}"/>
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="Debug" value="${debug}"/>
+            <Parameter name="BaseMem" value="${basemem}"/>
         </PCTRun>
     </target>
 

@@ -1,17 +1,17 @@
 /*
-	Copyright 2020-2021 Progress Software Corporation
+    Copyright 2020-2021 Progress Software Corporation
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-		http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 /**
  * Author(s): Dustin Grau (dugrau@progress.com)
@@ -62,6 +62,7 @@ define variable iLoop     as integer         no-undo.
 define variable iLoop2    as integer         no-undo.
 define variable iLoop3    as integer         no-undo.
 define variable iCollect  as integer         no-undo.
+define variable iBaseMem  as int64           no-undo.
 define variable cBound    as character       no-undo.
 define variable cScheme   as character       no-undo initial "http".
 define variable cHost     as character       no-undo initial "localhost".
@@ -75,6 +76,10 @@ define temp-table ttAgent no-undo
     field agentID     as character
     field agentPID    as character
     field agentState  as character
+    field maxSessions as int64
+    field ablSessions as int64
+    field availSess   as int64
+    field openConns   as int64
     field memoryBytes as int64
     .
 
@@ -114,6 +119,7 @@ else
         cUserId   = dynamic-function("getParameter" in source-procedure, "UserID") when dynamic-function("getParameter" in source-procedure, "UserID") gt ""
         cPassword = dynamic-function("getParameter" in source-procedure, "PassWD") when dynamic-function("getParameter" in source-procedure, "PassWD") gt ""
         cAblApp   = dynamic-function("getParameter" in source-procedure, "ABLApp") when dynamic-function("getParameter" in source-procedure, "ABLApp") gt ""
+		iBaseMem  = int64(dynamic-function("getParameter" in source-procedure, "BaseMem")) when dynamic-function("getParameter" in source-procedure, "BaseMem") gt ""
         cDebug    = dynamic-function("getParameter" in source-procedure, "Debug") when dynamic-function("getParameter" in source-procedure, "Debug") gt ""
         .
 
@@ -156,9 +162,9 @@ message substitute("Starting output to file: &1 ...", cOutFile).
 output to value(cOutFile).
 
 /* Start with some basic header information for this report. */
-put unformatted substitute("OpenEdge Release: &1", proversion(1)) skip.
-put unformatted substitute(" Report Executed: &1", iso-date(now)) skip.
-put unformatted substitute("  PASOE Instance: &1", cInstance) skip.
+put unformatted substitute("Utility Runtime: &1", proversion(1)) skip. /* Reports the OE runtime version used by this utility.     */
+put unformatted substitute("Report Executed: &1", iso-date(now)) skip. /* Produce a timestamp relative to where utility was run.   */
+put unformatted substitute(" PASOE Instance: &1", cInstance) skip. /* Reports the combined scheme, hostname, and port of instance. */
 
 /* Gather the necessary metrics. */
 run GetApplications.
@@ -322,6 +328,8 @@ procedure GetApplications:
             if oTemp:Has("name") and oTemp:GetCharacter("name") eq cAblApp then do:
                 /* This should be the proper and case-sensitive name of the ABLApp, so let's make sure we use that going forward. */
                 assign cAblApp = oTemp:GetCharacter("name").
+
+                /* Reports the full ABL Application name and OpenEdge version as reported by the monitored PAS instance itself. */
                 put unformatted substitute("~nABL Application Information [&1 - &2]", cAblApp, oTemp:GetCharacter("version")) skip.
 
                 if oTemp:Has("webapps") and oTemp:GetType("webapps") eq JsonDataType:Array then do:
@@ -423,12 +431,14 @@ procedure GetAgents:
     define variable iTotAgent as integer    no-undo.
     define variable iTotSess  as integer    no-undo.
     define variable iBusySess as integer    no-undo.
+    define variable iUsedSess as integer    no-undo.
     define variable dStart    as datetime   no-undo.
     define variable dCurrent  as datetime   no-undo.
     define variable oAgents   as JsonArray  no-undo.
     define variable oAgent    as JsonObject no-undo.
     define variable oSessions as JsonArray  no-undo.
     define variable oSessInfo as JsonObject no-undo.
+	define variable iMinMem   as int64      no-undo.
 
     empty temp-table ttAgent.
     empty temp-table ttAgentSession.
@@ -480,8 +490,13 @@ procedure GetAgents:
     assign dCurrent = datetime(today, mtime). /* Assumes calling program is the same TZ as server! */
 
     for each ttAgent exclusive-lock:
-        /* Gather additional information for each MSAgent after displaying a basic header. */
-        put unformatted substitute("~nAgent PID &1: &2", ttAgent.agentPID, ttAgent.agentState) skip.
+        assign
+            ttAgent.maxSessions = ?
+            ttAgent.ablSessions = ?
+            ttAgent.availSess   = ?
+            ttAgent.openConns   = ?
+            ttAgent.memoryBytes = ?
+            .
 
         /* We should only obtain additional status and metrics if the MSAgent is available. */
         if ttAgent.agentState eq "available" then do:
@@ -499,18 +514,15 @@ procedure GetAgents:
 
                         /* Should be the current calculated maximum # of ABL Sessions which can be started/utilized. */
                         if oSessInfo:Has("dynmaxablsessions") and oSessInfo:GetType("dynmaxablsessions") eq JsonDataType:Number then
-                            put unformatted substitute("~tDynMax ABL Sessions:~t&1",
-                                                       FormatIntAsNumber(oSessInfo:GetInteger("dynmaxablsessions"))) skip.
+                            assign ttAgent.maxSessions = oSessInfo:GetInteger("dynmaxablsessions").
 
                         /* This should represent the total number of ABL Sessions started, not to exceed the Dynamic Max. */
                         if oSessInfo:Has("numABLSessions") and oSessInfo:GetType("numABLSessions") eq JsonDataType:Number then
-                            put unformatted substitute("~t Total ABL Sessions:~t&1",
-                                                       FormatIntAsNumber(oSessInfo:GetInteger("numABLSessions"))) skip.
+                            assign ttAgent.ablSessions = oSessInfo:GetInteger("numABLSessions").
 
                         /* This should be the number of ABL Sessions available to execute ABL code for this MSAgent. */
                         if oSessInfo:Has("numAvailableSessions") and oSessInfo:GetType("numAvailableSessions") eq JsonDataType:Number then
-                            put unformatted substitute("~t Avail ABL Sessions:~t&1",
-                                                       FormatIntAsNumber(oSessInfo:GetInteger("numAvailableSessions"))) skip.
+                            assign ttAgent.availSess = oSessInfo:GetInteger("numAvailableSessions").
                     end.
                 end.
             end. /* agent manager properties */
@@ -527,13 +539,10 @@ procedure GetAgents:
                     oTemp = oJsonResp:GetJsonObject("result"):GetJsonArray("AgentStatHist"):GetJsonObject(1).
 
                     if oTemp:Has("OpenConnections") and oTemp:GetType("OpenConnections") eq JsonDataType:Number then
-                        put unformatted substitute("~t   Open Connections:~t&1",
-                                                   FormatIntAsNumber(oTemp:GetInteger("OpenConnections"))) skip.
+                        assign ttAgent.openConns = oTemp:GetInteger("OpenConnections").
 
-                    if oTemp:Has("OverheadMemory") and oTemp:GetType("OverheadMemory") eq JsonDataType:Number then do:
+                    if oTemp:Has("OverheadMemory") and oTemp:GetType("OverheadMemory") eq JsonDataType:Number then
                         assign ttAgent.memoryBytes = oTemp:GetInt64("OverheadMemory").
-                        put unformatted substitute("~t    Overhead Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
-                    end.
                 end.
             end. /* response */
 
@@ -542,8 +551,6 @@ procedure GetAgents:
             assign oJsonResp = MakeRequest(cHttpUrl).
             if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then
             do on error undo, leave:
-                put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~t~tMEMORY~tBOUND/ACTIVE SESSION" skip.
-
                 if oJsonResp:GetJsonObject("result"):Has("AgentSession") then
                     oSessions = oJsonResp:GetJsonObject("result"):GetJsonArray("AgentSession").
                 else
@@ -570,6 +577,12 @@ procedure GetAgents:
                         ttAgent.memoryBytes         = ttAgent.memoryBytes + ttAgentSession.memoryBytes
                         .
 
+                    /* Attempt to determine the most minimal memory value for all sessions of all agents available. */
+                    if iMinMem eq 0 then
+                        assign iMinMem = ttAgentSession.memoryBytes.
+                    else
+                        assign iMinMem = min(iMinMem, ttAgentSession.memoryBytes).
+
                     /* Attempt to calculate the time this session has been running, though we don't have a current timestamp directly from the server. */
                     assign ttAgentSession.runningTime = interval(dCurrent, dStart, "milliseconds") when (dCurrent ne ? and dStart ne ? and dCurrent ge dStart).
 
@@ -593,22 +606,65 @@ procedure GetAgents:
                                 .
                     end. /* iLoop - iSessions */
 
-                    put unformatted substitute("~t~t&1~t&2~t&3 &4 KB~t&5 &6",
-                                                string(ttAgentSession.sessionID, ">>>9"),
-                                                string(ttAgentSession.sessionState, "x(10)"),
-                                                ttAgentSession.startTime,
-                                                FormatMemory(ttAgentSession.memoryBytes, false),
-                                                (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
-                                                (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "")) skip.
-
                     release ttAgentSession no-error.
                 end. /* iLoop2 - oSessions */
-
-                put unformatted substitute("~tActive Agent-Sessions: &1 of &2 (&3% Busy)",
-                                           iBusySess, iTotSess, if iTotSess gt 0 then round((iBusySess / iTotSess) * 100, 1) else 0) skip.
-                put unformatted substitute("~t Approx. Agent Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
             end. /* response - AgentSessions */
         end. /* agent state = available */
+    end. /* for each ttAgent */
+
+    for each ttAgent no-lock:
+        assign iUsedSess = 0.
+
+        /* Output all information for each MSAgent after displaying a basic header. */
+        put unformatted substitute("~nAgent PID &1: &2", ttAgent.agentPID, ttAgent.agentState) skip.
+
+        if ttAgent.maxSessions ne ? then
+            put unformatted substitute("~tDynMax ABL Sessions:~t&1", FormatIntAsNumber(ttAgent.maxSessions)) skip.
+
+        if ttAgent.ablSessions ne ? then
+            put unformatted substitute("~t Total ABL Sessions:~t&1", FormatIntAsNumber(ttAgent.ablSessions)) skip.
+
+        if ttAgent.availSess ne ? then
+            put unformatted substitute("~t Avail ABL Sessions:~t&1", FormatIntAsNumber(ttAgent.availSess)) skip.
+
+        if ttAgent.openConns ne ? then
+            put unformatted substitute("~t   Open Connections:~t&1", FormatIntAsNumber(ttAgent.openConns)) skip.
+
+        if ttAgent.memoryBytes ne ? then
+            put unformatted substitute("~t    Overhead Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
+
+        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~t~tMEMORY~tBOUND/ACTIVE SESSION" skip.
+
+        assign iBaseMem = max(iBaseMem, iMinMem). /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory. */
+
+        for each ttAgentSession no-lock
+           where ttAgentSession.agentID eq ttAgent.agentID:
+            put unformatted substitute("~t~t&1~t&2~t&3 &4 KB~t&5 &6",
+                                        string(ttAgentSession.sessionID, ">>>9"),
+                                        string(ttAgentSession.sessionState, "x(10)"),
+                                        ttAgentSession.startTime,
+                                        FormatMemory(ttAgentSession.memoryBytes, false),
+                                        (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
+                                        (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "")) skip.
+
+            /**
+             * Since iBaseMem should be the LOWEST value across all agents, it should theoretically be the baseline value
+             * for any unused (fresh) sessions. Therefore, counting any sessions higher than this should indicate that the
+             * session was utilized for servicing requests.
+             */
+            if ttAgentSession.memoryBytes gt iBaseMem then
+                assign iUsedSess = iUsedSess + 1.
+        end. /* for each ttAgentSession */
+
+        /* Output summary information about agent-sessions, such as how many are busy out of the total count. */
+        put unformatted substitute("~tActive Agent-Sessions: &1 of &2 (&3% Busy)",
+                                   iBusySess, iTotSess, if iTotSess gt 0 then round((iBusySess / iTotSess) * 100, 1) else 0) skip.
+
+        /* Establish an educated guess on how many sessions have been utilized via a baseline memory value. */
+        put unformatted substitute("~t  Used Agent-Sessions: &1 of &2 (>&3 KB)", iUsedSess, iTotSess, FormatMemory(iBaseMem, true)) skip.
+
+        /* For 12.2+ this should include agent overhead memory + all sessions, otherwise just all sessions. */
+        put unformatted substitute("~t Approx. Agent Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
     end. /* for each ttAgent */
 end procedure.
 
