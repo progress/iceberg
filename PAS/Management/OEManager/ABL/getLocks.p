@@ -1,17 +1,17 @@
 /*
-	Copyright 2020-2021 Progress Software Corporation
+    Copyright 2020-2021 Progress Software Corporation
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-		http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 /**
  * Author(s): Dustin Grau (dugrau@progress.com)
@@ -30,6 +30,7 @@
 
 block-level on error undo, throw.
 
+using OpenEdge.Core.Json.JsonPropertyHelper.
 using OpenEdge.Core.JsonDataTypeEnum.
 using OpenEdge.Core.Collections.*.
 using OpenEdge.Net.HTTP.ClientBuilder.
@@ -97,12 +98,12 @@ else if session:parameter ne "" then /* original method */
     assign cPort = session:parameter.
 else
     assign
-        cScheme   = dynamic-function("getParameter" in source-procedure, "Scheme") when dynamic-function("getParameter" in source-procedure, "Scheme") gt ""
-        cHost     = dynamic-function("getParameter" in source-procedure, "Host") when dynamic-function("getParameter" in source-procedure, "Host") gt ""
-        cPort     = dynamic-function("getParameter" in source-procedure, "Port") when dynamic-function("getParameter" in source-procedure, "Port") gt ""
-        cUserId   = dynamic-function("getParameter" in source-procedure, "UserID") when dynamic-function("getParameter" in source-procedure, "UserID") gt ""
-        cPassword = dynamic-function("getParameter" in source-procedure, "PassWD") when dynamic-function("getParameter" in source-procedure, "PassWD") gt ""
-        cDebug    = dynamic-function("getParameter" in source-procedure, "Debug") when dynamic-function("getParameter" in source-procedure, "Debug") gt ""
+        cScheme   = dynamic-function("getParameter" in source-procedure, "Scheme") when (dynamic-function("getParameter" in source-procedure, "Scheme") gt "") eq true
+        cHost     = dynamic-function("getParameter" in source-procedure, "Host") when (dynamic-function("getParameter" in source-procedure, "Host") gt "") eq true
+        cPort     = dynamic-function("getParameter" in source-procedure, "Port") when (dynamic-function("getParameter" in source-procedure, "Port") gt "") eq true
+        cUserId   = dynamic-function("getParameter" in source-procedure, "UserID") when (dynamic-function("getParameter" in source-procedure, "UserID") gt "") eq true
+        cPassword = dynamic-function("getParameter" in source-procedure, "PassWD") when (dynamic-function("getParameter" in source-procedure, "PassWD") gt "") eq true
+        cDebug    = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
 if can-do("true,yes,1", cDebug) then do:
@@ -193,10 +194,8 @@ do while oIter:HasNext():
     if HasAgent(iPID) then do:
         assign cHttpUrl = substitute(oQueryURL:Get("Stacks"), cInstance, string(oAgent:value), iPID).
         assign oJsonResp = MakeRequest(cHttpUrl).
-        if valid-object(oJsonResp) and oJsonResp:Has("result") and
-           oJsonResp:GetType("result") eq JsonDataType:Object then do:
-            if oJsonResp:GetJsonObject("result"):Has("ABLStacks") and
-               oJsonResp:GetJsonObject("result"):GetType("ABLStacks") eq JsonDataType:Array then do:
+        if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
+            if JsonPropertyHelper:HasTypedProperty(oJsonResp:GetJsonObject("result"), "ABLStacks", JsonDataType:Array) then do:
                 define variable oABLStacks as JsonArray  no-undo.
                 define variable oABLStack  as JsonObject no-undo.
                 define variable oCallstack as JsonArray  no-undo.
@@ -212,7 +211,7 @@ do while oIter:HasNext():
                     if oABLStack:Has("AgentSessionId") then
                         message substitute("~n~tCall Stack for Session ID #&1:", oABLStack:GetInteger("AgentSessionId")).
 
-                    if oABLStack:Has("Callstack") and oABLStack:GetType("Callstack") eq JsonDataType:Array then do:
+                    if JsonPropertyHelper:HasTypedProperty(oABLStack, "Callstack", JsonDataType:Array) then do:
                         assign oCallstack = oABLStack:GetJsonArray("Callstack").
 
                         assign iLength2 = oCallstack:Length.
@@ -333,7 +332,7 @@ procedure getAblApplications:
     /* Oobtain a list of all ABL Applications for a PAS instance. */
     assign cHttpUrl = substitute(oQueryURL:Get("Apps"), cInstance).
     assign oJsonResp = MakeRequest(cHttpUrl).
-    if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then do:
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then do:
         define variable oApps as JsonArray  no-undo.
         define variable oApp  as JsonObject no-undo.
 
@@ -362,7 +361,7 @@ procedure getAblAppAgents:
             /* Obtain a list of all AVAILABLE agents for an ABL Application. */
             assign cHttpUrl = substitute(oQueryURL:Get("Agents"), cInstance, cast(oAblApps:GetValue(iLoop), OpenEdge.Core.String):Value).
             assign oJsonResp = MakeRequest(cHttpUrl).
-            if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then do:
+            if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
                 define variable oAgents as JsonArray  no-undo.
                 define variable oAgent  as JsonObject no-undo.
         

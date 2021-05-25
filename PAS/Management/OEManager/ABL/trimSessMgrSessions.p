@@ -1,17 +1,17 @@
 /*
-	Copyright 2020-2021 Progress Software Corporation
+    Copyright 2020-2021 Progress Software Corporation
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-		http://www.apache.org/licenses/LICENSE-2.0
+        http://www.apache.org/licenses/LICENSE-2.0
 
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 /**
  * Author(s): Dustin Grau (dugrau@progress.com)
@@ -30,6 +30,7 @@
  *   Debug        [false|true]
  */
 
+using OpenEdge.Core.Json.JsonPropertyHelper.
 using OpenEdge.Core.JsonDataTypeEnum.
 using OpenEdge.Core.Collections.StringStringMap.
 using OpenEdge.Net.HTTP.ClientBuilder.
@@ -85,15 +86,15 @@ else if session:parameter ne "" then /* original method */
     assign cPort = session:parameter.
 else
     assign
-        cScheme    = dynamic-function("getParameter" in source-procedure, "Scheme") when dynamic-function("getParameter" in source-procedure, "Scheme") gt ""
-        cHost      = dynamic-function("getParameter" in source-procedure, "Host") when dynamic-function("getParameter" in source-procedure, "Host") gt ""
-        cPort      = dynamic-function("getParameter" in source-procedure, "Port") when dynamic-function("getParameter" in source-procedure, "Port") gt ""
-        cUserId    = dynamic-function("getParameter" in source-procedure, "UserID") when dynamic-function("getParameter" in source-procedure, "UserID") gt ""
-        cPassword  = dynamic-function("getParameter" in source-procedure, "PassWD") when dynamic-function("getParameter" in source-procedure, "PassWD") gt ""
-        cAblApp    = dynamic-function("getParameter" in source-procedure, "ABLApp") when dynamic-function("getParameter" in source-procedure, "ABLApp") gt ""
-        cWebApp    = dynamic-function("getParameter" in source-procedure, "WebApp") when dynamic-function("getParameter" in source-procedure, "WebApp") gt ""
-        cTerminate = dynamic-function("getParameter" in source-procedure, "TerminateOpt") when dynamic-function("getParameter" in source-procedure, "TerminateOpt") gt ""
-        cDebug     = dynamic-function("getParameter" in source-procedure, "Debug") when dynamic-function("getParameter" in source-procedure, "Debug") gt ""
+        cScheme    = dynamic-function("getParameter" in source-procedure, "Scheme") when (dynamic-function("getParameter" in source-procedure, "Scheme") gt "") eq true
+        cHost      = dynamic-function("getParameter" in source-procedure, "Host") when (dynamic-function("getParameter" in source-procedure, "Host") gt "") eq true
+        cPort      = dynamic-function("getParameter" in source-procedure, "Port") when (dynamic-function("getParameter" in source-procedure, "Port") gt "") eq true
+        cUserId    = dynamic-function("getParameter" in source-procedure, "UserID") when (dynamic-function("getParameter" in source-procedure, "UserID") gt "") eq true
+        cPassword  = dynamic-function("getParameter" in source-procedure, "PassWD") when (dynamic-function("getParameter" in source-procedure, "PassWD") gt "") eq true
+        cAblApp    = dynamic-function("getParameter" in source-procedure, "ABLApp") when (dynamic-function("getParameter" in source-procedure, "ABLApp") gt "") eq true
+        cWebApp    = dynamic-function("getParameter" in source-procedure, "WebApp") when (dynamic-function("getParameter" in source-procedure, "WebApp") gt "") eq true
+        cTerminate = dynamic-function("getParameter" in source-procedure, "TerminateOpt") when (dynamic-function("getParameter" in source-procedure, "TerminateOpt") gt "") eq true
+        cDebug     = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
 if can-do("true,yes,1", cDebug) then do:
@@ -203,7 +204,7 @@ assign cHttpUrl = substitute(oQueryURL:Get("ClientSessions"), cInstance, cAblApp
 message substitute("Looking for SessionManager Sessions of &1...", cAblApp).
 message substitute("[Using &1 Termination]", if cTerminate eq "0" then "Graceful" else "Forced").
 assign oJsonResp = MakeRequest(cHttpUrl).
-if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then do:
+if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
     oSessions = oJsonResp:GetJsonObject("result"):GetJsonArray("OEABLSession").
 
     assign iSessions = oSessions:Length.
@@ -217,7 +218,7 @@ if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("re
     on stop undo, next SESSIONBLK:
         oSession = oSessions:GetJsonObject(iLoop).
 
-        if oSession:has("sessionID") and oSession:GetType("sessionID") eq JsonDataType:string then
+        if JsonPropertyHelper:HasTypedProperty(oSession, "sessionID", JsonDataType:string) then
             assign cSession = oSession:GetCharacter("sessionID").
 
         if oSession:Has("sessionID") then do

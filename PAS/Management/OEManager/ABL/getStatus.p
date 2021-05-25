@@ -32,6 +32,7 @@
 
 &GLOBAL-DEFINE MIN_VERSION_12_2 (integer(entry(1, proversion(1), ".")) eq 12 and integer(entry(2, proversion(1), ".")) ge 2)
 
+using OpenEdge.Core.Json.JsonPropertyHelper.
 using OpenEdge.Core.JsonDataTypeEnum.
 using OpenEdge.Core.Collections.StringStringMap.
 using OpenEdge.Net.HTTP.ClientBuilder.
@@ -113,14 +114,14 @@ else if session:parameter ne "" then /* original method */
     assign cPort = session:parameter.
 else
     assign
-        cScheme   = dynamic-function("getParameter" in source-procedure, "Scheme") when dynamic-function("getParameter" in source-procedure, "Scheme") gt ""
-        cHost     = dynamic-function("getParameter" in source-procedure, "Host") when dynamic-function("getParameter" in source-procedure, "Host") gt ""
-        cPort     = dynamic-function("getParameter" in source-procedure, "Port") when dynamic-function("getParameter" in source-procedure, "Port") gt ""
-        cUserId   = dynamic-function("getParameter" in source-procedure, "UserID") when dynamic-function("getParameter" in source-procedure, "UserID") gt ""
-        cPassword = dynamic-function("getParameter" in source-procedure, "PassWD") when dynamic-function("getParameter" in source-procedure, "PassWD") gt ""
-        cAblApp   = dynamic-function("getParameter" in source-procedure, "ABLApp") when dynamic-function("getParameter" in source-procedure, "ABLApp") gt ""
-		iBaseMem  = int64(dynamic-function("getParameter" in source-procedure, "BaseMem")) when dynamic-function("getParameter" in source-procedure, "BaseMem") gt ""
-        cDebug    = dynamic-function("getParameter" in source-procedure, "Debug") when dynamic-function("getParameter" in source-procedure, "Debug") gt ""
+        cScheme   = dynamic-function("getParameter" in source-procedure, "Scheme") when (dynamic-function("getParameter" in source-procedure, "Scheme") gt "") eq true
+        cHost     = dynamic-function("getParameter" in source-procedure, "Host") when (dynamic-function("getParameter" in source-procedure, "Host") gt "") eq true
+        cPort     = dynamic-function("getParameter" in source-procedure, "Port") when (dynamic-function("getParameter" in source-procedure, "Port") gt "") eq true
+        cUserId   = dynamic-function("getParameter" in source-procedure, "UserID") when (dynamic-function("getParameter" in source-procedure, "UserID") gt "") eq true
+        cPassword = dynamic-function("getParameter" in source-procedure, "PassWD") when (dynamic-function("getParameter" in source-procedure, "PassWD") gt "") eq true
+        cAblApp   = dynamic-function("getParameter" in source-procedure, "ABLApp") when (dynamic-function("getParameter" in source-procedure, "ABLApp") gt "") eq true
+        iBaseMem  = int64(dynamic-function("getParameter" in source-procedure, "BaseMem")) when (dynamic-function("getParameter" in source-procedure, "BaseMem") gt "") eq true
+        cDebug    = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
 if can-do("true,yes,1", cDebug) then do:
@@ -319,10 +320,10 @@ procedure GetApplications:
 
     assign cHttpUrl = substitute(oQueryURL:Get("Applications"), cInstance).
     assign oJsonResp = MakeRequest(cHttpUrl).
-    if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then do:
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then do:
         oResult = oJsonResp:GetJsonObject("result").
 
-        if oResult:Has("Application") and oResult:GetType("Application") eq JsonDataType:Array then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "Application", JsonDataType:Array) then
         do iLoop = 1 to oResult:GetJsonArray("Application"):Length:
             oTemp = oResult:GetJsonArray("Application"):GetJsonObject(iLoop).
             if oTemp:Has("name") and oTemp:GetCharacter("name") eq cAblApp then do:
@@ -332,7 +333,7 @@ procedure GetApplications:
                 /* Reports the full ABL Application name and OpenEdge version as reported by the monitored PAS instance itself. */
                 put unformatted substitute("~nABL Application Information [&1 - &2]", cAblApp, oTemp:GetCharacter("version")) skip.
 
-                if oTemp:Has("webapps") and oTemp:GetType("webapps") eq JsonDataType:Array then do:
+                if JsonPropertyHelper:HasTypedProperty(oTemp, "webapps", JsonDataType:Array) then do:
                     assign oWebApps = oTemp:GetJsonArray("webapps").
                     do iLoop2 = 1 to oWebApps:Length:
                         if oWebApps:GetJsonObject(iLoop2):Has("name") then
@@ -356,72 +357,72 @@ end procedure.
 procedure GetProperties:
     assign cHttpUrl = substitute(oQueryURL:Get("SessionManagerProperties"), cInstance, cAblApp).
     assign oJsonResp = MakeRequest(cHttpUrl).
-    if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
     do on error undo, leave:
         oResult = oJsonResp:GetJsonObject("result").
 
         put unformatted "~nManager Properties" skip.
 
-        if oResult:Has("maxAgents") and oResult:GetType("maxAgents") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "maxAgents", JsonDataType:string) then
             put unformatted substitute("~t        Maximum Agents:~t~t&1", FormatCharAsNumber(oResult:GetCharacter("maxAgents"))) skip.
 
-        if oResult:Has("minAgents") and oResult:GetType("minAgents") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "minAgents", JsonDataType:string) then
             put unformatted substitute("~t        Minimum Agents:~t~t&1", FormatCharAsNumber(oResult:GetCharacter("minAgents"))) skip.
 
-        if oResult:Has("numInitialAgents") and oResult:GetType("numInitialAgents") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "numInitialAgents", JsonDataType:string) then
             put unformatted substitute("~t        Initial Agents:~t~t&1", FormatCharAsNumber(oResult:GetCharacter("numInitialAgents"))) skip.
 
-        if oResult:Has("maxConnectionsPerAgent") and oResult:GetType("maxConnectionsPerAgent") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "maxConnectionsPerAgent", JsonDataType:string) then
             put unformatted substitute("~tMax. Connections/Agent:~t~t&1", FormatCharAsNumber(oResult:GetCharacter("maxConnectionsPerAgent"))) skip.
 
-        if oResult:Has("maxABLSessionsPerAgent") and oResult:GetType("maxABLSessionsPerAgent") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "maxABLSessionsPerAgent", JsonDataType:string) then
             put unformatted substitute("~tMax. ABLSessions/Agent:~t~t&1", FormatCharAsNumber(oResult:GetCharacter("maxABLSessionsPerAgent"))) skip.
 
-        if oResult:Has("idleConnectionTimeout") and oResult:GetType("idleConnectionTimeout") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "idleConnectionTimeout", JsonDataType:string) then
             put unformatted substitute("~t    Idle Conn. Timeout: &1 ms (&2)",
                                        FormatLongNumber(oResult:GetCharacter("idleConnectionTimeout"), false),
                                        FormatMsTime(integer(oResult:GetCharacter("idleConnectionTimeout")))) skip.
 
-        if oResult:Has("idleSessionTimeout") and oResult:GetType("idleSessionTimeout") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "idleSessionTimeout", JsonDataType:string) then
             put unformatted substitute("~t  Idle Session Timeout: &1 ms (&2)",
                                        FormatLongNumber(oResult:GetCharacter("idleSessionTimeout"), false),
                                        FormatMsTime(integer(oResult:GetCharacter("idleSessionTimeout")))) skip.
 
-        if oResult:Has("idleAgentTimeout") and oResult:GetType("idleAgentTimeout") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "idleAgentTimeout", JsonDataType:string) then
             put unformatted substitute("~t    Idle Agent Timeout: &1 ms (&2)",
                                        FormatLongNumber(oResult:GetCharacter("idleAgentTimeout"), false),
                                        FormatMsTime(integer(oResult:GetCharacter("idleAgentTimeout")))) skip.
 
-        if oResult:Has("idleResourceTimeout") and oResult:GetType("idleResourceTimeout") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "idleResourceTimeout", JsonDataType:string) then
             put unformatted substitute("~t Idle Resource Timeout: &1 ms (&2)",
                                        FormatLongNumber(oResult:GetCharacter("idleResourceTimeout"), false),
                                        FormatMsTime(integer(oResult:GetCharacter("idleResourceTimeout")))) skip.
 
-        if oResult:Has("connectionWaitTimeout") and oResult:GetType("connectionWaitTimeout") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "connectionWaitTimeout", JsonDataType:string) then
             put unformatted substitute("~t    Conn. Wait Timeout: &1 ms (&2)",
                                        FormatLongNumber(oResult:GetCharacter("connectionWaitTimeout"), false),
                                        FormatMsTime(integer(oResult:GetCharacter("connectionWaitTimeout")))) skip.
 
-        if oResult:Has("requestWaitTimeout") and oResult:GetType("requestWaitTimeout") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "requestWaitTimeout", JsonDataType:string) then
             put unformatted substitute("~t  Request Wait Timeout: &1 ms (&2)",
                                        FormatLongNumber(oResult:GetCharacter("requestWaitTimeout"), false),
                                        FormatMsTime(integer(oResult:GetCharacter("requestWaitTimeout")))) skip.
 
-        if oResult:Has("collectMetrics") and oResult:GetType("collectMetrics") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "collectMetrics", JsonDataType:string) then
             assign iCollect = integer(oResult:GetCharacter("collectMetrics")). /* Remember for later. */
     end. /* response - SessionManagerProperties */
 
     /* Get the configured initial number of sessions along with the min available sessions. */
     assign cHttpUrl = substitute(oQueryURL:Get("AgentManagerProperties"), cInstance, cAblApp).
     assign oJsonResp = MakeRequest(cHttpUrl).
-    if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
     do on error undo, leave:
         oResult = oJsonResp:GetJsonObject("result").
 
-        if oResult:Has("numInitialSessions") and oResult:GetType("numInitialSessions") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "numInitialSessions", JsonDataType:string) then
             put unformatted substitute("~tInitial Sessions/Agent:~t~t&1", FormatCharAsNumber(oResult:GetCharacter("numInitialSessions"))) skip.
 
-        if oResult:Has("minAvailableABLSessions") and oResult:GetType("minAvailableABLSessions") eq JsonDataType:String then
+        if JsonPropertyHelper:HasTypedProperty(oResult, "minAvailableABLSessions", JsonDataType:string) then
             put unformatted substitute("~tMin. Avail. Sess/Agent:~t~t&1", FormatCharAsNumber(oResult:GetCharacter("minAvailableABLSessions"))) skip.
     end. /* response - AgentManagerProperties */
 end procedure.
@@ -438,7 +439,7 @@ procedure GetAgents:
     define variable oAgent    as JsonObject no-undo.
     define variable oSessions as JsonArray  no-undo.
     define variable oSessInfo as JsonObject no-undo.
-	define variable iMinMem   as int64      no-undo.
+    define variable iMinMem   as int64      no-undo.
 
     empty temp-table ttAgent.
     empty temp-table ttAgentSession.
@@ -446,8 +447,8 @@ procedure GetAgents:
     /* Capture all available agent info to a temp-table before we proceed. */
     assign cHttpUrl = substitute(oQueryURL:Get("Agents"), cInstance, cAblApp).
     assign oJsonResp = MakeRequest(cHttpUrl).
-    if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then do:
-        if oJsonResp:GetJsonObject("result"):Has("agents") and oJsonResp:GetJsonObject("result"):GetType("agents") eq JsonDataType:Array then
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then do:
+        if JsonPropertyHelper:HasTypedProperty(oJsonResp:GetJsonObject("result"), "agents", JsonDataType:Array) then
             oAgents = oJsonResp:GetJsonObject("result"):GetJsonArray("agents").
         else
             oAgents = new JsonArray().
@@ -479,9 +480,8 @@ procedure GetAgents:
     /* https://docs.progress.com/bundle/pas-for-openedge-management/page/About-session-and-request-states.html */
     assign cHttpUrl = substitute(oQueryURL:Get("ClientSessions"), cInstance, cAblApp).
     assign oJsonResp = MakeRequest(cHttpUrl).
-    if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then do:
-        if oJsonResp:GetJsonObject("result"):Has("OEABLSession") and
-           oJsonResp:GetJsonObject("result"):GetType("OEABLSession") eq JsonDataType:Array then do:
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then do:
+        if JsonPropertyHelper:HasTypedProperty(oJsonResp:GetJsonObject("result"), "OEABLSession", JsonDataType:Array) then do:
             /* This data will be related to the MSAgent-sessions to denote which ones are bound. */
             oClSess = oJsonResp:GetJsonObject("result"):GetJsonArray("OEABLSession").
         end. /* Has OEABLSession */
@@ -504,24 +504,23 @@ procedure GetAgents:
             /* Get the dynamic value for the available sessions of this MSAgent (available only in 12.2.0 and later). */
             assign cHttpUrl = substitute(oQueryURL:Get("DynamicSessionLimit"), cInstance, cAblApp, ttAgent.agentPID).
             assign oJsonResp = MakeRequest(cHttpUrl).
-            if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then do:
+            if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then do:
                 oResult = oJsonResp:GetJsonObject("result").
-                if oResult:Has("AgentSessionInfo") and oResult:GetType("AgentSessionInfo") eq JsonDataType:Array then do:
+                if JsonPropertyHelper:HasTypedProperty(oResult, "AgentSessionInfo", JsonDataType:Array) then do:
                     oSessions = oResult:GetJsonArray("AgentSessionInfo").
-                    if oSessions:Length eq 1 and oSessions:GetJsonObject(1):Has("ABLOutput") and
-                       oSessions:GetJsonObject(1):GetType("ABLOutput") eq JsonDataType:Object then do:
+                    if oSessions:Length eq 1 and JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(1), "ABLOutput", JsonDataType:object) then do:
                         oSessInfo = oSessions:GetJsonObject(1):GetJsonObject("ABLOutput").
 
                         /* Should be the current calculated maximum # of ABL Sessions which can be started/utilized. */
-                        if oSessInfo:Has("dynmaxablsessions") and oSessInfo:GetType("dynmaxablsessions") eq JsonDataType:Number then
+                        if JsonPropertyHelper:HasTypedProperty(oSessInfo, "dynmaxablsessions", JsonDataType:Number) then
                             assign ttAgent.maxSessions = oSessInfo:GetInteger("dynmaxablsessions").
 
                         /* This should represent the total number of ABL Sessions started, not to exceed the Dynamic Max. */
-                        if oSessInfo:Has("numABLSessions") and oSessInfo:GetType("numABLSessions") eq JsonDataType:Number then
+                        if JsonPropertyHelper:HasTypedProperty(oSessInfo, "numABLSessions", JsonDataType:Number) then
                             assign ttAgent.ablSessions = oSessInfo:GetInteger("numABLSessions").
 
                         /* This should be the number of ABL Sessions available to execute ABL code for this MSAgent. */
-                        if oSessInfo:Has("numAvailableSessions") and oSessInfo:GetType("numAvailableSessions") eq JsonDataType:Number then
+                        if JsonPropertyHelper:HasTypedProperty(oSessInfo, "numAvailableSessions", JsonDataType:Number) then
                             assign ttAgent.availSess = oSessInfo:GetInteger("numAvailableSessions").
                     end.
                 end.
@@ -531,17 +530,16 @@ procedure GetAgents:
             /* Get metrics about this particular MSAgent. */
             assign cHttpUrl = substitute(oQueryURL:Get("AgentMetrics"), cInstance, cAblApp, ttAgent.agentPID).
             assign oJsonResp = MakeRequest(cHttpUrl).
-            if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then
+            if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
             do on error undo, leave:
-                if oJsonResp:GetJsonObject("result"):Has("AgentStatHist") and
-                   oJsonResp:GetJsonObject("result"):GetType("AgentStatHist") eq JsonDataType:Array and
+                if JsonPropertyHelper:HasTypedProperty(oJsonResp:GetJsonObject("result"), "AgentStatHist", JsonDataType:Array) and
                    oJsonResp:GetJsonObject("result"):GetJsonArray("AgentStatHist"):Length ge 1 then do:
                     oTemp = oJsonResp:GetJsonObject("result"):GetJsonArray("AgentStatHist"):GetJsonObject(1).
 
-                    if oTemp:Has("OpenConnections") and oTemp:GetType("OpenConnections") eq JsonDataType:Number then
+                    if JsonPropertyHelper:HasTypedProperty(oTemp, "OpenConnections", JsonDataType:Number) then
                         assign ttAgent.openConns = oTemp:GetInteger("OpenConnections").
 
-                    if oTemp:Has("OverheadMemory") and oTemp:GetType("OverheadMemory") eq JsonDataType:Number then
+                    if JsonPropertyHelper:HasTypedProperty(oTemp, "OverheadMemory", JsonDataType:Number) then
                         assign ttAgent.memoryBytes = oTemp:GetInt64("OverheadMemory").
                 end.
             end. /* response */
@@ -549,9 +547,9 @@ procedure GetAgents:
             /* Get sessions and count non-idle states. */
             assign cHttpUrl = substitute(oQueryURL:Get("AgentSessions"), cInstance, cAblApp, ttAgent.agentPID).
             assign oJsonResp = MakeRequest(cHttpUrl).
-            if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then
+            if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
             do on error undo, leave:
-                if oJsonResp:GetJsonObject("result"):Has("AgentSession") then
+                if JsonPropertyHelper:HasTypedProperty(oJsonResp:GetJsonObject("result"), "AgentSession", JsonDataType:Array) then
                     oSessions = oJsonResp:GetJsonObject("result"):GetJsonArray("AgentSession").
                 else
                     oSessions = new JsonArray().
@@ -686,27 +684,27 @@ procedure GetSessions:
     /* Get metrics about the session manager which comes from the collectMetrics flag. */
     assign cHttpUrl = substitute(oQueryURL:Get("SessionMetrics"), cInstance, cAblApp).
     assign oJsonResp = MakeRequest(cHttpUrl).
-    if valid-object(oJsonResp) and oJsonResp:Has("result") and oJsonResp:GetType("result") eq JsonDataType:Object then
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
     do on error undo, leave:
         oTemp = oJsonResp:GetJsonObject("result").
 
         /* Total number of requests to the session. */
-        if oTemp:Has("requests") and oTemp:GetType("requests") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "requests", JsonDataType:Number) then
             put unformatted substitute("~t       # Requests to Session:  &1",
                                         FormatLongNumber(string(oTemp:GetInteger("requests")), false)) skip.
 
         /* Number of times a response was read by the session from the MSAgent. */
         /* Number of errors that occurred while reading a response from the MSAgent. */
-        if oTemp:Has("reads") and oTemp:GetType("reads") eq JsonDataType:Number and
-           oTemp:Has("readErrors") and oTemp:GetType("readErrors") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "reads", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oTemp, "readErrors", JsonDataType:Number) then
             put unformatted substitute("~t      # Agent Responses Read:  &1 (&2 Errors)",
                                         FormatLongNumber(string(oTemp:GetInteger("reads")), false),
                                         trim(string(oTemp:GetInteger("readErrors"), ">>>,>>>,>>9"))) skip.
 
         /* Minimum, maximum, average times to read a response from the MSAgent. */
-        if oTemp:Has("minAgentReadTime") and oTemp:GetType("minAgentReadTime") eq JsonDataType:Number and
-           oTemp:Has("maxAgentReadTime") and oTemp:GetType("maxAgentReadTime") eq JsonDataType:Number and
-           oTemp:Has("avgAgentReadTime") and oTemp:GetType("avgAgentReadTime") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "minAgentReadTime", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oTemp, "maxAgentReadTime", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oTemp, "avgAgentReadTime", JsonDataType:Number) then
             put unformatted substitute("~tAgent Read Time (Mn, Mx, Av): &1 / &2 / &3",
                                         FormatMsTime(oTemp:GetInteger("minAgentReadTime")),
                                         FormatMsTime(oTemp:GetInteger("maxAgentReadTime")),
@@ -714,38 +712,38 @@ procedure GetSessions:
 
         /* Number of times requests were written by the session on the MSAgent. */
         /* Number of errors that occurred during writing a request to the MSAgent. */
-        if oTemp:Has("writes") and oTemp:GetType("writes") eq JsonDataType:Number and
-           oTemp:Has("writeErrors") and oTemp:GetType("writeErrors") eq JsonDataType:Number  then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "writes", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oTemp, "writeErrors", JsonDataType:Number) then
             put unformatted substitute("~t    # Agent Requests Written:  &1 (&2 Errors)",
                                         FormatLongNumber(string(oTemp:GetInteger("writes")), false),
                                         trim(string(oTemp:GetInteger("writeErrors"), ">>>,>>>,>>9"))) skip.
 
         /* Number of clients connected at a particular time. */
         /* Maximum number of concurrent clients. */
-        if oTemp:Has("concurrentConnectedClients") and oTemp:GetType("concurrentConnectedClients") eq JsonDataType:Number and
-           oTemp:Has("maxConcurrentClients") and oTemp:GetType("maxConcurrentClients") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "concurrentConnectedClients", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oTemp, "maxConcurrentClients", JsonDataType:Number) then
             put unformatted substitute("~tConcurrent Connected Clients:  &1 (Max: &2)",
                                         FormatLongNumber(string(oTemp:GetInteger("concurrentConnectedClients")), false),
                                         trim(string(oTemp:GetInteger("maxConcurrentClients"), ">>>,>>>,>>9"))) skip.
 
         /* Total time that reserved ABL sessions had to wait before executing. */
-        if oTemp:Has("totReserveABLSessionWaitTime") and oTemp:GetType("totReserveABLSessionWaitTime") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "totReserveABLSessionWaitTime", JsonDataType:Number) then
             put unformatted substitute("~tTot. Reserve ABLSession Wait: &1", FormatMsTime(oTemp:GetInteger("totReserveABLSessionWaitTime"))) skip.
 
         /* Number of waits that occurred while reserving a local ABL session. */
-        if oTemp:Has("numReserveABLSessionWaits") and oTemp:GetType("numReserveABLSessionWaits") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "numReserveABLSessionWaits", JsonDataType:Number) then
             put unformatted substitute("~t  # Reserve ABLSession Waits:  &1", FormatLongNumber(string(oTemp:GetInteger("numReserveABLSessionWaits")), false)) skip.
 
         /* Average time that a reserved ABL session had to wait before executing. */
-        if oTemp:Has("avgReserveABLSessionWaitTime") and oTemp:GetType("avgReserveABLSessionWaitTime") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "avgReserveABLSessionWaitTime", JsonDataType:Number) then
             put unformatted substitute("~tAvg. Reserve ABLSession Wait: &1", FormatMsTime(oTemp:GetInteger("avgReserveABLSessionWaitTime"))) skip.
 
         /* Maximum time that a reserved ABL session had to wait before executing. */
-        if oTemp:Has("maxReserveABLSessionWaitTime") and oTemp:GetType("maxReserveABLSessionWaitTime") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "maxReserveABLSessionWaitTime", JsonDataType:Number) then
             put unformatted substitute("~tMax. Reserve ABLSession Wait: &1", FormatMsTime(oTemp:GetInteger("maxReserveABLSessionWaitTime"))) skip.
 
         /* Number of timeouts that occurred while reserving a local ABL session. */
-        if oTemp:Has("numReserveABLSessionTimeouts") and oTemp:GetType("numReserveABLSessionTimeouts") eq JsonDataType:Number then
+        if JsonPropertyHelper:HasTypedProperty(oTemp, "numReserveABLSessionTimeouts", JsonDataType:Number) then
             put unformatted substitute("~t# Reserve ABLSession Timeout:  &1", FormatLongNumber(string(oTemp:GetInteger("numReserveABLSessionTimeouts")), false)) skip.
     end. /* response - SessionMetrics */
 
@@ -767,7 +765,7 @@ procedure GetSessions:
                 if not valid-object(oTemp) then next SESSIONBLK.
 
                 assign lIsBound = false. /* Reset for each iteration. */
-                if oTemp:Has("bound") and oTemp:GetType("bound") eq JsonDataType:Boolean then
+                if JsonPropertyHelper:HasTypedProperty(oTemp, "bound", JsonDataType:Boolean) then
                     assign lIsBound = oTemp:GetLogical("bound") eq true.
 
                 put unformatted substitute("~n~t&1&2&3~t&4~t&5  &6 &7&8 &9",
@@ -794,7 +792,7 @@ procedure GetSessions:
                 end. /* bound */
 
                 /* Client Connections should be present next, especially if session-managed model is used. */
-                if oTemp:Has("clientConnInfo") and oTemp:GetType("clientConnInfo") eq JsonDataType:Object then do:
+                if JsonPropertyHelper:HasTypedProperty(oTemp, "clientConnInfo", JsonDataType:object) then do:
                     assign oConnInfo = oTemp:GetJsonObject("clientConnInfo").
 
                     if valid-object(oConnInfo) then
@@ -807,11 +805,11 @@ procedure GetSessions:
                 end. /* clientConnInfo */
 
                 /* Agent Connection should be present if executing ABL code. */
-                if oTemp:Has("agentConnInfo") and oTemp:GetType("agentConnInfo") eq JsonDataType:Object then do:
+                if JsonPropertyHelper:HasTypedProperty(oTemp, "agentConnInfo", JsonDataType:object) then do:
                     assign oConnInfo = oTemp:GetJsonObject("agentConnInfo").
 
                     /* We can't really continue unless there is an AgentID (string) value to display. */
-                    if valid-object(oConnInfo) and oConnInfo:Has("agentID") and oConnInfo:GetType("agentID") eq JsonDataType:String then
+                    if JsonPropertyHelper:HasTypedProperty(oConnInfo, "agentID", JsonDataType:string) then
                         put unformatted substitute("~t|-- AgentConn: &1  &2  Agent: &3  Local: &4",
                                                    if oAgentMap:ContainsKey(oConnInfo:GetCharacter("agentID"))
                                                    then "PID " + oAgentMap:Get(oConnInfo:GetCharacter("agentID"))

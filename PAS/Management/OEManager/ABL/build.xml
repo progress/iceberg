@@ -25,18 +25,18 @@
         <echo message="${line.separator}"/>
         <echo message="Utilities for easy operation and maintenance of a PASOE instance."/>
         <echo message="Run from a PROENV session or with DLC and DLC/bin in your OS PATH."/>
-		<echo message="Tasks denoted with [RO] are read-only and do not impact operation."/>
+        <echo message="Tasks denoted with [RO] are read-only and do not impact operation."/>
         <echo message="${line.separator}Usage Instructions:"/>
         <echo message="${line.separator} TCMAN Shortcuts:"/>
-		<echo message="${line.separator} proant startup - Use TCMAN to start the ${instance} PAS instance"/>
+        <echo message="${line.separator} proant startup - Use TCMAN to start the ${instance} PAS instance"/>
         <echo message="${line.separator} proant query - Use TCMAN to query the ${instance} PAS instance"/>
         <echo message="${line.separator} proant shutdown - Use TCMAN to stop the ${instance} PAS instance"/>
         <echo message="${line.separator}"/>
-		<echo message="${line.separator} Internal Tools:"/>
-		<echo message="${line.separator} proant inventory - Bundle useful PAS instance files (as .zip) for support tickets"/>
+        <echo message="${line.separator} Internal Tools:"/>
+        <echo message="${line.separator} proant inventory - Bundle useful PAS instance files (as .zip) for support tickets"/>
         <echo message="${line.separator} proant compile - Compile all utility procedures to r-code (for production use)"/>
         <echo message="${line.separator}"/>
-		<echo message="${line.separator} Status/Management:"/>
+        <echo message="${line.separator} Status/Management:"/>
         <echo message="${line.separator} proant status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
         <echo message="                   [OPTIONAL] -Dbasemem=${basemem} (Minimum memory threshold, in bytes, of unused agent sessions)"/>
         <echo message="${line.separator} proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
@@ -60,8 +60,8 @@
         <echo message="                This utilizes a single DBConnection; edit build.xml to add more as needed"/>
         <echo message="                Note: will only provide session data if using self-service DB connections"/>
         <echo message="                [OPTIONAL]  -Dcodepage=${codepage} (Codepage)"/>
-		<echo message="                [OPTIONAL] -Dcollation=${collation} (Collation)"/>
-		<echo message="                [OPTIONAL]  -Ddb.name=${db.name} (Database name to check)"/>
+        <echo message="                [OPTIONAL] -Dcollation=${collation} (Collation)"/>
+        <echo message="                [OPTIONAL]  -Ddb.name=${db.name} (Database name to check)"/>
         <echo message="                [OPTIONAL]  -Ddb.host=${db.host} (Database host to check)"/>
         <echo message="                [OPTIONAL]  -Ddb.port=${db.port} (Database port to check)"/>
         <echo message="${line.separator} proant users - [RO] Alias for 'locks' target"/>
@@ -89,7 +89,7 @@
             <property environment="env"/>
 
             <!-- Set a property if environment is Windows. -->
-            <condition property="isWin32">
+            <condition property="isWin">
                 <os family="windows"/>
             </condition>
 
@@ -136,7 +136,7 @@
             <property name="ablapp" value="oepas1"/>
             <property name="webapp" value="ROOT"/>
             <property name="codepage" value="UTF-8"/>
-			<property name="collation" value="BASIC"/>
+            <property name="collation" value="BASIC"/>
             <property name="db.name" value="Sports2020"/>
             <property name="db.host" value="localhost"/>
             <property name="db.port" value="8600"/>
@@ -146,7 +146,7 @@
             <property name="terminateopt" value="0"/>
             <property name="waitfinish" value="120000"/>
             <property name="waitafter" value="60000"/>
-			<property name="basemem" value="819200"/>
+            <property name="basemem" value="819200"/>
         </sequential>
     </macrodef>
 
@@ -564,10 +564,10 @@
                graphicalMode="false"
                procedure="getLocks${proc.ext}"
                stackSize="4096"
-			   cpStream="${codepage}"
-			   cpInternal="${codepage}"
-			   cpColl="${collation}"
-			   cpCase="${collation}">
+               cpStream="${codepage}"
+               cpInternal="${codepage}"
+               cpColl="${collation}"
+               cpCase="${collation}">
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
