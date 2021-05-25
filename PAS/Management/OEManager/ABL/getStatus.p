@@ -439,7 +439,8 @@ procedure GetAgents:
     define variable oAgent    as JsonObject no-undo.
     define variable oSessions as JsonArray  no-undo.
     define variable oSessInfo as JsonObject no-undo.
-    define variable iMinMem   as int64      no-undo.
+	define variable iMinMem   as int64      no-undo.
+	define variable iTotalMem as int64      no-undo.
 
     empty temp-table ttAgent.
     empty temp-table ttAgentSession.
@@ -554,15 +555,8 @@ procedure GetAgents:
                 else
                     oSessions = new JsonArray().
 
-                assign
-                    iTotSess  = oSessions:Length
-                    iBusySess = 0
-                    .
-
+                assign iTotSess  = oSessions:Length.
                 do iLoop2 = 1 to iTotSess:
-                    if oSessions:GetJsonObject(iLoop2):GetCharacter("SessionState") ne "IDLE" then
-                        assign iBusySess = iBusySess + 1.
-
                     create ttAgentSession.
                     assign
                         ttAgentSession.agentID      = ttAgent.agentID
@@ -572,7 +566,6 @@ procedure GetAgents:
                         ttAgentSession.startTime    = oSessions:GetJsonObject(iLoop2):GetDatetimeTZ("StartTime")
                         ttAgentSession.memoryBytes  = oSessions:GetJsonObject(iLoop2):GetInt64("SessionMemory")
                         dStart                      = datetime(date(ttAgentSession.startTime), mtime(ttAgentSession.startTime))
-                        ttAgent.memoryBytes         = ttAgent.memoryBytes + ttAgentSession.memoryBytes
                         .
 
                     /* Attempt to determine the most minimal memory value for all sessions of all agents available. */
@@ -611,8 +604,6 @@ procedure GetAgents:
     end. /* for each ttAgent */
 
     for each ttAgent no-lock:
-        assign iUsedSess = 0.
-
         /* Output all information for each MSAgent after displaying a basic header. */
         put unformatted substitute("~nAgent PID &1: &2", ttAgent.agentPID, ttAgent.agentState) skip.
 
@@ -633,7 +624,14 @@ procedure GetAgents:
 
         put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~t~tMEMORY~tBOUND/ACTIVE SESSION" skip.
 
-        assign iBaseMem = max(iBaseMem, iMinMem). /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory. */
+        assign iBaseMem = max(iBaseMem, iMinMem) + 1024. /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory, plus 1K. */
+
+        assign
+			iBusySess = 0
+			iUsedSess = 0
+			iTotSess  = 0
+			iTotalMem = ttAgent.memoryBytes
+			.
 
         for each ttAgentSession no-lock
            where ttAgentSession.agentID eq ttAgent.agentID:
@@ -644,6 +642,15 @@ procedure GetAgents:
                                         FormatMemory(ttAgentSession.memoryBytes, false),
                                         (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
                                         (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "")) skip.
+
+			assign
+				iTotSess  = iTotSess + 1
+				iTotalMem = iTotalMem + ttAgentSession.memoryBytes
+				.
+
+			/* Busy sessions are those actively serving requests (non-IDLE). */
+			if ttAgentSession.sessionState ne "IDLE" then
+				assign iBusySess = iBusySess + 1.
 
             /**
              * Since iBaseMem should be the LOWEST value across all agents, it should theoretically be the baseline value
@@ -662,7 +669,7 @@ procedure GetAgents:
         put unformatted substitute("~t  Used Agent-Sessions: &1 of &2 (>&3 KB)", iUsedSess, iTotSess, FormatMemory(iBaseMem, true)) skip.
 
         /* For 12.2+ this should include agent overhead memory + all sessions, otherwise just all sessions. */
-        put unformatted substitute("~t Approx. Agent Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
+        put unformatted substitute("~t Approx. Agent Memory: &1 KB", FormatMemory(iTotalMem, true)) skip.
     end. /* for each ttAgent */
 end procedure.
 

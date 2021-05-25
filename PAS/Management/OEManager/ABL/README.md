@@ -80,3 +80,7 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]
      [echo] CATALINA_HOME: C:\Progress\OpenEdge\servers\pasoe
      [echo] CATALINA_BASE: C:\OpenEdge\WRK\oepas1
+
+## Security Notes ##
+
+It is strongly recommended to [secure the oemanager and manager WebApps](https://docs.progress.com/bundle/openedge-activedirectory-authentication/page/Secure-the-Tomcat-Manager-and-OpenEdge-Manager-web-applications.html) when deployed in a production environment.
