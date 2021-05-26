@@ -605,7 +605,7 @@ procedure GetAgents:
 
     for each ttAgent no-lock:
         /* Output all information for each MSAgent after displaying a basic header. */
-        put unformatted substitute("~nAgent PID &1: &2", ttAgent.agentPID, ttAgent.agentState) skip.
+        put unformatted substitute("~n> MSAgent PID &1: &2", ttAgent.agentPID, ttAgent.agentState) skip.
 
         if ttAgent.maxSessions ne ? then
             put unformatted substitute("~tDynMax ABL Sessions:~t&1", FormatIntAsNumber(ttAgent.maxSessions)) skip.
@@ -622,7 +622,7 @@ procedure GetAgents:
         if ttAgent.memoryBytes ne ? then
             put unformatted substitute("~t    Overhead Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
 
-        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~t~tMEMORY~tBOUND/ACTIVE SESSION" skip.
+        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tSESS. MEMORY~tBOUND/ACTIVE CLIENT SESSION" skip.
 
         assign iBaseMem = max(iBaseMem, iMinMem) + 1024. /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory, plus 1K. */
 
@@ -641,7 +641,7 @@ procedure GetAgents:
                                         ttAgentSession.startTime,
                                         FormatMemory(ttAgentSession.memoryBytes, false),
                                         (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
-                                        (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "")) skip.
+                                        (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
 
 			assign
 				iTotSess  = iTotSess + 1
@@ -662,14 +662,14 @@ procedure GetAgents:
         end. /* for each ttAgentSession */
 
         /* Output summary information about agent-sessions, such as how many are busy out of the total count. */
-        put unformatted substitute("~tActive Agent-Sessions: &1 of &2 (&3% Busy)",
+        put unformatted substitute("~t  Active Agent-Sessions: &1 of &2 (&3% Busy)",
                                    iBusySess, iTotSess, if iTotSess gt 0 then round((iBusySess / iTotSess) * 100, 1) else 0) skip.
 
         /* Establish an educated guess on how many sessions have been utilized via a baseline memory value. */
-        put unformatted substitute("~t  Used Agent-Sessions: &1 of &2 (>&3 KB)", iUsedSess, iTotSess, FormatMemory(iBaseMem, true)) skip.
+        put unformatted substitute("~tUtilized Agent-Sessions: &1 of &2 (>&3 KB)", iUsedSess, iTotSess, FormatMemory(iBaseMem, true)) skip.
 
         /* For 12.2+ this should include agent overhead memory + all sessions, otherwise just all sessions. */
-        put unformatted substitute("~t Approx. Agent Memory: &1 KB", FormatMemory(iTotalMem, true)) skip.
+        put unformatted substitute("~t   Approx. Agent Memory: &1 KB", FormatMemory(iTotalMem, true)) skip.
     end. /* for each ttAgent */
 end procedure.
 
