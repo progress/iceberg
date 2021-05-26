@@ -605,7 +605,7 @@ procedure GetAgents:
 
     for each ttAgent no-lock:
         /* Output all information for each MSAgent after displaying a basic header. */
-        put unformatted substitute("~n> MSAgent PID &1: &2", ttAgent.agentPID, ttAgent.agentState) skip.
+        put unformatted substitute("~n> Agent PID &1: &2", ttAgent.agentPID, ttAgent.agentState) skip.
 
         if ttAgent.maxSessions ne ? then
             put unformatted substitute("~tDynMax ABL Sessions:~t&1", FormatIntAsNumber(ttAgent.maxSessions)) skip.
