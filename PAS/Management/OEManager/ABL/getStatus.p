@@ -439,8 +439,8 @@ procedure GetAgents:
     define variable oAgent    as JsonObject no-undo.
     define variable oSessions as JsonArray  no-undo.
     define variable oSessInfo as JsonObject no-undo.
-	define variable iMinMem   as int64      no-undo.
-	define variable iTotalMem as int64      no-undo.
+    define variable iMinMem   as int64      no-undo.
+    define variable iTotalMem as int64      no-undo.
 
     empty temp-table ttAgent.
     empty temp-table ttAgentSession.
@@ -627,11 +627,11 @@ procedure GetAgents:
         assign iBaseMem = max(iBaseMem, iMinMem) + 1024. /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory, plus 1K. */
 
         assign
-			iBusySess = 0
-			iUsedSess = 0
-			iTotSess  = 0
-			iTotalMem = ttAgent.memoryBytes
-			.
+            iBusySess = 0
+            iUsedSess = 0
+            iTotSess  = 0
+            iTotalMem = if ttAgent.memoryBytes ne ? then ttAgent.memoryBytes else 0
+            .
 
         for each ttAgentSession no-lock
            where ttAgentSession.agentID eq ttAgent.agentID:
@@ -643,14 +643,14 @@ procedure GetAgents:
                                         (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
                                         (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
 
-			assign
-				iTotSess  = iTotSess + 1
-				iTotalMem = iTotalMem + ttAgentSession.memoryBytes
-				.
+            assign
+                iTotSess  = iTotSess + 1
+                iTotalMem = iTotalMem + ttAgentSession.memoryBytes
+                .
 
-			/* Busy sessions are those actively serving requests (non-IDLE). */
-			if ttAgentSession.sessionState ne "IDLE" then
-				assign iBusySess = iBusySess + 1.
+            /* Busy sessions are those actively serving requests (non-IDLE). */
+            if ttAgentSession.sessionState ne "IDLE" then
+                assign iBusySess = iBusySess + 1.
 
             /**
              * Since iBaseMem should be the LOWEST value across all agents, it should theoretically be the baseline value
