@@ -16,6 +16,8 @@
         limitations under the License.
     -->
 
+    <!-- Before releasing code, run "proant build" to update the release.txt file with a current timestamp. -->
+
     <!-- Utilize a local file for properties. Allows build.xml to provide defaults only. -->
     <property file="${basedir}/build.properties"/>
 
@@ -38,13 +40,15 @@
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Status/Management:"/>
         <echo message="${line.separator} proant status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
-        <echo message="                   [OPTIONAL] -Dbasemem=${basemem} (Minimum memory threshold, in bytes, of unused agent sessions)"/>
+        <echo message="                      [OPTIONAL] -Dbasemem=${basemem} (Minimum memory threshold, in bytes, of unused agent sessions)"/>
         <echo message="${line.separator} proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
         <echo message="${line.separator} proant flush - [RO] Flush the available deferred log buffer to agent log file"/>
         <echo message="${line.separator} proant trimhttp - Trim all Session Manager and Tomcat HTTP sessions for an ABL/Web App"/>
         <echo message="                   [OPTIONAL] -Dterminateopt=${terminateopt} (0 for graceful termination and 1 for forced termination)"/>
         <echo message="${line.separator} proant trimidle - Trim all IDLE ABL Sessions for each MSAgent for an ABL App"/>
         <echo message="${line.separator} proant trimall - Trim all ABL Sessions for each MSAgent for an ABL App"/>
+        <echo message="${line.separator} proant reset - Reset an aspect of each MSAgent for an ABL App"/>
+        <echo message="                [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
         <if>
             <equals arg1="${oeMajor}" arg2="12"/>
             <then>
@@ -126,6 +130,10 @@
                 <os family="unix"/>
             </condition>
 
+            <!-- Output the last recorded code release date. -->
+            <loadfile property="release" srcFile="release.txt"/>
+            <echo message="Code Release: ${release}"/>
+
             <!-- Set general properties for this build file. -->
             <property name="scheme" value="http"/>
             <property name="host" value="localhost"/>
@@ -147,6 +155,7 @@
             <property name="waitfinish" value="120000"/>
             <property name="waitafter" value="60000"/>
             <property name="basemem" value="819200"/>
+            <property name="resettype" value="stats"/>
         </sequential>
     </macrodef>
 
@@ -229,6 +238,15 @@
             </fail>
         </sequential>
     </macrodef>
+
+    <target name="build">
+        <tstamp>
+            <format property="DSTAMP" pattern="yyyy-MM-dd"/>
+            <format property="TSTAMP" pattern="HH:mm:ss.SSS"/>
+        </tstamp>
+
+        <echo message="${DSTAMP}T${TSTAMP}" file="release.txt"/>
+    </target>
 
     <!-- PAS instance management -->
 
@@ -504,6 +522,28 @@
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="Idle" value="false"/>
             <Parameter name="TerminateOpt" value="${terminateopt}"/>
+            <Parameter name="Debug" value="${debug}"/>
+        </PCTRun>
+    </target>
+
+    <target name="reset">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="reset${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="Type" value="${resettype}"/>
             <Parameter name="Debug" value="${debug}"/>
         </PCTRun>
     </target>

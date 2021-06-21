@@ -16,16 +16,19 @@
 /**
  * Author(s): Dustin Grau (dugrau@progress.com)
  *
- * Flush the available deferred log buffer to the agent log file.
- * Usage: flushLogs.p <params>
+ * Resets an aspect of running MSAgents of an ABLApp.
+ * Usage: reset.p <params>
  *  Parameter Default/Allowed
- *   Scheme   [http|https]
- *   Hostname [localhost]
- *   PAS Port [8810]
- *   UserId   [tomcat]
- *   Password [tomcat]
- *   ABL App  [oepas1]
- *   Debug    [false|true]
+ *   Scheme     [http|https]
+ *   Hostname   [localhost]
+ *   PAS Port   [8810]
+ *   UserId     [tomcat]
+ *   Password   [tomcat]
+ *   ABL App    [oepas1]
+ *   Type       [stats|logs]
+ *   Debug      [false|true]
+ *
+ * Based on https://knowledgebase.progress.com/articles/Article/dbi-from-pas-agent-keeps-growing
  */
 
 using OpenEdge.Core.Json.JsonPropertyHelper.
@@ -41,26 +44,29 @@ using Progress.Json.ObjectModel.JsonObject.
 using Progress.Json.ObjectModel.JsonArray.
 using Progress.Json.ObjectModel.JsonDataType.
 
-define variable oDelResp  as IHttpResponse   no-undo.
-define variable oClient   as IHttpClient     no-undo.
-define variable oCreds    as Credentials     no-undo.
-define variable cHttpUrl  as character       no-undo.
-define variable cInstance as character       no-undo.
-define variable oJsonResp as JsonObject      no-undo.
-define variable oAgents   as JsonArray       no-undo.
-define variable oAgent    as JsonObject      no-undo.
-define variable oQueryURL as StringStringMap no-undo.
-define variable iLoop     as integer         no-undo.
-define variable cScheme   as character       no-undo initial "http".
-define variable cHost     as character       no-undo initial "localhost".
-define variable cPort     as character       no-undo initial "8810".
-define variable cUserId   as character       no-undo initial "tomcat".
-define variable cPassword as character       no-undo initial "tomcat".
-define variable cAblApp   as character       no-undo initial "oepas1".
-define variable cDebug    as character       no-undo initial "false".
+define variable cOutFile    as character       no-undo.
+define variable oDelResp    as IHttpResponse   no-undo.
+define variable oClient     as IHttpClient     no-undo.
+define variable oCreds      as Credentials     no-undo.
+define variable cHttpUrl    as character       no-undo.
+define variable cInstance   as character       no-undo.
+define variable oJsonResp   as JsonObject      no-undo.
+define variable oAgents     as JsonArray       no-undo.
+define variable oAgent      as JsonObject      no-undo.
+define variable oQueryURL   as StringStringMap no-undo.
+define variable iLoop       as integer         no-undo.
+define variable cScheme     as character       no-undo initial "http".
+define variable cHost       as character       no-undo initial "localhost".
+define variable cPort       as character       no-undo initial "8810".
+define variable cUserId     as character       no-undo initial "tomcat".
+define variable cPassword   as character       no-undo initial "tomcat".
+define variable cAblApp     as character       no-undo initial "oepas1".
+define variable cDebug      as character       no-undo initial "false".
+define variable cType       as character       no-undo initial "stats".
+define variable cPID        as character       no-undo.
 
 /* Check for passed-in arguments/parameters. */
-if num-entries(session:parameter) ge 7 then
+if num-entries(session:parameter) ge 9 then
     assign
         cScheme   = entry(1, session:parameter)
         cHost     = entry(2, session:parameter)
@@ -68,7 +74,8 @@ if num-entries(session:parameter) ge 7 then
         cUserId   = entry(4, session:parameter)
         cPassword = entry(5, session:parameter)
         cAblApp   = entry(6, session:parameter)
-        cDebug    = entry(7, session:parameter)
+        cType     = entry(7, session:parameter)
+        cDebug    = entry(8, session:parameter)
         .
 else if session:parameter ne "" then /* original method */
     assign cPort = session:parameter.
@@ -80,11 +87,12 @@ else
         cUserId   = dynamic-function("getParameter" in source-procedure, "UserID") when (dynamic-function("getParameter" in source-procedure, "UserID") gt "") eq true
         cPassword = dynamic-function("getParameter" in source-procedure, "PassWD") when (dynamic-function("getParameter" in source-procedure, "PassWD") gt "") eq true
         cAblApp   = dynamic-function("getParameter" in source-procedure, "ABLApp") when (dynamic-function("getParameter" in source-procedure, "ABLApp") gt "") eq true
+        cType     = dynamic-function("getParameter" in source-procedure, "Type") when (dynamic-function("getParameter" in source-procedure, "Type") gt "") eq true
         cDebug    = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
 if can-do("true,yes,1", cDebug) then do:
-    log-manager:logfile-name    = "flushLogs.log".
+    log-manager:logfile-name    = "trimAgents.log".
     log-manager:log-entry-types = "4GLTrace".
     log-manager:logging-level   = 5.
 end.
@@ -96,7 +104,8 @@ assign oQueryURL = new StringStringMap().
 
 /* Register the URL's to the OEM-API endpoints as will be used in this utility. */
 oQueryURL:Put("Agents", "&1/oemanager/applications/&2/agents").
-oQueryURL:Put("FlushLogs", "&1/oemanager/applications/&2/agents/&3/flushDeferredLog").
+oQueryURL:Put("AgentStatData", "&1/oemanager/applications/&2/agents/&3/agentStatData").
+oQueryURL:Put("DeferredLog", "&1/oemanager/applications/&2/agents/&3/resetDeferredLog").
 
 function MakeRequest returns JsonObject ( input pcHttpUrl as character ):
     define variable oReq  as IHttpRequest  no-undo.
@@ -179,9 +188,9 @@ end function. /* MakeRequest */
 
 /* Initial URL to obtain a list of all MSAgents for an ABL Application. */
 assign cHttpUrl = substitute(oQueryURL:Get("Agents"), cInstance, cAblApp).
-message substitute("Flushing deferred log buffer for MSAgents of &1...", cAblApp).
+message substitute("Looking for MSAgents of &1...", cAblApp).
 assign oJsonResp = MakeRequest(cHttpUrl).
-if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then do:
+if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
     oAgents = oJsonResp:GetJsonObject("result"):GetJsonArray("agents").
     if oAgents:Length eq 0 then
         message "No MSAgents running".
@@ -192,20 +201,46 @@ if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object)
     on stop undo, next AGENTBLK:
         oAgent = oAgents:GetJsonObject(iLoop).
 
-        /* Write session stack information from any available MSAgents. */
-        if oAgent:GetCharacter("state") eq "available" then do:
-            message substitute("Flushing buffer for MSAgent PID &1...", oAgent:GetCharacter("pid")).
+        if JsonPropertyHelper:HasTypedProperty(oAgent, "pid", JsonDataType:string) then
+            assign cPID = oAgent:GetCharacter("pid").
 
-            /* A single command will flush all deferred log entries for all MSAgents. */
-            assign cHttpUrl = substitute(oQueryURL:Get("FlushLogs"), cInstance, cAblApp, oAgent:GetCharacter("pid")).
-            assign oJsonResp = MakeRequest(cHttpUrl).
-            if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
+        /* Perform a delete on the type of item to reset. */
+        do stop-after 10
+        on error undo, throw
+        on stop undo, retry:
+            if retry then
+                undo, throw new Progress.Lang.AppError("Encountered stop condition", 0).
+
+            case cType:
+                when "stats" then
+                    assign cHttpUrl = substitute(oQueryURL:Get("AgentStatData"), cInstance, cAblApp, cPID).
+                when "logs" then
+                    assign cHttpUrl = substitute(oQueryURL:Get("DeferredLog"), cInstance, cAblApp, cPID).
+                otherwise
+                    undo, throw new Progress.Lang.AppError(substitute("Unknown reset type '&1'", cType), 0).
+            end case.
+
+            if can-do("true,yes,1", cDebug) then
+                message substitute("Calling URL: &1", cHttpUrl).
+
+            oDelResp = oClient:Execute(RequestBuilder
+                                       :Delete(cHttpUrl)
+                                       :AcceptContentType("application/vnd.progress+json")
+                                       :ContentType("application/vnd.progress+json")
+                                       :UsingBasicAuthentication(oCreds)
+                                       :Request).
+
+            if valid-object(oDelResp) and valid-object(oDelResp:Entity) and type-of(oDelResp:Entity, JsonObject) then do:
+                assign oJsonResp = cast(oDelResp:Entity, JsonObject).
                 if oJsonResp:Has("operation") and oJsonResp:Has("outcome") then
                     message substitute("~t&1: &2", oJsonResp:GetCharacter("operation"), oJsonResp:GetCharacter("outcome")).
-            end. /* flush */
-        end. /* agent state = available */
-        else
-            message substitute("Agent PID &1 not AVAILABLE, skipping flush.", oAgent:GetCharacter("pid")).
+            end.
+
+            catch err as Progress.Lang.Error:
+                message substitute("Error Resetting &1 PID &2: &3", cType, cPID, err:GetMessage(1)).
+                next AGENTBLK.
+            end catch.
+        end. /* do stop-after */
     end. /* iLoop - agent */
 end. /* agents */
 
