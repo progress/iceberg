@@ -56,6 +56,7 @@ define variable cInstance as character       no-undo.
 define variable oJsonResp as JsonObject      no-undo.
 define variable oResult   as JsonObject      no-undo.
 define variable oTemp     as JsonObject      no-undo.
+define variable oMetrics  as JsonObject      no-undo.
 define variable oClSess   as JsonArray       no-undo.
 define variable oQueryURL as StringStringMap no-undo.
 define variable oAgentMap as StringStringMap no-undo.
@@ -64,6 +65,7 @@ define variable iLoop2    as integer         no-undo.
 define variable iLoop3    as integer         no-undo.
 define variable iCollect  as integer         no-undo.
 define variable iBaseMem  as int64           no-undo.
+define variable dInstTime as datetime        no-undo.
 define variable cBound    as character       no-undo.
 define variable cScheme   as character       no-undo initial "http".
 define variable cHost     as character       no-undo initial "localhost".
@@ -77,6 +79,8 @@ define temp-table ttAgent no-undo
     field agentID     as character
     field agentPID    as character
     field agentState  as character
+    field startTime   as datetime-tz
+    field runningTime as int64
     field maxSessions as int64
     field ablSessions as int64
     field availSess   as int64
@@ -145,6 +149,7 @@ oQueryURL:Put("SessionManagerProperties", "&1/oemanager/applications/&2/properti
 oQueryURL:Put("AgentManagerProperties", "&1/oemanager/applications/&2/agents/properties").
 oQueryURL:Put("Agents", "&1/oemanager/applications/&2/agents").
 oQueryURL:Put("DynamicSessionLimit", "&1/oemanager/applications/&2/agents/&3/dynamicSessionLimit").
+oQueryURL:Put("AgentThreads", "&1/oemanager/applications/&2/agents/&3/threads").
 oQueryURL:Put("AgentMetrics", "&1/oemanager/applications/&2/agents/&3/metrics").
 oQueryURL:Put("AgentSessions", "&1/oemanager/applications/&2/agents/&3/sessions").
 oQueryURL:Put("SessionMetrics", "&1/oemanager/applications/&2/metrics").
@@ -431,19 +436,37 @@ end procedure.
 procedure GetAgents:
     define variable iTotAgent as integer    no-undo.
     define variable iTotSess  as integer    no-undo.
+    define variable iTotThrd  as integer    no-undo.
     define variable iBusySess as integer    no-undo.
     define variable iUsedSess as integer    no-undo.
     define variable dStart    as datetime   no-undo.
-    define variable dCurrent  as datetime   no-undo.
     define variable oAgents   as JsonArray  no-undo.
     define variable oAgent    as JsonObject no-undo.
     define variable oSessions as JsonArray  no-undo.
     define variable oSessInfo as JsonObject no-undo.
+    define variable oThreads  as JsonArray  no-undo.
     define variable iMinMem   as int64      no-undo.
     define variable iTotalMem as int64      no-undo.
 
     empty temp-table ttAgent.
     empty temp-table ttAgentSession.
+
+    /* Get metrics about the session manager which comes from the collectMetrics flag. */
+    assign cHttpUrl = substitute(oQueryURL:Get("SessionMetrics"), cInstance, cAblApp).
+    assign oJsonResp = MakeRequest(cHttpUrl).
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
+    do on error undo, leave:
+        oMetrics = oJsonResp:GetJsonObject("result").
+
+        /* Get the server access time (should be a timestamp from the server's timezone). */
+        define variable dTemp as datetime-tz no-undo.
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "accessTime", JsonDataType:String) then do:
+            assign dTemp = oMetrics:GetDateTimeTZ("accessTime").
+            assign dInstTime = datetime(date(dTemp), mtime(dTemp)).
+        end.
+        else
+            assign dInstTime = now.
+    end. /* response - SessionMetrics */
 
     /* Capture all available agent info to a temp-table before we proceed. */
     assign cHttpUrl = substitute(oQueryURL:Get("Agents"), cInstance, cAblApp).
@@ -488,8 +511,6 @@ procedure GetAgents:
         end. /* Has OEABLSession */
     end. /* Client Sessions */
 
-    assign dCurrent = datetime(today, mtime). /* Assumes calling program is the same TZ as server! */
-
     for each ttAgent exclusive-lock:
         assign
             ttAgent.maxSessions = ?
@@ -528,6 +549,33 @@ procedure GetAgents:
             end. /* agent manager properties */
         &ENDIF
 
+            /* Get threads for this particular MSAgent. */
+            assign dStart = ?. /* Clear before use. */
+            assign cHttpUrl = substitute(oQueryURL:Get("AgentThreads"), cInstance, cAblApp, ttAgent.agentPID).
+            assign oJsonResp = MakeRequest(cHttpUrl).
+            if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
+            do on error undo, leave:
+                if JsonPropertyHelper:HasTypedProperty(oJsonResp:GetJsonObject("result"), "AgentThread", JsonDataType:Array) and
+                   oJsonResp:GetJsonObject("result"):GetJsonArray("AgentThread"):Length ge 1 then do:
+                    oThreads = oJsonResp:GetJsonObject("result"):GetJsonArray("AgentThread").
+                    assign
+                        iTotThrd          = oThreads:Length
+                        ttAgent.startTime = dInstTime
+                        .
+
+                    /* Loop through the threads to get the earliest start time; should be the agent's epoch. */
+                    do iLoop2 = 1 to iTotThrd:
+                        oTemp = oThreads:GetJsonObject(iLoop2).
+                        if JsonPropertyHelper:HasTypedProperty(oTemp, "StartTime", JsonDataType:String) then
+                            assign ttAgent.startTime = min(ttAgent.startTime, oTemp:GetDateTimeTZ("StartTime")).
+                    end. /* iLoop2 - oThreads */
+
+                    /* Attempt to calculate the time this session has been running, though we don't have a current timestamp directly from the server. */
+                    assign dStart = datetime(date(ttAgent.startTime), mtime(ttAgent.startTime)) when ttAgent.startTime ne ?.
+                    assign ttAgent.runningTime = interval(dInstTime, dStart, "milliseconds") when (dInstTime ne ? and dStart ne ? and dInstTime ge dStart).
+                end.
+            end. /* response */
+
             /* Get metrics about this particular MSAgent. */
             assign cHttpUrl = substitute(oQueryURL:Get("AgentMetrics"), cInstance, cAblApp, ttAgent.agentPID).
             assign oJsonResp = MakeRequest(cHttpUrl).
@@ -546,6 +594,7 @@ procedure GetAgents:
             end. /* response */
 
             /* Get sessions and count non-idle states. */
+            assign dStart = ?. /* Clear before use. */
             assign cHttpUrl = substitute(oQueryURL:Get("AgentSessions"), cInstance, cAblApp, ttAgent.agentPID).
             assign oJsonResp = MakeRequest(cHttpUrl).
             if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
@@ -565,7 +614,6 @@ procedure GetAgents:
                         ttAgentSession.sessionState = oSessions:GetJsonObject(iLoop2):GetCharacter("SessionState")
                         ttAgentSession.startTime    = oSessions:GetJsonObject(iLoop2):GetDatetimeTZ("StartTime")
                         ttAgentSession.memoryBytes  = oSessions:GetJsonObject(iLoop2):GetInt64("SessionMemory")
-                        dStart                      = datetime(date(ttAgentSession.startTime), mtime(ttAgentSession.startTime))
                         .
 
                     /* Attempt to determine the most minimal memory value for all sessions of all agents available. */
@@ -575,7 +623,8 @@ procedure GetAgents:
                         assign iMinMem = min(iMinMem, ttAgentSession.memoryBytes).
 
                     /* Attempt to calculate the time this session has been running, though we don't have a current timestamp directly from the server. */
-                    assign ttAgentSession.runningTime = interval(dCurrent, dStart, "milliseconds") when (dCurrent ne ? and dStart ne ? and dCurrent ge dStart).
+                    assign dStart = datetime(date(ttAgentSession.startTime), mtime(ttAgentSession.startTime)) when ttAgentSession.startTime ne ?.
+                    assign ttAgentSession.runningTime = interval(dInstTime, dStart, "milliseconds") when (dInstTime ne ? and dStart ne ? and dInstTime ge dStart).
 
                     define variable iSessions as integer no-undo.
 
@@ -607,22 +656,25 @@ procedure GetAgents:
         /* Output all information for each MSAgent after displaying a basic header. */
         put unformatted substitute("~n> Agent PID &1: &2", ttAgent.agentPID, ttAgent.agentState) skip.
 
+        if ttAgent.startTime ne ? then
+            put unformatted substitute("~tEst. Agent Lifetime: &1", FormatMsTime(ttAgent.runningTime)) skip.
+
         if ttAgent.maxSessions ne ? then
-            put unformatted substitute("~tDynMax ABL Sessions:~t&1", FormatIntAsNumber(ttAgent.maxSessions)) skip.
+            put unformatted substitute("~tDynMax ABL Sessions:~t    &1", FormatIntAsNumber(ttAgent.maxSessions)) skip.
 
         if ttAgent.ablSessions ne ? then
-            put unformatted substitute("~t Total ABL Sessions:~t&1", FormatIntAsNumber(ttAgent.ablSessions)) skip.
+            put unformatted substitute("~t Total ABL Sessions:~t    &1", FormatIntAsNumber(ttAgent.ablSessions)) skip.
 
         if ttAgent.availSess ne ? then
-            put unformatted substitute("~t Avail ABL Sessions:~t&1", FormatIntAsNumber(ttAgent.availSess)) skip.
+            put unformatted substitute("~t Avail ABL Sessions:~t    &1", FormatIntAsNumber(ttAgent.availSess)) skip.
 
         if ttAgent.openConns ne ? then
-            put unformatted substitute("~t   Open Connections:~t&1", FormatIntAsNumber(ttAgent.openConns)) skip.
+            put unformatted substitute("~t   Open Connections:~t    &1", FormatIntAsNumber(ttAgent.openConns)) skip.
 
         if ttAgent.memoryBytes ne ? then
             put unformatted substitute("~t    Overhead Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
 
-        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tSESS. MEMORY~tBOUND/ACTIVE CLIENT SESSION" skip.
+        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~t~tSESS. MEMORY~tBOUND/ACTIVE CLIENT SESSION" skip.
 
         assign iBaseMem = max(iBaseMem, iMinMem) + 1024. /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory, plus 1K. */
 
@@ -635,10 +687,11 @@ procedure GetAgents:
 
         for each ttAgentSession no-lock
            where ttAgentSession.agentID eq ttAgent.agentID:
-            put unformatted substitute("~t~t&1~t&2~t&3 &4 KB~t&5 &6",
+            put unformatted substitute("~t~t&1~t&2~t&3~t&4 &5 KB~t&6 &7",
                                         string(ttAgentSession.sessionID, ">>>9"),
                                         string(ttAgentSession.sessionState, "x(10)"),
                                         ttAgentSession.startTime,
+                                        FormatMsTime(ttAgentSession.runningTime),
                                         FormatMemory(ttAgentSession.memoryBytes, false),
                                         (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
                                         (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
@@ -688,71 +741,65 @@ procedure GetSessions:
         when 3 then put unformatted "(Count+Time)" skip.
     end case.
 
-    /* Get metrics about the session manager which comes from the collectMetrics flag. */
-    assign cHttpUrl = substitute(oQueryURL:Get("SessionMetrics"), cInstance, cAblApp).
-    assign oJsonResp = MakeRequest(cHttpUrl).
-    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then
-    do on error undo, leave:
-        oTemp = oJsonResp:GetJsonObject("result").
-
+    if valid-object(oMetrics) then do:
         /* Total number of requests to the session. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "requests", JsonDataType:Number) then
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "requests", JsonDataType:Number) then
             put unformatted substitute("~t       # Requests to Session:  &1",
-                                        FormatLongNumber(string(oTemp:GetInteger("requests")), false)) skip.
+                                        FormatLongNumber(string(oMetrics:GetInteger("requests")), false)) skip.
 
         /* Number of times a response was read by the session from the MSAgent. */
         /* Number of errors that occurred while reading a response from the MSAgent. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "reads", JsonDataType:Number) and
-           JsonPropertyHelper:HasTypedProperty(oTemp, "readErrors", JsonDataType:Number) then
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "reads", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oMetrics, "readErrors", JsonDataType:Number) then
             put unformatted substitute("~t      # Agent Responses Read:  &1 (&2 Errors)",
-                                        FormatLongNumber(string(oTemp:GetInteger("reads")), false),
-                                        trim(string(oTemp:GetInteger("readErrors"), ">>>,>>>,>>9"))) skip.
+                                        FormatLongNumber(string(oMetrics:GetInteger("reads")), false),
+                                        trim(string(oMetrics:GetInteger("readErrors"), ">>>,>>>,>>9"))) skip.
 
         /* Minimum, maximum, average times to read a response from the MSAgent. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "minAgentReadTime", JsonDataType:Number) and
-           JsonPropertyHelper:HasTypedProperty(oTemp, "maxAgentReadTime", JsonDataType:Number) and
-           JsonPropertyHelper:HasTypedProperty(oTemp, "avgAgentReadTime", JsonDataType:Number) then
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "minAgentReadTime", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oMetrics, "maxAgentReadTime", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oMetrics, "avgAgentReadTime", JsonDataType:Number) then
             put unformatted substitute("~tAgent Read Time (Mn, Mx, Av): &1 / &2 / &3",
-                                        FormatMsTime(oTemp:GetInteger("minAgentReadTime")),
-                                        FormatMsTime(oTemp:GetInteger("maxAgentReadTime")),
-                                        FormatMsTime(oTemp:GetInteger("avgAgentReadTime"))) skip.
+                                        FormatMsTime(oMetrics:GetInteger("minAgentReadTime")),
+                                        FormatMsTime(oMetrics:GetInteger("maxAgentReadTime")),
+                                        FormatMsTime(oMetrics:GetInteger("avgAgentReadTime"))) skip.
 
         /* Number of times requests were written by the session on the MSAgent. */
         /* Number of errors that occurred during writing a request to the MSAgent. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "writes", JsonDataType:Number) and
-           JsonPropertyHelper:HasTypedProperty(oTemp, "writeErrors", JsonDataType:Number) then
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "writes", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oMetrics, "writeErrors", JsonDataType:Number) then
             put unformatted substitute("~t    # Agent Requests Written:  &1 (&2 Errors)",
-                                        FormatLongNumber(string(oTemp:GetInteger("writes")), false),
-                                        trim(string(oTemp:GetInteger("writeErrors"), ">>>,>>>,>>9"))) skip.
+                                        FormatLongNumber(string(oMetrics:GetInteger("writes")), false),
+                                        trim(string(oMetrics:GetInteger("writeErrors"), ">>>,>>>,>>9"))) skip.
 
         /* Number of clients connected at a particular time. */
         /* Maximum number of concurrent clients. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "concurrentConnectedClients", JsonDataType:Number) and
-           JsonPropertyHelper:HasTypedProperty(oTemp, "maxConcurrentClients", JsonDataType:Number) then
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "concurrentConnectedClients", JsonDataType:Number) and
+           JsonPropertyHelper:HasTypedProperty(oMetrics, "maxConcurrentClients", JsonDataType:Number) then
             put unformatted substitute("~tConcurrent Connected Clients:  &1 (Max: &2)",
-                                        FormatLongNumber(string(oTemp:GetInteger("concurrentConnectedClients")), false),
-                                        trim(string(oTemp:GetInteger("maxConcurrentClients"), ">>>,>>>,>>9"))) skip.
+                                        FormatLongNumber(string(oMetrics:GetInteger("concurrentConnectedClients")), false),
+                                        trim(string(oMetrics:GetInteger("maxConcurrentClients"), ">>>,>>>,>>9"))) skip.
 
         /* Total time that reserved ABL sessions had to wait before executing. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "totReserveABLSessionWaitTime", JsonDataType:Number) then
-            put unformatted substitute("~tTot. Reserve ABLSession Wait: &1", FormatMsTime(oTemp:GetInteger("totReserveABLSessionWaitTime"))) skip.
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "totReserveABLSessionWaitTime", JsonDataType:Number) then
+            put unformatted substitute("~tTot. Reserve ABLSession Wait: &1", FormatMsTime(oMetrics:GetInteger("totReserveABLSessionWaitTime"))) skip.
 
         /* Number of waits that occurred while reserving a local ABL session. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "numReserveABLSessionWaits", JsonDataType:Number) then
-            put unformatted substitute("~t  # Reserve ABLSession Waits:  &1", FormatLongNumber(string(oTemp:GetInteger("numReserveABLSessionWaits")), false)) skip.
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "numReserveABLSessionWaits", JsonDataType:Number) then
+            put unformatted substitute("~t  # Reserve ABLSession Waits:  &1", FormatLongNumber(string(oMetrics:GetInteger("numReserveABLSessionWaits")), false)) skip.
 
         /* Average time that a reserved ABL session had to wait before executing. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "avgReserveABLSessionWaitTime", JsonDataType:Number) then
-            put unformatted substitute("~tAvg. Reserve ABLSession Wait: &1", FormatMsTime(oTemp:GetInteger("avgReserveABLSessionWaitTime"))) skip.
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "avgReserveABLSessionWaitTime", JsonDataType:Number) then
+            put unformatted substitute("~tAvg. Reserve ABLSession Wait: &1", FormatMsTime(oMetrics:GetInteger("avgReserveABLSessionWaitTime"))) skip.
 
         /* Maximum time that a reserved ABL session had to wait before executing. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "maxReserveABLSessionWaitTime", JsonDataType:Number) then
-            put unformatted substitute("~tMax. Reserve ABLSession Wait: &1", FormatMsTime(oTemp:GetInteger("maxReserveABLSessionWaitTime"))) skip.
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "maxReserveABLSessionWaitTime", JsonDataType:Number) then
+            put unformatted substitute("~tMax. Reserve ABLSession Wait: &1", FormatMsTime(oMetrics:GetInteger("maxReserveABLSessionWaitTime"))) skip.
 
         /* Number of timeouts that occurred while reserving a local ABL session. */
-        if JsonPropertyHelper:HasTypedProperty(oTemp, "numReserveABLSessionTimeouts", JsonDataType:Number) then
-            put unformatted substitute("~t# Reserve ABLSession Timeout:  &1", FormatLongNumber(string(oTemp:GetInteger("numReserveABLSessionTimeouts")), false)) skip.
-    end. /* response - SessionMetrics */
+        if JsonPropertyHelper:HasTypedProperty(oMetrics, "numReserveABLSessionTimeouts", JsonDataType:Number) then
+            put unformatted substitute("~t# Reserve ABLSession Timeout:  &1", FormatLongNumber(string(oMetrics:GetInteger("numReserveABLSessionTimeouts")), false)) skip.
+    end. /* valid oMetrics */
 
     /* Parse through and display statistics from the Client Sessions API as obtained previously. */
     if valid-object(oClSess) then do:

@@ -240,6 +240,14 @@
     </macrodef>
 
     <target name="build">
+        <antcall target="compile"/>
+
+        <delete quiet="true">
+            <fileset dir="${basedir}">
+                <include name="*.r"/>
+            </fileset>
+        </delete>
+
         <tstamp>
             <format property="DSTAMP" pattern="yyyy-MM-dd"/>
             <format property="TSTAMP" pattern="HH:mm:ss.SSS"/>
