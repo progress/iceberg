@@ -674,7 +674,7 @@ procedure GetAgents:
         if ttAgent.memoryBytes ne ? then
             put unformatted substitute("~t    Overhead Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
 
-        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~t~tSESS. MEMORY~tBOUND/ACTIVE CLIENT SESSION" skip.
+        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tBOUND/ACTIVE CLIENT SESSION" skip.
 
         assign iBaseMem = max(iBaseMem, iMinMem) + 1024. /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory, plus 1K. */
 
