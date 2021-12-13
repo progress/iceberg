@@ -1,0 +1,807 @@
+<project name="MetricsDeployment" basedir="." default="usage">
+
+    <!--
+        Copyright 2020-2021 Progress Software Corporation
+
+        Licensed under the Apache License, Version 2.0 (the "License");
+        you may not use this file except in compliance with the License.
+        You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    -->
+
+    <!-- Utilize a local file for properties. Allows build.xml to provide defaults only. -->
+    <property file="${basedir}/build.properties"/>
+
+    <target name="usage" description="Usage Instructions">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <echo message="${line.separator}Usage Instructions:"/>
+        <echo message="${line.separator}proant create - [Optional] Create a standard ${instance} PAS instance"/>
+        <echo message="    -Dhttp=${http} = Port for HTTP connections"/>
+        <echo message="    -Dhttps=${https} = Port for HTTPS connections"/>
+        <echo message="    -Dajp=${ajp} = Port for AJP13 connections"/>
+        <echo message="    -Dshut=${shut} = Tomcat shutdown port"/>
+        <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+        <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+        <echo message="    -Dalias=${alias} = Alias for PAS instance"/>
+        <echo message="${line.separator}proant deploy_demos - [Optional] Recompile and update demo ABL code"/>
+        <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+        <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+        <echo message="    -Dablapp=${ablapp} = Dedicated ABL App name"/>
+        <echo message="    -Dwebapp=${webapp} = Demo webapp name"/>
+        <echo message="${line.separator}proant deploy_metrics - Configure the PAS instance for metrics collection"/>
+        <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+        <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+        <echo message="    -Dablapp=${ablapp} = Dedicated ABL App name"/>
+        <echo message="    -Dwebapp=${webapp} = Demo webapp name"/>
+        <echo message="    -Dmonitor=${monitor} = IP of the monitor endpoint"/>
+        <echo message="    -Dport=${port} = Port of the monitor endpoint"/>
+        <if>
+            <equals arg1="${oeMajor}" arg2="12"/>
+            <then>
+                <echo message="${line.separator}proant health - Enable the HealthScanner function for the instance"/>
+                <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+                <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+                <echo message="    -DhealthPort=${healthPort} = Port for HealthCheck"/>
+                <echo message="${line.separator}proant metrics - Enable/Disable collection for the instance"/>
+                <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+                <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+				<echo message="    -Dablapp=${ablapp} = ABL App for collection"/>
+                <echo message="    -DlocalIP=${localIP} = IP of this server"/>
+                <echo message="    -Dtype=${type} [pulse|profiler]"/>
+                <echo message="    -Dstate=${state} [on|off]"/>
+                <echo message="    -Dopts=${opts} [logmsgs,sessions[,requests[,calltrees,callstacks],ablobjs]]"/>
+                <echo message="    -Dmonitor=${monitor} = IP of the monitor endpoint (or 'file' for local output)"/>
+                <echo message="    -Dport=${port} = Port of the monitor endpoint"/>
+				<echo message="${line.separator}    Note: You cannot simultaneously use the 'calltrees' option in the pulse metrics and run profiler metrics."/>
+				<echo message="          The web UI will display whichever was reported, but an agent cannot collect both at the same time."/>
+            </then>
+        </if>
+        <echo message="${line.separator}proant revert - [Optional] Restore original PAS instance"/>
+        <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+        <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+        <echo message="${line.separator}Instance Management:"/>
+        <echo message="    proant startup - Uses TCMAN to start the ${instance} PAS instance"/>
+        <echo message="    proant query - Uses TCMAN to query the ${instance} PAS instance"/>
+        <echo message="    proant shutdown - Uses TCMAN to stop the ${instance} PAS instance"/>
+        <echo message="${line.separator}Location Assumptions:"/>
+        <echo message="    DLC Environment: ${dlcHome}"/>
+        <echo message="      CATALINA_BASE: ${pas.path}"/>
+    </target>
+
+    <macrodef name="init_env">
+        <sequential>
+            <!-- Access environmental variables via "env.*". -->
+            <property environment="env"/>
+
+            <!-- Set a property if environment is Windows. -->
+            <condition property="isWin">
+                <os family="windows"/>
+            </condition>
+
+            <!-- Set a property if environment is Unix. -->
+            <condition property="isUnix">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set a property if environment is 32bit. -->
+            <condition property="is32bit">
+                <or>
+                    <os arch="x86"/>
+                    <os arch="i386"/>
+                </or>
+            </condition>
+
+            <!-- Set a property if environment is 64bit. -->
+            <condition property="is64bit">
+                <not>
+                    <or>
+                        <os arch="x86"/>
+                        <os arch="i386"/>
+                    </or>
+                </not>
+            </condition>
+
+            <!-- Set the script suffix for the OS. -->
+            <condition property="scriptSuffix" value=".sh" else=".bat">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set path delimiter for the OS. -->
+            <condition property="delim" value="/" else="\">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set general properties for this build file. -->
+            <property name="instance" value="oepas1"/>
+            <property name="alias" value="${instance}"/>
+            <property name="ablapp" value="${instance}"/>
+            <property name="webapp" value="ROOT"/>
+            <property name="http" value="8810"/>
+            <property name="https" value="8811"/>
+            <property name="ajp" value="8009"/>
+            <property name="shut" value="8812"/>
+            <property name="scheme" value="http"/>
+            <property name="monitor" value="127.0.0.1"/>
+            <property name="port" value="8850"/>
+            <property name="healthPort" value="8899"/>
+            <property name="type" value="pulse"/>
+            <property name="state" value="on"/>
+            <property name="opts" value="sessions,requests,calltrees,ablobjs"/>
+            <property name="proc.ext" value=".r"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="init_oe">
+        <sequential>
+            <init_env/> <!-- Initialize environmental and general properties. -->
+
+            <!-- Fail immediately if not a 64-bit OS. -->
+            <fail message="Environment is not 64-bit">
+                <condition>
+                    <not>
+                        <isset property="is64bit"/>
+                    </not>
+                </condition>
+            </fail>
+
+            <!-- Check if DLC is set as an environment variable. -->
+            <fail message="DLC Home path is not set">
+                <condition>
+                    <and>
+                        <not><isset property="dlcHome"/></not>
+                        <not><isset property="env.DLC"/></not>
+                    </and>
+                </condition>
+            </fail>
+            <property name="dlcHome" value="${env.DLC}"/>
+            <echo message="DLC Home: ${dlcHome}"/>
+
+            <!-- Assume the DLC WRK directory unless overridden. -->
+            <condition property="wrk" value="/usr/wrk" else="C:\OpenEdge\WRK">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Load the current PCT library from DLC. -->
+            <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
+
+            <!-- Access the OE version info, and read into a property. -->
+            <ProgressVersion dlcHome="${dlcHome}" majorVersion="oeMajor" minorVersion="oeMinor" revision="oeRev" fullVersion="full"/>
+            <property name="oe.version" value="${oeMajor}.${oeMinor}.${oeRev}"/>
+            <echo message="OpenEdge Version: ${oe.version}"/>
+
+            <!-- Add the ANT-Contrib library to this environment (present in 11.7.4+ and 12.0+). -->
+            <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${dlcHome}/ant/lib/ant-contrib-0.6.jar"/>
+
+            <!-- Obtain the local IP address. -->
+            <if>
+                <equals arg1="${isWin}" arg2="true"/>
+                <then>
+                    <!-- Get the hostname via command prompt. -->
+                    <exec executable="cmd" outputproperty="myHostName">
+                        <arg value="/c" />
+                        <arg value="hostname"/>
+                    </exec>
+
+                    <!-- Ping the host and scrape output to temporary file. -->
+                    <exec executable="cmd" outputproperty="infraServerIPTemp" >
+                        <arg value="/c"/>
+                        <arg value="FOR /f &quot;tokens=1 delims=:&quot; %d IN ('ping ${myHostName} -4 -n 1 ^| find /i &quot;reply&quot;') DO FOR /F &quot;tokens=3 delims= &quot; %g IN (&quot;%d&quot;) DO echo localIP=%g > myIP.properties"/>
+                    </exec>
+
+                    <!-- Load property file with localIP value, then delete file. -->
+                    <property file="myIP.properties"/>
+                    <delete file="myIP.properties" quiet="true"/>
+                </then>
+                <else>
+                    <!-- Simply execute `hostname -i` to obtain IP address for Unix. -->
+                    <exec executable="hostname" outputproperty="infraServer">
+                        <arg line="-i"/>
+                    </exec>
+                    <property name="localIP" value="${infraServer}"/>
+                </else>
+            </if>
+
+            <!-- Set OpenEdge properties for this build file. -->
+            <property name="dlc.bin" value="${dlcHome}${delim}bin"/>
+            <condition property="pas.exec" value="pasman" else="pasman.bat">
+                <os family="unix"/>
+            </condition>
+            <property name="pas.root" value="${wrk}"/>
+            <property name="pas.path" value="${pas.root}${delim}${instance}"/>
+            <property name="pas.bin" value="${pas.path}${delim}bin"/>
+            <property name="pas.webapp.dir" value="${pas.path}${delim}webapps${delim}${webapp}"/>
+
+            <if>
+                <equals arg1="${oeMajor}" arg2="11"/>
+                <then>
+                    <!-- OpenEdge 11.7.x -->
+                    <property name="deploy.dir" value="${basedir}/deploy/oe117"/>
+                </then>
+                <else>
+                    <!-- OpenEdge 12.x -->
+
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="1"/>
+                        <then>
+                            <!-- OpenEdge 12.1 -->
+                            <fail message="OpenEdge version 12.1 is not supported."/>
+                        </then>
+                        <else>
+                            <!-- OpenEdge 12.2+ -->
+                            <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
+                        </else>
+                    </if>
+                </else>
+            </if>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="require">
+        <!-- Usage <require file="_path_to_file_"/> -->
+        <attribute name="file"/>
+        <attribute name="message" default="File @{file} not set or missing"/>
+
+        <sequential>
+            <fail message="@{message}">
+                <condition>
+                    <not>
+                        <available file="@{file}" type="file"/>
+                    </not>
+                </condition>
+            </fail>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="requireDir">
+        <!-- Usage <requireDir folder="_path_to_folder_"/> -->
+        <attribute name="folder"/>
+        <attribute name="message" default="Directory @{folder} not set or missing"/>
+
+        <sequential>
+            <fail message="@{message}">
+                <condition>
+                    <not>
+                        <available file="@{folder}" type="dir"/>
+                    </not>
+                </condition>
+            </fail>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="copyBinScripts">
+        <sequential>
+            <!-- Make sure .sh files use Unix file endings. -->
+            <fixcrlf srcdir="${deploy.dir}/bin" includes="*.sh" eol="lf" eof="remove"/>
+
+            <!-- Copy the bin scripts to the PAS instance, tailoring during copy. -->
+            <copy toDir="${pas.bin}" overwrite="true" verbose="false">
+                <fileset dir="${deploy.dir}/bin">
+                    <include name="*.bat"/>
+                    <include name="*.sh"/>
+                </fileset>
+                <filterset>
+                    <filter token="APPNAME" value="${ablapp}"/>
+                    <filter token="MONITOR" value="${monitor}"/>
+                    <filter token="MONPORT" value="${port}"/>
+                </filterset>
+            </copy>
+
+            <!-- Set execution privilege on shell scripts. -->
+            <chmod dir="${pas.bin}" perm="ug+x" includes="*.sh"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="copySparkDiagnostics">
+        <sequential>
+            <!-- Copy the config for Spark Diagnostic metrics. -->
+            <copy toDir="${pas.path}/conf" overwrite="true" verbose="true">
+                <fileset dir="${deploy.dir}">
+                    <include name="metrics_config.json"/>
+                </fileset>
+                <filterset>
+                    <filter token="MONITOR" value="${monitor}"/>
+                    <filter token="MONPORT" value="${port}"/>
+                </filterset>
+            </copy>
+
+            <!-- OpenEdge 11.x - Requires use of the Spark-Diagnostics library -->
+            <copy toDir="${pas.path}/openedge" overwrite="true" verbose="true">
+                <fileset dir="${deploy.dir}">
+                    <include name="*.pl"/>
+                </fileset>
+            </copy>
+
+            <!-- Check if PAS properties file exists. -->
+            <require file="${pas.path}/conf/openedge.properties"/>
+            <require file="${deploy.dir}/merge_spark.openedge.properties"/>
+
+            <!-- Make a copy of the default merge file (using Spark-Diagnostics), named for the ABL Application. -->
+            <copy file="${deploy.dir}/merge_spark.openedge.properties" overwrite="true" tofile="${basedir}/merge_spark_${ablapp}.openedge.properties">
+                <filterset>
+                    <filter token="APPNAME" value="${ablapp}"/>
+                    <filter token="WEBAPP" value="${webapp}"/>
+                </filterset>
+            </copy>
+
+            <!-- Merge the Spark Diagnostics properties for the ABL Application. -->
+            <echo message="Merging initial properties from 'merge_spark_${ablapp}.openedge.properties'..."/>
+            <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+                <arg line="-f '${basedir}/merge_spark_${ablapp}.openedge.properties'"/>
+            </exec>
+        </sequential>
+    </macrodef>
+
+    <target name="compile">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <if>
+            <equals arg1="${oeMajor}" arg2="12"/>
+            <then>
+                <!-- OpenEdge 12.x -->
+
+                <mkdir dir="${deploy.dir}/xbuild"/>
+                <mkdir dir="${deploy.dir}/build"/>
+
+                <!-- Create xcode from source, placing in a temporary directory. -->
+                <PCTXCode destDir="${deploy.dir}/xbuild" dlcHome="${dlcHome}">
+                    <fileset dir="${deploy.dir}/src">
+                        <include name="**/*.cls"/>
+                        <include name="**/*.p"/>
+                    </fileset>
+                </PCTXCode>
+
+                <!-- Compile from xcode source, placing in a build directory. -->
+                <PCTCompile destDir="${deploy.dir}/build" dlcHome="${dlcHome}">
+                    <propath>
+                        <pathelement path="${deploy.dir}/xbuild"/>
+                        <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                    </propath>
+                    <fileset dir="${deploy.dir}/xbuild">
+                        <include name="**/*.cls"/>
+                        <include name="**/*.p"/>
+                    </fileset>
+                </PCTCompile>
+
+                <delete dir="${deploy.dir}/build/.pct" quiet="true"/>
+                <delete dir="${deploy.dir}/xbuild" quiet="true"/>
+            </then>
+            <else>
+                <echo message="Compilation is not necessary for OpenEdge 11.7"/>
+            </else>
+        </if>
+    </target>
+
+    <target name="create">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <!-- Create the PAS instance using the values (or defaults) provided. -->
+        <echo message="Creating PAS instance '${instance}' at ${pas.path} with ports ${http}/${https}/${ajp}/${shut}..."/>
+        <mkdir dir="${wrk}"/>
+        <exec dir="${dlc.bin}" executable="${pas.exec}" output="create_${instance}.txt" failonerror="true">
+            <arg value="create"/>
+            <arg value="-v"/>
+            <arg value="-f"/>
+            <arg line="-p ${http}"/>
+            <arg line="-P ${https}"/>
+            <arg line="-j ${ajp}"/>
+            <arg line="-s ${shut}"/>
+            <arg line="-N ${alias}"/>
+            <arg value="${pas.path}"/>
+            <arg value="${instance}"/>
+        </exec>
+        <echo message="See file create_${instance}.txt for details of PAS server creation."/>
+
+        <if>
+            <equals arg1="${oeMajor}" arg2="11"/>
+            <then>
+                <!-- MUST deploy the oemanager for use with OpenEdge 11.7.x. -->
+                <exec executable="${pas.path}/bin/tcman${scriptSuffix}" output="deploy_oemanager.txt" failonerror="true">
+                    <arg value="deploy"/>
+                    <arg value="-v"/>
+                    <arg value="${dlcHome}/servers/pasoe/extras/oemanager.war"/>
+                </exec>
+            </then>
+        </if>
+    </target>
+
+    <target name="deploy_metrics">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <!-- Check if expected directories exists. -->
+        <requireDir folder="${pas.root}"/>
+        <requireDir folder="${pas.path}"/>
+        <requireDir folder="${pas.webapp.dir}"/>
+
+        <echo message="Creating backup of original openedge.properties file..."/>
+        <copy file="${pas.path}/conf/openedge.properties" tofile="${pas.path}/conf/openedge.properties.bak" verbose="true"/>
+
+        <echo message="Installing application metrics logic into ${pas.path}..."/>
+
+        <!-- Copy batch/shell scripts to PAS bin location. -->
+        <copyBinScripts/>
+
+        <!-- Copy logging config file. -->
+        <copy toDir="${pas.path}/openedge" overwrite="true" verbose="true">
+            <fileset dir="${deploy.dir}">
+                <include name="logging.config"/>
+            </fileset>
+        </copy>
+
+        <!-- Copy certain files depending on the OpenEdge version. -->
+        <if>
+            <equals arg1="${oeMajor}" arg2="12"/>
+            <then>
+                <!-- OpenEdge 12.2+ -->
+
+                <!-- Copy special ABL files for this version. -->
+                <copy toDir="${pas.path}/openedge" overwrite="true" verbose="false">
+                    <fileset dir="${deploy.dir}/build">
+                        <include name="**/*.r"/>
+                        <exclude name="metrics.r"/>
+                    </fileset>
+                </copy>
+            </then>
+            <else>
+                <!-- Copy the Spark Diagnostic library for OE 11.7.x. -->
+                <copySparkDiagnostics/>
+            </else>
+        </if>
+
+        <!-- Adjust logging properties with advanced output (granular timestamps, enhanced MDC logging). -->
+        <if>
+            <equals arg1="${oeMajor}" arg2="11"/>
+            <then>
+                <!-- OpenEdge 11.x -->
+
+                <echo message="Adding enhanced MDC logging capabilities..."/>
+
+                <!-- Modify the existing setenv to enable Request ID Logging. -->
+                <copy file="${pas.bin}/openedge_setenv.bat" tofile="${pas.bin}/openedge_setenv.bat.bak" verbose="true"/>
+                <replaceregexp
+                    file="${pas.bin}/openedge_setenv.bat"
+                    match="rem set REQIDLOGGING=y"
+                    replace="set REQIDLOGGING=y"
+                    byline="true"/>
+
+                <!-- Modify the existing setenv to enable Request ID Logging. -->
+                <copy file="${pas.bin}/openedge_setenv.sh" tofile="${pas.bin}/openedge_setenv.sh.bak" verbose="true"/>
+                <replaceregexp
+                    file="${pas.bin}/openedge_setenv.sh"
+                    match="#REQIDLOGGING=y ; export REQIDLOGGING"
+                    replace="REQIDLOGGING=y ; export REQIDLOGGING"
+                    byline="true"/>
+
+                <!-- Merge a new property into the existing catalina.properties (after backing up the original). -->
+                <copy file="${pas.path}/conf/catalina.properties" tofile="${pas.path}/conf/catalina.properties.bak" verbose="true"/>
+                <concat destfile="${pas.path}/conf/catalina.properties" append="true">
+                    <filelist dir="${deploy.dir}" files="merge.catalina.properties"/>
+                </concat>
+
+                <!-- Utilize the new access log property above within server.xml (after backing up the original). -->
+                <copy file="${pas.path}/conf/server.xml" tofile="${pas.path}/conf/server.xml.bak" verbose="true"/>
+                <replaceregexp
+                    file="${pas.path}/conf/server.xml"
+                    match="\{psc.as.accesslog.pattern\}"
+                    replace="\{psc.as.accesslog.pattern.advanced\}"
+                    byline="true"/>
+            </then>
+            <else>
+                <!-- OpenEdge 12.x -->
+
+                <!-- Note that Request ID Logging is now enabled by default for OE 12.x so only minor adjustents are needed. -->
+
+                <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
+                <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
+                <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
+                <replaceregexp
+                    file="${pas.path}/conf/logging-tomcat.properties"
+                    match="psc.as.logging.access.pattern=(.*) \%b %req(.*)"
+                    replace="psc.as.logging.access.pattern=\1 \%b \%D \%req\2"
+                    byline="true"/>
+            </else>
+        </if>
+    </target>
+
+    <target name="deploy_demos">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <!-- Check if expected directories exists. -->
+        <requireDir folder="${pas.root}"/>
+        <requireDir folder="${pas.path}"/>
+        <requireDir folder="${pas.webapp.dir}"/>
+
+        <!-- Copy service mapping (to PROPATH). -->
+        <copy toDir="${pas.webapp.dir}/WEB-INF/openedge" overwrite="true" verbose="true">
+            <fileset dir="${basedir}/deploy">
+                <include name="*.map"/>
+            </fileset>
+        </copy>
+
+        <!-- Copy service catalog (static file). -->
+        <copy toDir="${pas.webapp.dir}/static" overwrite="true" verbose="true">
+            <fileset dir="${basedir}/deploy">
+                <include name="*.json"/>
+            </fileset>
+        </copy>
+
+        <!-- Compile demo application files and output at destination WebApp. -->
+        <PCTCompile destDir="${pas.webapp.dir}/WEB-INF/openedge" dlcHome="${dlcHome}">
+            <fileset dir="${basedir}/deploy/openedge">
+                <include name="**/*.cls"/>
+                <include name="**/*.p"/>
+            </fileset>
+            <propath>
+                <pathelement path="${basedir}/deploy/openedge"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.Core.pl"/>
+            </propath>
+        </PCTCompile>
+        <delete dir="${pas.webapp.dir}/WEB-INF/openedge/.pct" quiet="true"/>
+
+        <!-- Check if PAS properties file exists. -->
+        <require file="${pas.path}/conf/openedge.properties"/>
+
+        <!-- Check if MERGE properties file exists. -->
+        <require file="${deploy.dir}/merge_demo.openedge.properties"/>
+
+        <!-- Make a copy of the default merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
+        <copy file="${deploy.dir}/merge_demo.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_${ablapp}.openedge.properties">
+            <filterset>
+                <filter token="APPNAME" value="${ablapp}"/>
+                <filter token="WEBAPP" value="${webapp}"/>
+            </filterset>
+        </copy>
+
+        <!-- Merge the demo code properties for the ABL Application. -->
+        <echo message="Merging initial properties from 'merge_demo_${ablapp}.openedge.properties'..."/>
+        <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+            <arg line="-f '${basedir}/merge_demo_${ablapp}.openedge.properties'"/>
+        </exec>
+    </target>
+
+    <target name="revert">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <!-- Check if expected directories exists. -->
+        <requireDir folder="${pas.root}"/>
+        <requireDir folder="${pas.path}"/>
+        <requireDir folder="${pas.webapp.dir}"/>
+
+        <echo message="Reverting application metrics logic for ${pas.path}..."/>
+
+        <!-- Delete the metrics config. -->
+        <delete file="${pas.path}/conf/metrics_config.json"/>
+
+        <!-- Delete any common ABL files. -->
+        <delete file="${pas.path}/openedge/Diagnostic.pl"/>
+
+        <!-- Delete certain files depending on the OpenEdge version. -->
+        <if>
+            <equals arg1="${oeMajor}" arg2="12"/>
+            <then>
+                <!-- OpenEdge 12.x -->
+                <if>
+                    <equals arg1="${oeMinor}" arg2="2"/>
+                    <then>
+                        <!-- OpenEdge 12.2.x -->
+
+                        <!-- Delete special ABL files for this version. -->
+                        <delete dir="${pas.path}/openedge/OpenEdge/ApplicationServer"/>
+                    </then>
+                </if>
+            </then>
+        </if>
+
+        <!-- Delete logging config file. -->
+        <delete file="${pas.path}/openedge/logging.config"/>
+
+        <!-- Delete script files. -->
+        <delete file="${pas.bin}/agents.bat"/>
+        <delete file="${pas.bin}/agents.sh"/>
+        <delete file="${pas.bin}/profiler_off.bat"/>
+        <delete file="${pas.bin}/profiler_off.sh"/>
+        <delete file="${pas.bin}/profiler_on.bat"/>
+        <delete file="${pas.bin}/profiler_on.sh"/>
+        <delete file="${pas.bin}/pulse_off.bat"/>
+        <delete file="${pas.bin}/pulse_off.sh"/>
+        <delete file="${pas.bin}/pulse_on.bat"/>
+        <delete file="${pas.bin}/pulse_on.sh"/>
+
+        <!-- Remove the JAR files for HealthScanner. -->
+        <delete dir="${pas.path}/lib" quiet="true"/>
+
+        <!-- Remove the REST adapter for tests. -->
+        <delete dir="${pas.webapp.dir}/WEB-INF/adapters/rest/tests" quiet="true"/>
+
+        <!-- Revert the openedge.properties file. -->
+        <copy file="${pas.path}/conf/openedge.properties.bak" tofile="${pas.path}/conf/openedge.properties" verbose="true" overwrite="true"/>
+        <delete file="${pas.path}/conf/openedge.properties.bak"/>
+
+        <!-- Remove application files. -->
+        <delete dir="${pas.webapp.dir}/WEB-INF/openedge/Business"/>
+        <delete file="${pas.webapp.dir}/WEB-INF/openedge/BusyHandler.r"/>
+        <delete file="${pas.webapp.dir}/WEB-INF/openedge/DOHEventHandler.r"/>
+        <delete file="${pas.webapp.dir}/WEB-INF/openedge/SimpleHandler.r"/>
+        <delete file="${pas.webapp.dir}/WEB-INF/openedge/startup.r"/>
+        <delete file="${pas.webapp.dir}/WEB-INF/openedge/tests.map"/>
+
+        <!-- Revert any scripts. -->
+        <if>
+            <equals arg1="${oeMajor}" arg2="11"/>
+            <then>
+                <!-- OpenEdge 11.x -->
+
+                <!-- Revert the environment scripts. -->
+                <copy file="${pas.bin}/openedge_setenv.bat.bak" tofile="${pas.bin}/openedge_setenv.bat" verbose="true" overwrite="true"/>
+                <delete file="${pas.bin}/openedge_setenv.bat.bak"/>
+                <copy file="${pas.bin}/openedge_setenv.sh.bak" tofile="${pas.bin}/openedge_setenv.sh" verbose="true" overwrite="true"/>
+                <delete file="${pas.bin}/openedge_setenv.sh.bak"/>
+
+                <!-- Revert the catalina.properties file. -->
+                <copy file="${pas.path}/conf/catalina.properties.bak" tofile="${pas.path}/conf/catalina.properties" verbose="true" overwrite="true"/>
+                <delete file="${pas.path}/conf/catalina.properties.bak"/>
+
+                <!-- Rever the server.xml file. -->
+                <copy file="${pas.path}/conf/server.xml.bak" tofile="${pas.path}/conf/server.xml" verbose="true" overwrite="true"/>
+                <delete file="${pas.path}/conf/server.xml.bak"/>
+            </then>
+            <else>
+                <!-- OpenEdge 12.x -->
+
+                <!-- Revert the Tomcat logging file. -->
+                <copy file="${pas.path}/conf/logging-tomcat.properties.bak" tofile="${pas.path}/conf/logging-tomcat.properties" verbose="true" overwrite="true"/>
+                <delete file="${pas.path}/conf/logging-tomcat.properties.bak"/>
+
+                <!-- Disable the HealthScanner feature for the PAS instance. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthCheckOff.txt" failonerror="true">
+                    <arg line="feature HealthCheck=off"/>
+                </exec>
+
+                <!-- Check effect of last command. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthCheckOff.txt" failonerror="true">
+                    <arg line="feature HealthCheck"/>
+                </exec>
+
+                <!-- Disable health data collection for the PAS instance. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthDisabled.txt" failonerror="true">
+                    <arg line="config psc.as.health.enabled=false"/>
+                </exec>
+
+                <!-- Check effect of last command. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthDisabled.txt" failonerror="true">
+                    <arg line="config psc.as.health.enabled"/>
+                </exec>
+
+                <!-- Remove only the OpenEdge.ApplicationServer class overrides. -->
+                <delete dir="${pas.webapp.dir}/openedge/OpenEdge/ApplicationServer" quiet="true"/>
+
+                <!-- Revert the health.config file. -->
+                <copy file="${pas.path}/conf/health.config.bak" tofile="${pas.path}/conf/health.config" verbose="true" overwrite="true"/>
+                <delete file="${pas.path}/conf/health.config.bak" quiet="true" failonerror="false"/>
+            </else>
+        </if>
+    </target>
+
+    <target name="health">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <!-- Check if expected directories exists. -->
+        <requireDir folder="${pas.root}"/>
+        <requireDir folder="${pas.path}"/>
+
+        <if>
+            <equals arg1="${oeMajor}" arg2="11"/>
+            <then>
+                <!-- OpenEdge 11.x -->
+                <echo message="This action is not supported under OpenEdge 11"/>
+            </then>
+            <else>
+                <!-- OpenEdge 12.x -->
+
+                <!-- Enable the HealthScanner feature for the PAS instance. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthCheckOn.txt" failonerror="true">
+                    <arg line="feature HealthCheck=on"/>
+                </exec>
+
+                <!-- Check effect of last command. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthCheckOn.txt" failonerror="true">
+                    <arg line="feature HealthCheck"/>
+                </exec>
+
+                <!-- Enable health data collection for the PAS instance. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthEnabled.txt" failonerror="true">
+                    <arg line="config psc.as.health.enabled=true"/>
+                </exec>
+
+                <!-- Check effect of last command. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthEnabled.txt" failonerror="true">
+                    <arg line="config psc.as.health.enabled"/>
+                </exec>
+
+                <!-- Enable health data collection for the PAS instance. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthPort.txt" failonerror="true">
+                    <arg line="config psc.as.healthcheck.port=${healthPort}"/>
+                </exec>
+
+                <!-- Enable health data collection for the PAS instance. -->
+                <exec executable="${pas.bin}/tcman${scriptSuffix}" output="HealthPort.txt" failonerror="true">
+                    <arg line="config psc.as.healthcheck.port"/>
+                </exec>
+
+                <!-- Set health check to not fail on critical values! Adjust as necessary. -->
+                <copy file="${pas.path}/conf/health.config" tofile="${pas.path}/conf/health.config.bak" verbose="true"/>
+                <replaceregexp
+                    file="${pas.path}/conf/health.config"
+                    match='"failOnCritical"         : true'
+                    replace='"failOnCritical"         : false'
+                    byline="true"/>
+
+                <echo message="Please restart the PASOE instance to complete enablement."/>
+            </else>
+        </if>
+    </target>
+
+    <target name="metrics">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${deploy.dir}/build/metrics${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+            </propath>
+            <Parameter name="CatalinaBase" value="${pas.path}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="Type" value="${type}"/>
+            <Parameter name="Host" value="${localIP}"/>
+            <Parameter name="State" value="${state}"/>
+            <Parameter name="Opts" value="${opts}"/>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Monitor" value="${monitor}"/>
+            <Parameter name="Port" value="${port}"/>
+        </PCTRun>
+    </target>
+
+    <!-- PAS instance management -->
+
+    <target name="shutdown">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <requireDir folder="${pas.path}"/>
+
+        <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="true">
+            <arg line="pasoestart -v -halt -abort -timeout 300 -json -array"/>
+        </exec>
+    </target>
+
+    <target name="startup">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <requireDir folder="${pas.path}"/>
+
+        <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="false">
+            <arg line="pasoestart -v -archive -timeout 300 -json -array"/>
+        </exec>
+    </target>
+
+    <target name="query">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <requireDir folder="${pas.path}"/>
+
+        <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="false">
+            <arg line="pasoestart -v -query -json -array"/>
+        </exec>
+    </target>
+
+</project>

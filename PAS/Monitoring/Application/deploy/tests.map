@@ -1,0 +1,191 @@
+{
+  "services": {
+    "tests": {
+      "version": "1.0.0",
+      "operations": {
+        "\/": {
+          "GET": {
+            "contentType": "application\/json",
+            "statusCode": 200,
+            "file": "$CATALINA_BASE\/webapps\/$oepas-webapp\/static\/tests.json",
+            "name": "dataservice.catalog"
+          }
+        },
+        "\/leakycode": {
+        },
+        "\/leakycode\/buffer": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.UnitTest.LeakyCode",
+              "function": "badBuffer",
+              "arg": [
+                {
+                  "ablName": "completed",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "completed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/leakycode\/memptr": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.UnitTest.LeakyCode",
+              "function": "badMemptr",
+              "arg": [
+                {
+                  "ablName": "pointerSize",
+                  "ablType": "INTEGER",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "pointerSize"
+                  }
+                },
+                {
+                  "ablName": "pointerValue",
+                  "ablType": "INT64",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "pointerValue"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/leakycode\/handle": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.UnitTest.LeakyCode",
+              "function": "badHandle",
+              "arg": [
+                {
+                  "ablName": "textMessage",
+                  "ablType": "CHARACTER",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "textMessage"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/leakycode\/object": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.UnitTest.LeakyCode",
+              "function": "badObject",
+              "arg": [
+                {
+                  "ablName": "arrayLength",
+                  "ablType": "INTEGER",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "arrayLength"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/runcode": {
+        },
+        "\/runcode\/stop": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.UnitTest.RunCode",
+              "function": "stopCode",
+              "arg": [
+                {
+                  "ablName": "completed",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "completed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/runcode\/busy": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.UnitTest.RunCode",
+              "function": "lookBusy",
+              "arg": [
+                {
+                  "ablName": "busyTime",
+                  "ablType": "INTEGER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "busyTime"
+                  }
+                },
+                {
+                  "ablName": "elapsed",
+                  "ablType": "INTEGER",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "elapsed"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "schemas": {
+      }
+    }
+  }
+}

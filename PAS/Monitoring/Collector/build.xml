@@ -1,0 +1,456 @@
+<project name="CollectorCreation" basedir="." default="usage">
+
+    <!--
+        Copyright 2021 Progress Software Corporation
+
+        Licensed under the Apache License, Version 2.0 (the "License");
+        you may not use this file except in compliance with the License.
+        You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    -->
+
+    <!-- Utilize a local file for properties. Allows build.xml to provide defaults only. -->
+    <property file="${basedir}/build.properties"/>
+
+    <target name="usage" description="Usage Instructions">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <echo message="${line.separator}Usage Instructions:"/>
+        <echo message="${line.separator}proant create - Create the ${instance} PAS instance and ${db.name} database"/>
+        <echo message="    -Dhttp=${http} = Port for HTTP connections"/>
+        <echo message="    -Dhttps=${https} = Port for HTTPS connections"/>
+        <echo message="    -Dajp=${ajp} = Port for AJP13 connections"/>
+        <echo message="    -Dshut=${shut} = Tomcat shutdown port"/>
+        <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+        <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+        <echo message="    -Dalias=${alias} = Alias for PAS instance"/>
+        <echo message="    -Dablapp=${ablapp} = Dedicated ABL App name"/>
+        <echo message="    -Dwebapp=${webapp} = WebApp name for UI deployment"/>
+        <echo message="    -Dcodepage=${codepage} = Codepage for DB/instance"/>
+        <echo message="    -Dcollation=${collation} = Collation for Codepage"/>
+        <echo message="${line.separator}proant update - [Optional] Re-deploy static content and ABL code"/>
+        <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+        <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+        <echo message="${line.separator}proant rebuild_db - [Optional] Re-create the ${db.name} database from scratch"/>
+        <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
+        <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
+        <echo message="${line.separator}Instance Management:"/>
+        <echo message="    proant startup - Uses TCMAN to start the ${instance} PAS instance"/>
+        <echo message="    proant query - Uses TCMAN to query the ${instance} PAS instance"/>
+        <echo message="    proant shutdown - Uses TCMAN to stop the ${instance} PAS instance"/>
+        <echo message="${line.separator}Location Assumptions:"/>
+        <echo message="    DLC Environment: ${dlcHome}"/>
+        <echo message="      CATALINA_BASE: ${pas.path}"/>
+        <echo message="      Database Path: ${db.path}"/>
+    </target>
+
+    <macrodef name="init_env">
+        <sequential>
+            <!-- Access environmental variables via "env.*". -->
+            <property environment="env"/>
+
+            <!-- Set a property if environment is Windows. -->
+            <condition property="isWin">
+                <os family="windows"/>
+            </condition>
+
+            <!-- Set a property if environment is Unix. -->
+            <condition property="isUnix">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set a property if environment is 32bit. -->
+            <condition property="is32bit">
+                <or>
+                    <os arch="x86"/>
+                    <os arch="i386"/>
+                </or>
+            </condition>
+
+            <!-- Set a property if environment is 64bit. -->
+            <condition property="is64bit">
+                <not>
+                    <or>
+                        <os arch="x86"/>
+                        <os arch="i386"/>
+                    </or>
+                </not>
+            </condition>
+
+            <!-- Set the script suffix for the OS. -->
+            <condition property="scriptSuffix" value=".sh" else=".bat">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set path delimiter for the OS. -->
+            <condition property="delim" value="/" else="\">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set general properties for this build file. -->
+            <property name="instance" value="monitor"/>
+            <property name="alias" value="${instance}"/>
+            <property name="ablapp" value="${instance}"/>
+            <property name="webapp" value="ROOT"/>
+            <property name="http" value="8850"/>
+            <property name="https" value="8851"/>
+            <property name="ajp" value="8852"/>
+            <property name="shut" value="8853"/>
+            <property name="db.name" value="pasmon"/>
+            <property name="db.port" value="8854"/>
+            <property name="codepage" value="UTF-8"/>
+            <property name="collation" value="Basic"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="init_oe">
+        <sequential>
+            <init_env/> <!-- Initialize environmental and general properties. -->
+
+            <!-- Fail immediately if not a 64-bit OS. -->
+            <fail message="Environment is not 64-bit">
+                <condition>
+                    <not>
+                        <isset property="is64bit"/>
+                    </not>
+                </condition>
+            </fail>
+
+            <!-- Check if DLC is set as an environment variable. -->
+            <fail message="DLC Home path is not set">
+                <condition>
+                    <and>
+                        <not><isset property="dlcHome"/></not>
+                        <not><isset property="env.DLC"/></not>
+                    </and>
+                </condition>
+            </fail>
+            <property name="dlcHome" value="${env.DLC}"/>
+            <echo message="DLC Home: ${dlcHome}"/>
+
+            <!-- Assume the DLC WRK directory unless overridden. -->
+            <condition property="wrk" value="/usr/wrk" else="C:\OpenEdge\WRK">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Load the current PCT library from DLC. -->
+            <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
+
+            <!-- Access the OE version info, and read into a property. -->
+            <ProgressVersion dlcHome="${dlcHome}" majorVersion="oeMajor" minorVersion="oeMinor" revision="oeRev" fullVersion="full"/>
+            <property name="oe.version" value="${oeMajor}.${oeMinor}.${oeRev}"/>
+            <echo message="OpenEdge Version: ${oe.version}"/>
+
+            <!-- Add the ANT-Contrib library to this environment (present in 11.7.4+ and 12.0+). -->
+            <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${dlcHome}/ant/lib/ant-contrib-0.6.jar"/>
+
+            <!-- Set OpenEdge properties for this build file. -->
+            <property name="dlc.bin" value="${dlcHome}${delim}bin"/>
+            <condition property="pas.exec" value="pasman" else="pasman.bat">
+                <os family="unix"/>
+            </condition>
+            <property name="pas.root" value="${wrk}"/>
+            <property name="pas.path" value="${pas.root}${delim}${instance}"/>
+            <property name="pas.bin" value="${pas.path}${delim}bin"/>
+            <property name="pas.webapp.dir" value="${pas.path}${delim}webapps${delim}${webapp}"/>
+            <property name="db.path" value="${pas.path}${delim}db"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="require">
+        <!-- Usage <require file="_path_to_file_"/> -->
+        <attribute name="file"/>
+        <attribute name="message" default="File @{file} not set or missing"/>
+
+        <sequential>
+            <fail message="@{message}">
+                <condition>
+                    <not>
+                        <available file="@{file}" type="file"/>
+                    </not>
+                </condition>
+            </fail>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="requireDir">
+        <!-- Usage <requireDir folder="_path_to_folder_"/> -->
+        <attribute name="folder"/>
+        <attribute name="message" default="Directory @{folder} not set or missing"/>
+
+        <sequential>
+            <fail message="@{message}">
+                <condition>
+                    <not>
+                        <available file="@{folder}" type="dir"/>
+                    </not>
+                </condition>
+            </fail>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="deploy_ui">
+        <sequential>
+            <!-- Check if ZIP file and WebApp exist. -->
+            <require file="${basedir}/ui.zip"/>
+            <requireDir folder="${pas.path}/webapps/${webapp}"/>
+
+            <!-- Deploy static files to an existing WebApp. -->
+            <echo message="Deploying UI files to ${webapp} WebApp..."/>
+            <unzip src="${basedir}/ui.zip" dest="${pas.path}/webapps/${webapp}" overwrite="true"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="deploy_abl">
+        <sequential>
+            <!-- Check if openedge folder in target ablapps exists. -->
+            <requireDir folder="${pas.path}/ablapps/${ablapp}/openedge"/>
+
+            <!-- Copy all files to the PAS instance. -->
+            <echo message="Deploying ABL code to ${ablapp} ABLApp..."/>
+            <copy toDir="${pas.path}/ablapps/${ablapp}/openedge" overwrite="true" verbose="false">
+                <fileset dir="${basedir}/ablapps">
+                    <include name="**/*"/>
+                </fileset>
+            </copy>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="build_db">
+        <sequential>
+            <!-- Create the PAS instance using the values (or defaults) provided. -->
+            <echo message="${line.separator}Creating DB instance at ${db.path}..."/>
+            <mkdir dir="${db.path}"/>
+
+            <!-- Create with 8K blocks and large files support. -->
+            <PCTCreateBase destDir="${db.path}" dbName="${db.name}" dlcHome="${dlcHome}"
+                           blockSize="8" cpInternal="${codepage}" cpColl="${collation}" largeFiles="false"
+                           structFile="${basedir}/schema/pasmon.st" schemaFile="${basedir}/schema/pasmon.df">
+            </PCTCreateBase>
+
+            <property name="cluster.size" value="262128"/>
+            <property name="biblock.size" value="16"/>
+            <property name="db.server.intl" value="-cpinternal ${codepage} -cpcoll ${collation}"/>
+
+            <echo message="Truncating BI: -C truncate bi -G 1 -bi ${cluster.size} -biblocksize ${biblock.size} ${db.server.intl}"/>
+            <exec dir="${dlc.bin}" executable="_dbutil" output="${db.path}/proutil_truncatebi.log" failonerror="true">
+                <arg value="${db.path}/${db.name}"/>
+                <arg line="-C truncate bi"/>
+                <arg line="-G 1"/>
+                <arg line="-bi ${cluster.size}"/>
+                <arg line="-biblocksize ${biblock.size}"/>
+                <arg line="${db.server.intl}"/>
+            </exec>
+
+            <echo message="BI Grow: -C bigrow 4 -r ${db.server.intl}"/>
+            <exec dir="${dlc.bin}" executable="_dbutil" output="${db.path}/proutil_bigrow.log" failonerror="true">
+                <arg value="${db.path}/${db.name}"/>
+                <arg line="-C bigrow 4"/>
+                <arg value="-r"/>
+                <arg line="${db.server.intl}"/>
+            </exec>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="tailor_instance">
+        <sequential>
+            <!-- Check if directory exists. -->
+            <requireDir folder="${basedir}/openedge"/>
+
+            <!-- Copy any config files to the PAS instance. -->
+            <copy toDir="${pas.path}/openedge" overwrite="true" verbose="true">
+                <fileset dir="${basedir}/openedge">
+                    <include name="*.config"/>
+                </fileset>
+            </copy>
+
+            <!-- Make sure .sh files use Unix file endings. -->
+            <fixcrlf srcdir="${basedir}/bin" includes="*.sh" eol="lf" eof="remove"/>
+
+            <!-- Copy the bin scripts to the PAS instance, tailoring during copy. -->
+            <copy toDir="${pas.bin}" overwrite="true" verbose="false">
+                <fileset dir="${basedir}/bin">
+                    <include name="*.bat"/>
+                    <include name="*.sh"/>
+                </fileset>
+                <filterset>
+                    <filter token="DLCHOME" value="${dlcHome}"/>
+                    <filter token="DBNAME" value="${db.name}"/>
+                    <filter token="DBPORT" value="${db.port}"/>
+                    <filter token="CODEPAGE" value="${codepage}"/>
+                    <filter token="COLLATION" value="${collation}"/>
+                </filterset>
+            </copy>
+
+            <!-- Set execution privilege on shell scripts. -->
+            <chmod dir="${pas.bin}" perm="ug+x" includes="*.sh"/>
+
+            <!-- Make a copy of the startup file, copied into the CATALINA_BASE/openedge folder. -->
+            <copy file="${basedir}/openedge/startup.pf" overwrite="true" tofile="${pas.path}/openedge/startup.pf">
+                <filterset>
+                    <filter token="PASPATH" value="${pas.path}"/>
+                    <filter token="DBPATH" value="${db.path}"/>
+                    <filter token="DBNAME" value="${db.name}"/>
+                    <filter token="DBPORT" value="${db.port}"/>
+                    <filter token="CODEPAGE" value="${codepage}"/>
+                    <filter token="COLLATION" value="${collation}"/>
+                </filterset>
+            </copy>
+
+            <!-- Set compression limits lower to catch most payloads. -->
+            <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="true">
+                <arg line="config psc.as.compress.min=128"/>
+            </exec>
+
+            <!-- Adjust logging properties with advanced output (granular timestamps, enhanced MDC logging). -->
+            <if>
+                <equals arg1="${oeMajor}" arg2="12"/>
+                <then>
+                    <!-- OpenEdge 12.x -->
+
+                    <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
+                    <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
+                    <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
+                    <replaceregexp
+                        file="${pas.path}/conf/logging-tomcat.properties"
+                        match="psc.as.logging.access.pattern=(.*) \%b %req(.*)"
+                        replace="psc.as.logging.access.pattern=\1 \%b \%D \%req\2"
+                        byline="true"/>
+                </then>
+            </if>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="merge_properties">
+        <sequential>
+            <!-- Check if local MERGE properties file exists. -->
+            <require file="${basedir}/openedge/merge.openedge.properties"/>
+
+            <!-- Check if PAS properties file exists. -->
+            <require file="${pas.path}/conf/openedge.properties"/>
+
+            <!-- Make a copy of the default merge file, named and tailored for the ABL Application. -->
+            <copy file="${basedir}/openedge/merge.openedge.properties" overwrite="true" tofile="${basedir}/openedge/merge_${ablapp}.openedge.properties">
+                <filterset>
+                    <filter token="APPNAME" value="${ablapp}"/>
+                    <filter token="WEBAPP" value="${webapp}"/>
+                </filterset>
+            </copy>
+
+            <!-- Merge the intitial properties for the ABL Application. -->
+            <echo message="Merging initial properties from 'merge_${ablapp}.openedge.properties'."/>
+            <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+                <arg line="-f '${basedir}/openedge/merge_${ablapp}.openedge.properties'"/>
+            </exec>
+        </sequential>
+    </macrodef>
+
+    <target name="create">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <!-- Create the PAS instance using the values (or defaults) provided. -->
+        <echo message="${line.separator}Creating PAS instance '${instance}' at ${pas.path} with ports ${http}/${https}/${ajp}/${shut}..."/>
+        <mkdir dir="${wrk}"/>
+        <exec dir="${dlc.bin}" executable="${pas.exec}" output="create_${instance}.txt" failonerror="true">
+            <arg value="create"/>
+            <arg value="-v"/>
+            <arg value="-f"/> <!-- Deploys manager and oemanager webapp. -->
+            <arg line="-p ${http}"/>
+            <arg line="-P ${https}"/>
+            <arg line="-j ${ajp}"/>
+            <arg line="-s ${shut}"/>
+            <arg line="-N ${alias}"/>
+            <arg value="${pas.path}"/>
+            <arg value="${instance}"/>
+        </exec>
+        <echo message="See file create_${instance}.txt for details of PAS server creation."/>
+
+        <!-- Check if expected directories exists. -->
+        <requireDir folder="${pas.root}"/>
+        <requireDir folder="${pas.path}"/>
+        <requireDir folder="${pas.webapp.dir}"/>
+
+        <!-- Deploy the UI to WebApp. -->
+        <deploy_ui/>
+
+        <!-- Deploy the ABL code. -->
+        <deploy_abl/>
+
+        <!-- Create the database. -->
+        <build_db/>
+
+        <!-- Tailor the instance using the deployment directory. -->
+        <tailor_instance/>
+
+        <!-- Merge any available properties to the instance. -->
+        <merge_properties/>
+    </target>
+
+    <target name="update">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <!-- Check if expected directories exists. -->
+        <requireDir folder="${pas.root}"/>
+        <requireDir folder="${pas.path}"/>
+        <requireDir folder="${pas.webapp.dir}"/>
+
+        <!-- Deploy the UI to a WebApp. -->
+        <deploy_ui/>
+
+        <!-- Deploy the ABL code. -->
+        <deploy_abl/>
+    </target>
+
+    <target name="rebuild_db">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <!-- Check if expected directories exists. -->
+        <requireDir folder="${pas.root}"/>
+        <requireDir folder="${pas.path}"/>
+
+        <delete dir="${db.path}" quiet="true"/>
+
+        <!-- Create the monitor database. -->
+        <build_db/>
+    </target>
+
+    <!-- PAS instance management -->
+
+    <target name="shutdown">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <requireDir folder="${pas.path}"/>
+
+        <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="true">
+            <arg line="pasoestart -v -halt -abort -timeout 300 -json -array"/>
+        </exec>
+    </target>
+
+    <target name="startup">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <requireDir folder="${pas.path}"/>
+
+        <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="false">
+            <arg line="pasoestart -v -archive -timeout 300 -json -array"/>
+        </exec>
+    </target>
+
+    <target name="query">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <requireDir folder="${pas.path}"/>
+
+        <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="false">
+            <arg line="pasoestart -v -query -json -array"/>
+        </exec>
+    </target>
+
+</project>

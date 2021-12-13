@@ -7,3 +7,5 @@ All content is intended for use with Progress Application Server for OpenEdge (P
 ## Areas ##
 
 **Management** - Includes both monitoring and management for a running PAS instance.
+
+**Monitoring** - Continual monitoring solution for PAS instances using a "push" pattern.

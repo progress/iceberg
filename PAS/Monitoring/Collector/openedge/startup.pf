@@ -1,0 +1,10 @@
+# Use for external reporting (read-only)
+#-db @DBNAME@ -H localhost -S @DBPORT@ -RO
+-db @DBPATH@/@DBNAME@
+-cpinternal @CODEPAGE@
+-cpstream @CODEPAGE@
+-mmax 8192
+-D 1000
+-lkwtmo 10
+-tmpbsize 4
+-errorstack

@@ -1,0 +1,1122 @@
+{
+  "services": {
+    "monitor": {
+      "version": "1.0.0",
+      "operations": {
+        "\/": {
+          "GET": {
+            "contentType": "application\/json",
+            "statusCode": 200,
+            "file": "$CATALINA_BASE\/webapps\/$oepas-webapp\/static\/monitor.json",
+            "name": "dataservice.catalog"
+          }
+        },
+        "\/intake": {
+        },
+        "\/intake\/liveProfile": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "LiveProfile",
+              "arg": [
+                {
+                  "ablName": "AppName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "AppName"
+                  }
+                },
+                {
+                  "ablName": "Instance",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "Instance"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/liveMetrics": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "LiveMetrics",
+              "arg": [
+                {
+                  "ablName": "AppName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "AppName"
+                  }
+                },
+                {
+                  "ablName": "Instance",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "Instance"
+                  }
+                },
+                {
+                  "ablName": "SampleName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "SampleName"
+                  }
+                },
+                {
+                  "ablName": "Data",
+                  "ablType": "class Progress.Json.ObjectModel.JsonObject",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "Data"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/cleanOrphans": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "CleanOrphans",
+              "arg": [
+                {
+                  "ablName": "applicationName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "applicationName"
+                  }
+                },
+                {
+                  "ablName": "serverName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverName"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/accessLogs": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "ParseAccessLogs",
+              "arg": [
+                {
+                  "ablName": "applicationName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "applicationName"
+                  }
+                },
+                {
+                  "ablName": "serverName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverName"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/liveHealth": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "LiveHealth",
+              "arg": [
+                {
+                  "ablName": "AppName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "AppName"
+                  }
+                },
+                {
+                  "ablName": "Instance",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "Instance"
+                  }
+                },
+                {
+                  "ablName": "HealthCheck",
+                  "ablType": "class Progress.Json.ObjectModel.JsonObject",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "HealthCheck"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/ablMetrics": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "ReadMetrics",
+              "arg": [
+                {
+                  "ablName": "applicationName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "applicationName"
+                  }
+                },
+                {
+                  "ablName": "serverName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverName"
+                  }
+                },
+                {
+                  "ablName": "processObjects",
+                  "ablType": "LOGICAL",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processObjects"
+                  }
+                },
+                {
+                  "ablName": "processProfiles",
+                  "ablType": "LOGICAL",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processProfiles"
+                  }
+                },
+                {
+                  "ablName": "processRequests",
+                  "ablType": "LOGICAL",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processRequests"
+                  }
+                },
+                {
+                  "ablName": "processSessions",
+                  "ablType": "LOGICAL",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processSessions"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/fixData": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "FixData",
+              "arg": [
+                {
+                  "ablName": "applicationName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "applicationName"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/applications": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "ListApplications",
+              "arg": [
+                {
+                  "ablName": "applicationNames",
+                  "ablType": "class Progress.Json.ObjectModel.JsonArray",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "applicationNames"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/purgeMetrics": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "PurgeMetrics",
+              "arg": [
+                {
+                  "ablName": "applicationName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "applicationName"
+                  }
+                },
+                {
+                  "ablName": "serverName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverName"
+                  }
+                },
+                {
+                  "ablName": "purgeDate",
+                  "ablType": "DATETIME",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "purgeDate"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/purgeHealth": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "PurgeHealth",
+              "arg": [
+                {
+                  "ablName": "applicationName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "applicationName"
+                  }
+                },
+                {
+                  "ablName": "serverName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverName"
+                  }
+                },
+                {
+                  "ablName": "purgeDate",
+                  "ablType": "DATETIME",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "purgeDate"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/intake\/liveLogs": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Intake",
+              "function": "LiveLogs",
+              "arg": [
+                {
+                  "ablName": "AppName",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "AppName"
+                  }
+                },
+                {
+                  "ablName": "Instance",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "Instance"
+                  }
+                },
+                {
+                  "ablName": "success",
+                  "ablType": "LOGICAL",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "success"
+                  }
+                },
+                {
+                  "ablName": "processed",
+                  "ablType": "DATETIME",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "processed"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report": {
+        },
+        "\/report\/callTree": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetCallTreeData",
+              "arg": [
+                {
+                  "ablName": "requestUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "requestUUID"
+                  }
+                },
+                {
+                  "ablName": "callTreeData",
+                  "ablType": "LONGCHAR",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "callTreeData"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/logs": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetAgentLog",
+              "arg": [
+                {
+                  "ablName": "serverUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverUUID"
+                  }
+                },
+                {
+                  "ablName": "agentPID",
+                  "ablType": "INTEGER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "agentPID"
+                  }
+                },
+                {
+                  "ablName": "dateRange",
+                  "ablType": "DATETIME-TZ EXTENT",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "dateRange"
+                  }
+                },
+                {
+                  "ablName": "logData",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "logData"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/servers": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetServerList",
+              "arg": [
+                {
+                  "ablName": "appServer",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "appServer"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/objects": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetABLObjects",
+              "arg": [
+                {
+                  "ablName": "objectCount",
+                  "ablType": "INTEGER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "objectCount"
+                  }
+                },
+                {
+                  "ablName": "sampleUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sampleUUID"
+                  }
+                },
+                {
+                  "ablName": "sampleGroup",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sampleGroup"
+                  }
+                },
+                {
+                  "ablName": "sampleDate",
+                  "ablType": "DATETIME",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sampleDate"
+                  }
+                },
+                {
+                  "ablName": "sampleObject",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "sampleObject"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/health": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "HealthReport",
+              "arg": [
+                {
+                  "ablName": "serverUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverUUID"
+                  }
+                },
+                {
+                  "ablName": "trendPeriod",
+                  "ablType": "INTEGER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "trendPeriod"
+                  }
+                },
+                {
+                  "ablName": "healthTrend",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "healthTrend"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/metrics": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetAgentMetrics",
+              "arg": [
+                {
+                  "ablName": "serverUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverUUID"
+                  }
+                },
+                {
+                  "ablName": "agentPID",
+                  "ablType": "INTEGER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "agentPID"
+                  }
+                },
+                {
+                  "ablName": "sessionID",
+                  "ablType": "INTEGER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sessionID"
+                  }
+                },
+                {
+                  "ablName": "sampleGroup",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sampleGroup"
+                  }
+                },
+                {
+                  "ablName": "agentMetrics",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "agentMetrics"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/profilerData": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetProfilerData",
+              "arg": [
+                {
+                  "ablName": "profilerRowID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "profilerRowID"
+                  }
+                },
+                {
+                  "ablName": "profilerOut",
+                  "ablType": "LONGCHAR",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "profilerOut"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/requests": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetRequests",
+              "arg": [
+                {
+                  "ablName": "sessionUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sessionUUID"
+                  }
+                },
+                {
+                  "ablName": "sampleGroup",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sampleGroup"
+                  }
+                },
+                {
+                  "ablName": "ablRequestStack",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "ablRequestStack"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/sessions": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetSessionList",
+              "arg": [
+                {
+                  "ablName": "serverUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverUUID"
+                  }
+                },
+                {
+                  "ablName": "sampleGroup",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sampleGroup"
+                  }
+                },
+                {
+                  "ablName": "agentSession",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "agentSession"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/profilerList": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetProfilerList",
+              "arg": [
+                {
+                  "ablName": "sessionUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sessionUUID"
+                  }
+                },
+                {
+                  "ablName": "requestDate",
+                  "ablType": "DATETIME",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "requestDate"
+                  }
+                },
+                {
+                  "ablName": "profilerList",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "profilerList"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "\/report\/access": {
+          "PUT": {
+            "contentType": "application\/json",
+            "options": {
+              "writeBI": false,
+              "requestEnvelope": false,
+              "responseEnvelope": false
+            },
+            "entity": {
+              "name": "Business.Report",
+              "function": "GetAccessHistory",
+              "arg": [
+                {
+                  "ablName": "serverUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "serverUUID"
+                  }
+                },
+                {
+                  "ablName": "sessionUUID",
+                  "ablType": "CHARACTER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sessionUUID"
+                  }
+                },
+                {
+                  "ablName": "accessHistory",
+                  "ablType": "HANDLE",
+                  "ioMode": "OUTPUT",
+                  "msgElem": {
+                    "type": "body",
+                    "name": "accessHistory"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "schemas": {
+      }
+    }
+  }
+}
