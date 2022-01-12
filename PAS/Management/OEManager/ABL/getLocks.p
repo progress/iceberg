@@ -47,18 +47,22 @@ define variable oClient     as IHttpClient     no-undo.
 define variable oCreds      as Credentials     no-undo.
 define variable cHttpUrl    as character       no-undo.
 define variable cInstance   as character       no-undo.
+define variable cClSessID   as character       no-undo.
 define variable oJsonResp   as JsonObject      no-undo.
 define variable oResult     as JsonObject      no-undo.
 define variable oTemp       as JsonObject      no-undo.
 define variable oAblApps    as Array           no-undo.
+define variable oAgentIDs   as StringStringMap no-undo.
 define variable oAppAgents  as StringStringMap no-undo.
 define variable oAgentList  as Array           no-undo.
 define variable oQueryURL   as StringStringMap no-undo.
+define variable oSessions   as JsonArray       no-undo.
 define variable cDB         as character       no-undo.
 define variable iLoop       as integer         no-undo.
 define variable iLoop2      as integer         no-undo.
-define variable iLength1    as integer         no-undo.
-define variable iLength2    as integer         no-undo.
+define variable iStacks     as integer         no-undo.
+define variable iSessions   as integer         no-undo.
+define variable iCStacks    as integer         no-undo.
 define variable iPID        as integer         no-undo.
 define variable oIter       as IIterator       no-undo.
 define variable oAgent      as IMapEntry       no-undo.
@@ -116,6 +120,7 @@ assign cInstance = substitute("&1://&2:&3", cScheme, cHost, cPort).
 assign oQueryURL = new StringStringMap().
 assign
     oAblApps   = new Array()
+    oAgentIDs  = new StringStringMap()
     oAppAgents = new StringStringMap()
     oAgentList = new Array()
     .
@@ -127,6 +132,7 @@ oAgentList:AutoExpand = true.
 oQueryURL:Put("Apps", "&1/oemanager/applications").
 oQueryURL:Put("Agents", "&1/oemanager/applications/&2/agents").
 oQueryURL:Put("Stacks", "&1/oemanager/applications/&2/agents/&3/stacks").
+oQueryURL:Put("ClientSessions", "&1/oemanager/applications/&2/sessions").
 
 function MakeRequest returns JsonObject ( input pcHttpUrl as character ) forward.
 function HasAgent returns logical ( input poInt as integer ) forward.
@@ -193,10 +199,15 @@ run getAblAppAgents.
 assign oIter = oAppAgents:EntrySet:Iterator().
 do while oIter:HasNext():
     assign oAgent = cast(oIter:Next(), IMapEntry).
-    assign iPID = integer(string(oAgent:key)).
+    assign iPID = integer(string(oAgent:key)). /* Key for StringStringMap is just a PID. */
 
     /* Obtain stacks for the agent. */
     if HasAgent(iPID) then do:
+        /* First, get client sessions for this ABL Application (StringStringMap is PID:ABLAppName). */
+        run getClientSessions (input string(oAgent:value), output oSessions).
+        assign iSessions = oSessions:Length.
+
+        /* Next, get the stacks for this instance, ABL App, and PID. */
         assign cHttpUrl = substitute(oQueryURL:Get("Stacks"), cInstance, string(oAgent:value), iPID).
         assign oJsonResp = MakeRequest(cHttpUrl).
         if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
@@ -209,18 +220,38 @@ do while oIter:HasNext():
 
                 assign oABLStacks = oJsonResp:GetJsonObject("result"):GetJsonArray("ABLStacks").
 
-                assign iLength1 = oABLStacks:Length.
-                do iLoop = 1 to iLength1:
-                    assign oABLStack = oABLStacks:GetJsonObject(iLoop).
+                assign iStacks = oABLStacks:Length.
+                do iLoop = 1 to iStacks:
+                    assign
+                        oABLStack = oABLStacks:GetJsonObject(iLoop)
+                        cClSessID = ""
+                        .
 
-                    if oABLStack:Has("AgentSessionId") then
-                        message substitute("~n~tCall Stack for Session ID #&1:", oABLStack:GetInteger("AgentSessionId")).
+                    if oABLStack:Has("AgentSessionId") then do:
+                        SESSION-LOOP:
+                        do iLoop2 = 1 to iSessions:
+                            /* Attempt to find a [client] session ID for this Agent-Session; needed to terminate a connection if necessary. */
+                            /* Applies mostly to APSV, and should be only 1 connection per agent-session, so there will be a unique result. */
+                            assign oTemp = oSessions:GetJsonObject(iLoop2).
+                            if oTemp:Has("agentID") and oTemp:Has("sessionID") and oTemp:Has("ablSessionID") and
+                               oAgentIDs:ContainsKey(string(oAgent:key)) and oTemp:GetCharacter("agentID") eq oAgentIDs:Get(string(oAgent:key)) and
+                               integer(oTemp:GetCharacter("ablSessionID")) eq oABLStack:GetInteger("AgentSessionId") then do:
+                                assign cClSessID = oTemp:GetCharacter("sessionID").
+                                leave SESSION-LOOP.
+                            end.
+                        end. /* iLoop2 */
+
+                        if cClSessID gt "" then
+                            message substitute("~n~tCall Stack for Session ID #&1 (&2):", oABLStack:GetInteger("AgentSessionId"), cClSessID).
+                        else
+                            message substitute("~n~tCall Stack for Session ID #&1:", oABLStack:GetInteger("AgentSessionId")).
+                    end. /* Has AgentSessionId */
 
                     if JsonPropertyHelper:HasTypedProperty(oABLStack, "Callstack", JsonDataType:Array) then do:
                         assign oCallstack = oABLStack:GetJsonArray("Callstack").
 
-                        assign iLength2 = oCallstack:Length.
-                        do iLoop2 = 1 to iLength2:
+                        assign iCStacks = oCallstack:Length.
+                        do iLoop2 = 1 to iCStacks:
                             if oCallstack:GetJsonObject(iLoop2):Has("Routine") then
                                 message substitute("~t~t&1", oCallstack:GetJsonObject(iLoop2):GetCharacter("Routine")).
                         end. /* iLoop2 */
@@ -357,14 +388,16 @@ procedure getAblApplications:
 end procedure.
 
 procedure getAblAppAgents:
-    define variable iSize as integer no-undo.
+    define variable iSize    as integer   no-undo.
+    define variable cAppName as character no-undo.
 
     /* Iterate through the list of ABL Applications, getting all MSAgent PID's. */
     assign iSize = oAblApps:Size.
     do iLoop = 1 to iSize:
         if valid-object(oAblApps:GetValue(iLoop)) then do:
             /* Obtain a list of all AVAILABLE agents for an ABL Application. */
-            assign cHttpUrl = substitute(oQueryURL:Get("Agents"), cInstance, cast(oAblApps:GetValue(iLoop), OpenEdge.Core.String):Value).
+            assign cAppName = string(cast(oAblApps:GetValue(iLoop), OpenEdge.Core.String):Value).
+            assign cHttpUrl = substitute(oQueryURL:Get("Agents"), cInstance, cAppName).
             assign oJsonResp = MakeRequest(cHttpUrl).
             if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
                 define variable oAgents as JsonArray  no-undo.
@@ -379,10 +412,27 @@ procedure getAblAppAgents:
                 on stop undo, next AGENTBLK:
                     oAgent = oAgents:GetJsonObject(iLoop2).
 
-                    if oAgent:GetCharacter("state") eq "available" then
-                        oAppAgents:Put(oAgent:GetCharacter("pid"), cast(oAblApps:GetValue(iLoop), OpenEdge.Core.String):Value).
+                    if oAgent:GetCharacter("state") eq "available" then do:
+                        oAgentIDs:Put(oAgent:GetCharacter("pid"), oAgent:GetCharacter("agentId")).
+                        oAppAgents:Put(oAgent:GetCharacter("pid"), cAppName).
+                    end.
                 end. /* iLoop - agents */
             end. /* agents */
         end. /* Non-Null Array Item */
     end. /* iLoop */
+end procedure.
+
+procedure getClientSessions:
+    define input  parameter pcAblApp as character no-undo.
+    define output parameter poClSess as JsonArray no-undo.
+
+    /* https://docs.progress.com/bundle/pas-for-openedge-management/page/About-session-and-request-states.html */
+    assign cHttpUrl = substitute(oQueryURL:Get("ClientSessions"), cInstance, pcAblApp).
+    assign oJsonResp = MakeRequest(cHttpUrl).
+    if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:object) then do:
+        if JsonPropertyHelper:HasTypedProperty(oJsonResp:GetJsonObject("result"), "OEABLSession", JsonDataType:Array) then do:
+            /* This data will be related to the MSAgent-sessions to denote which ones are bound. */
+            poClSess = oJsonResp:GetJsonObject("result"):GetJsonArray("OEABLSession").
+        end. /* Has OEABLSession */
+    end. /* Client Sessions */
 end procedure.

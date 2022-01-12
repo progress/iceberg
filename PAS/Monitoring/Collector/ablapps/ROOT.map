@@ -1,0 +1,21 @@
+{
+    "services": {
+        "ROOT": {
+            "version": "1.0.0",
+            "operations": {
+                "/": {
+                    "GET": {
+                        "contentType": "application/json",
+                        "statusCode": 200,
+                        "entity": {
+                            "type": "self",
+                            "name": "OpenEdge.Web.DataObject.DataObjectHandler",
+                            "function": "ListServices",
+                            "arg": []
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

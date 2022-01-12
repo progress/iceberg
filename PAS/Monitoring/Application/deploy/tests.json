@@ -1,0 +1,109 @@
+{
+  "version": "1.5",
+  "lastModified": "Mon Aug 05 10:56:12 EDT 2019",
+  "services": [
+    {
+      "name": "tests",
+      "address": "\/web\/pdo\/tests",
+      "useRequest": false,
+      "resources": [
+        {
+          "name": "leakycode",
+          "path": "\/leakycode",
+          "autoSave": true,
+          "operations": [
+            {
+              "name": "buffer",
+              "path": "\/buffer",
+              "useBeforeImage": false,
+              "type": "invoke",
+              "verb": "put",
+              "params": [
+                {
+                  "name": "completed",
+                  "type": "RESPONSE_BODY"
+                }
+              ]
+            },
+            {
+              "name": "memptr",
+              "path": "\/memptr",
+              "useBeforeImage": false,
+              "type": "invoke",
+              "verb": "put",
+              "params": [
+                {
+                  "name": "pointerSize",
+                  "type": "RESPONSE_BODY"
+                }
+              ]
+            },
+            {
+              "name": "handle",
+              "path": "\/handle",
+              "useBeforeImage": false,
+              "type": "invoke",
+              "verb": "put",
+              "params": [
+                {
+                  "name": "textMessage",
+                  "type": "RESPONSE_BODY"
+                }
+              ]
+            },
+            {
+              "name": "object",
+              "path": "\/object",
+              "useBeforeImage": false,
+              "type": "invoke",
+              "verb": "put",
+              "params": [
+                {
+                  "name": "arrayLength",
+                  "type": "RESPONSE_BODY"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "runcode",
+          "path": "\/runcode",
+          "autoSave": true,
+          "operations": [
+            {
+              "name": "stop",
+              "path": "\/stop",
+              "useBeforeImage": false,
+              "type": "invoke",
+              "verb": "put",
+              "params": [
+                {
+                  "name": "completed",
+                  "type": "RESPONSE_BODY"
+                }
+              ]
+            },
+            {
+              "name": "busy",
+              "path": "\/busy",
+              "useBeforeImage": false,
+              "type": "invoke",
+              "verb": "put",
+              "params": [
+                {
+                  "name": "busyTime",
+                  "type": "REQUEST_BODY"
+                },
+                {
+                  "name": "elapsed",
+                  "type": "RESPONSE_BODY"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
