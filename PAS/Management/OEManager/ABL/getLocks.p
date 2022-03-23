@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2021 Progress Software Corporation
+    Copyright 2020-2022 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ do iLoop = 1 to num-dbs:
 end.
 
 /* Display table lock information to screen. */
-message "~nUsr#~tUser~t~tDomain~t~tTenant~t~tDatabase~tTable~t~tFlags~t~t~tPID~tSessionID".
+message "~nUsr#~tUser~t~tDomain~t~tTenant~t~tDatabase~t~tTable~t~tFlags~t~t~tPID~tSessionID".
 for each ttLock no-lock:
     message substitute("&1  &2  &3 &4 &5 &6 &7 &8~t&9",
                        string(ttLock.UserNum) + fill(" ", 8 - length(string(ttLock.UserNum))),
@@ -160,10 +160,10 @@ for each ttLock no-lock:
                        string(ttLock.DomainName, "x(15)"),
                        string(ttLock.TenantName, "x(15)"),
                        string(ttLock.DatabaseName, "x(15)"),
-                       string(ttLock.TableName, "x(15)"),
+                       string(ttLock.TableName, "x(22)"),
                        string(ttLock.LockFlags, "x(15)"),
                        string(ttLock.PID, ">>>>>>>>>>>>>>9"),
-                       (if ttLock.SessionID eq ? then "" else string(ttLock.SessionID))).
+                       (if ttLock.SessionID eq ? then "UNKNOWN" else string(ttLock.SessionID, ">>>>>>>>9"))).
 
     /****************************************************************************************************
       Lock Types
