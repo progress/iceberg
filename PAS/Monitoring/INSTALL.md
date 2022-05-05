@@ -18,12 +18,14 @@ Running `proant` from within each of the Application or Collection directories w
 1. Execute `proant deploy_metrics` to integrate the metrics-gathering feature to a target instance.
 	- Adjust the available parameters as necessary to change your path and target for the PAS instance to tailor.
 	- **Be certain to change the monitor instance's IP and port as necessary for data collection!**
-	- This will tailor the instance depending on the OpenEdge version, using either the **Spark Diagnostics** (11.7) or **LiveDiag** (12.2+) pattern as applicable.
+	- This will tailor the instance depending on the OpenEdge version, using either the **Spark Diagnostics** (11.7.8+) or **LiveDiag** (12.2.4+) pattern as applicable.
 1. Start the target instance and confirm operation of the PAS instance at `http://HOSTNAME:PORT` as applicable.
 
-**Note 1:** For the **LiveDiag** solution in OpenEdge 12.2+ a set of R-code (.r files) will be deployed into the CATALINA_BASE/openedge location which is typically in the application PROPATH (a new folder structure will be added: OpenEdge/ApplicationServer/). These files override some of the product-supplied ABL code which drives the Profiler and LiveDiag collection features and allows pushing that data to a customized, remote collection endpoint. It is anticipated that a variation of this code will become part of the standard product installation in the future.
+**Note 1:** For the **LiveDiag** solution in OpenEdge 12.2.4+ a set of R-code (.r files) will be deployed into the `CATALINA_BASE/openedge` location which is expected to be in the application PROPATH (to which a new sub-folder structure will be added: OpenEdge/ApplicationServer/). These files override some of the product-supplied ABL code which drives the Profiler and LiveDiag collection features and allows pushing that data to a customized, remote collection endpoint using the ABL HttpClient library. It is anticipated that a variation of this code may become part of the standard product installation in the future.
 
-**Note 2:** The R-code is compiled against the LTS release (12.2) by default, and may need to be recompiled for later versions of OpenEdge. To do so, there is an undocumented `compile` target for the proant utility which will recompile the code and place it into the correct deployment directory. From there the `deploy_metrics` will copy the R-code to the correct location. This step will of course require the "4GL Development" license, though once compiled the files can be deployed anywhere the same version of OpenEdge is installed.
+**Note 2:** The R-code is compiled against the LTS release (12.2) by default, and may need to be recompiled for other versions of OpenEdge (read: later versions). To do so, there is an undocumented `compile` target for the proant utility which will recompile the code and place it into the correct deployment directory. From there the `deploy_metrics` will copy the R-code to the correct location. This step will of course require the "4GL Development" license, though once compiled the files can be deployed anywhere the same version of OpenEdge is installed.
+
+**Note 3:** When specifying the ABL Application name for any utilities or command line options, it is necessary to use the exact same case as the openedge.properties file and reported by the PAS instance. Due to the use of JSON objects to pass many of the commands to the instance these values should be treated as case-sensitive.
 
 ### Collector - Metrics Visualization ###
 
@@ -103,13 +105,13 @@ With the tests executed and results gathered, it should be possible to see an in
 	- Statistics Overview - A summary of all agent and session statistics gathered for the application.
 	- Memory/Objects - Reports the selected session's trend of memory consumption to ABL Objects.
 	- Agent Activity - Provides a graphic for 3 key metrics:
-		- Concurrent Sessions: Activity over time, including counts of requests serviced by each session at that moment.		
+		- Concurrent Sessions: Activity over time, including counts of requests serviced by each session at that moment.
 		- Session Memory: Use over time for the agent, including overhead memory when available (OpenEdge 12.2+).
 		- Agent Lifetime: Total sessions started over the life of the session, including session and overhead memory totals.
 	- ABL Requests - Sequential list of requests for ABL code execution.
 	- Tomcat Access Logs - Provided after the shut-down of the monitored PAS instance (Spark-Diagnostics only).
 	- Profiler Data - ABL Profiler output, if enabled for collection (not covered here).
-	- Health Trends - Reserved for displaying trends from the HealthScanner (not covered here). 
+	- Health Trends - Reserved for displaying trends from the HealthScanner (not covered here).
 
 ### Sample Scenario ###
 
@@ -135,19 +137,21 @@ Is something not working as expected? Are you running tests but not getting data
 
 ### Application ###
 
-1. Open the logging.config which should be placed somewhere in your PROPATH (default: CATALINA_BASE/openedge).
+1. Open the `logging.config` file which should exist in your PROPATH (default: CATALINA_BASE/openedge).
 2. For the respective solution implemented:
-	- **Spark-Diagnostics:** Look for the "Spark.Diagnostic.Util.RemoteMetrics", "Spark.Diagnostic.Util.OEMetrics", and "AgentMetrics" objects.
-	- **LiveDiag:** Look for the "PushLiveDiag" and "OpenEdge.ApplicationServer.Service" objects.
+	- **Spark-Diagnostics:** Look for the **"Spark.Diagnostic.Util.RemoteMetrics"**, **"Spark.Diagnostic.Util.OEMetrics"**, and **"AgentMetrics"** properties in the JSON file.
+	- **LiveDiag:** Look for the **"PushLiveDiag"** and **"OpenEdge.ApplicationServer.Service"** properties in the JSON file.
 3. Set the **logLevel** property in these objects to DEBUG or TRACE. Note that TRACE may output many additional files into your PAS instance's session temporary directory location.
 4. Stop your PAS instance if possible, remove all existing log files, and restart the instance for a clean slate.
+5. Inspect the PAS instance's `/temp/` directory for any .log files produced from the logger output.
 
 ### Collector ###
 
-1. Open the logging.config which should be placed somewhere in your PROPATH (default: CATALINA_BASE/openedge).
-2. Look for the "Business.Intake" object.
+1. Open the `logging.config` file which should exist in your PROPATH (default: CATALINA_BASE/openedge).
+2. Look for the **"Business.Intake"** property in the JSON file.
 3. Set the **logLevel** property in this object to DEBUG or TRACE. Note that TRACE may output many additional files into your PAS instance's session temporary directory location.
 4. Stop your PAS instance if possible, remove all existing log files, and restart the instance for a clean slate.
+5. Inspect the PAS instance's `/temp/` directory for any .log files produced from the logger output.
 
 **Next Steps**
 

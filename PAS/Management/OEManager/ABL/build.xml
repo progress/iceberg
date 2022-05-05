@@ -1,7 +1,7 @@
 <project name="ManagementTools" basedir="." default="usage">
 
     <!--
-        Copyright 2020-2021 Progress Software Corporation
+        Copyright 2020-2022 Progress Software Corporation
 
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -55,7 +55,8 @@
                 <echo message="${line.separator} proant refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)"/>
             </then>
         </if>
-        <echo message="${line.separator} proant clean - Perform a 'soft restart' (status, flush, trimhttp, stop) of an ABL App"/>
+        <echo message="${line.separator} proant close - Perform a 'soft restart' (status, flush, trimhttp, stop) of an ABL App"/>
+        <echo message="${line.separator} proant clean - Deprecated alias for 'close' target"/>
         <echo message="                [OPTIONAL] -Dsleep={sleep time in minutes} (Default: 1)"/>
         <echo message="${line.separator} proant stop - Gracefully stops all MSAgents (+stacks output) for an ABL App"/>
         <echo message="               [OPTIONAL] -Dwaitfinish=${waitfinish} (How long to wait in milliseconds if the MSAgent is busy serving a request)"/>
@@ -79,7 +80,7 @@
         <echo message="  -Dpas.root=${pas.root} (PAS parent directory)"/>
         <echo message="  -Dinstance=${instance} (Physical instance name)"/>
         <echo message="  -Dablapp=${ablapp}"/>
-        <echo message="  -Dwebapp=${webapp} (Used by trimhttp/clean to access the Tomcat manager webapp)"/>
+        <echo message="  -Dwebapp=${webapp} (Used by trimhttp/close to access the Tomcat manager webapp)"/>
         <echo message="  -Ddebug=${debug} (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)"/>
         <echo message="${line.separator}NOTE: The name of the ABLApp is case-sensitive!"/>
         <echo message="${line.separator}"/>
@@ -372,6 +373,10 @@
     <!-- Management Tools -->
 
     <target name="clean">
+        <antcall target="close"/>
+    </target>
+
+    <target name="close">
         <property name="sleep" value="1"/>
 
         <!-- Perform a 'soft restart' of an ABL Application -->

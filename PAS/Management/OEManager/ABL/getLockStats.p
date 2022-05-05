@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2021 Progress Software Corporation
+    Copyright 2020-2022 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ define variable cDomainName as character no-undo.
 define variable cTenantName as character no-undo.
 define variable cTableName  as character no-undo.
 define variable cLockFlags  as character no-undo.
+define variable cConnDetail as character no-undo.
 define variable iUserNum    as int64     no-undo.
 define variable iTransID    as int64     no-undo.
 define variable iConnectPID as int64     no-undo.
@@ -54,6 +55,7 @@ define variable hLockBuffer as handle    no-undo.
 define variable hTranBuffer as handle    no-undo.
 define variable hFileBuffer as handle    no-undo.
 define variable hSecBuffer  as handle    no-undo.
+define variable hConnDetFld as handle    no-undo.
 
 if not connected("dictdb") then
     return. /* We cannot continue without a database. */
@@ -79,13 +81,33 @@ repeat:
     hConnQuery:get-next(no-lock).
     if hConnQuery:query-off-end then leave CONNECTBLK.
 
-    assign
+    assign // Get some basic info which should always be present.
         iUserNum    = hConnBuffer::_Connect-Usr
         cUserName   = hConnBuffer::_Connect-Name
-        iConnectPID = hConnBuffer::_Connect-Pid
-        iSessionID  = if hConnBuffer::_Connect-Device begins "AS-" and num-entries(hConnBuffer::_Connect-Device, "-") gt 1
-                      then integer(entry(2, hConnBuffer::_Connect-Device, "-")) else ?
         .
+
+    // As of OE 12.5 a new field _Connect-Details was added to hold a unique string to identify connections from a PAS instance.
+	assign hConnDetFld = hConnBuffer:Buffer-Field("_Connect-Details") no-error. // Purposeful no-error here.
+	if error-status:error then
+		error-status:error = false. // Ignore any generated error from above.
+    if valid-object(hConnDetFld) then do:
+        // The format of the data in this field should be "Container:Host:AgentPID:SessID"
+        assign cConnDetail = hConnDetFld:Buffer-Value().
+        if num-entries(cConnDetail, ":") ge 4 then
+            assign
+                iConnectPID = integer(entry(3, cConnDetail, ":"))
+                iSessionID = if entry(4, cConnDetail, ":") begins "AS-" and num-entries(entry(4, cConnDetail, ":"), "-") gt 1
+                             then integer(entry(2, entry(4, cConnDetail, ":"), "-")) else ?
+                .
+    end.
+    else do:
+        // Fall back to gathering the Agent PID and SessionID from other means (only works when PAS utilizes shared-memory connections).
+        assign
+            iConnectPID = hConnBuffer::_Connect-Pid
+            iSessionID  = if hConnBuffer::_Connect-Device begins "AS-" and num-entries(hConnBuffer::_Connect-Device, "-") gt 1
+                          then integer(entry(2, hConnBuffer::_Connect-Device, "-")) else ?
+            .
+    end.
 
     hLockQuery:query-prepare(substitute("for each &1 where _Lock-Usr eq &2", hLockBuffer:name, iUserNum)).
     hLockQuery:query-open().

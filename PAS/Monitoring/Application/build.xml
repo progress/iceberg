@@ -1,7 +1,7 @@
 <project name="MetricsDeployment" basedir="." default="usage">
 
     <!--
-        Copyright 2020-2021 Progress Software Corporation
+        Copyright 2020-2022 Progress Software Corporation
 
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -229,16 +229,57 @@
                     <!-- OpenEdge 12.x -->
 
                     <if>
+                        <equals arg1="${oeMinor}" arg2="0"/>
+                        <then>
+                            <!-- OpenEdge 12.0 -->
+                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                        </then>
+                    </if>
+
+                    <if>
                         <equals arg1="${oeMinor}" arg2="1"/>
                         <then>
                             <!-- OpenEdge 12.1 -->
-                            <fail message="OpenEdge version 12.1 is not supported."/>
+                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
                         </then>
-                        <else>
-                            <!-- OpenEdge 12.2+ -->
-                            <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
-                        </else>
                     </if>
+
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="2"/>
+                        <then>
+                            <if>
+                                <equals arg1="${oeRev}" arg2="0"/>
+                                <then>
+                                    <!-- OpenEdge 12.2.0 -->
+                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                </then>
+                            </if>
+                            <if>
+                                <equals arg1="${oeRev}" arg2="1"/>
+                                <then>
+                                    <!-- OpenEdge 12.2.1 -->
+                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                </then>
+                            </if>
+                            <if>
+                                <equals arg1="${oeRev}" arg2="2"/>
+                                <then>
+                                    <!-- OpenEdge 12.2.2 -->
+                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                </then>
+                            </if>
+                            <if>
+                                <equals arg1="${oeRev}" arg2="3"/>
+                                <then>
+                                    <!-- OpenEdge 12.2.3 -->
+                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                </then>
+                            </if>
+                        </then>
+                    </if>
+
+                    <!-- OpenEdge 12.2.4+ -->
+                    <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
                 </else>
             </if>
         </sequential>
