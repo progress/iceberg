@@ -1,7 +1,7 @@
 <project name="CollectorCreation" basedir="." default="usage">
 
     <!--
-        Copyright 2021 Progress Software Corporation
+        Copyright 2020-2022 Progress Software Corporation
 
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -161,6 +161,66 @@
             <property name="pas.bin" value="${pas.path}${delim}bin"/>
             <property name="pas.webapp.dir" value="${pas.path}${delim}webapps${delim}${webapp}"/>
             <property name="db.path" value="${pas.path}${delim}db"/>
+
+            <if>
+                <equals arg1="${oeMajor}" arg2="11"/>
+                <then>
+                    <!-- OpenEdge 11.7.x -->
+                </then>
+                <else>
+                    <!-- OpenEdge 12.x -->
+
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="0"/>
+                        <then>
+                            <!-- OpenEdge 12.0 -->
+                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                        </then>
+                    </if>
+
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="1"/>
+                        <then>
+                            <!-- OpenEdge 12.1 -->
+                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                        </then>
+                    </if>
+
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="2"/>
+                        <then>
+                            <if>
+                                <equals arg1="${oeRev}" arg2="0"/>
+                                <then>
+                                    <!-- OpenEdge 12.2.0 -->
+                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                </then>
+                            </if>
+                            <if>
+                                <equals arg1="${oeRev}" arg2="1"/>
+                                <then>
+                                    <!-- OpenEdge 12.2.1 -->
+                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                </then>
+                            </if>
+                            <if>
+                                <equals arg1="${oeRev}" arg2="2"/>
+                                <then>
+                                    <!-- OpenEdge 12.2.2 -->
+                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                </then>
+                            </if>
+                            <if>
+                                <equals arg1="${oeRev}" arg2="3"/>
+                                <then>
+                                    <!-- OpenEdge 12.2.3 -->
+                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                </then>
+                            </if>
+                        </then>
+                    </if>
+                </else>
+            </if>
         </sequential>
     </macrodef>
 
