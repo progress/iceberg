@@ -53,15 +53,15 @@
                 <echo message="${line.separator}proant metrics - Enable/Disable collection for the instance"/>
                 <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
                 <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
-				<echo message="    -Dablapp=${ablapp} = ABL App for collection"/>
+                <echo message="    -Dablapp=${ablapp} = ABL App for collection"/>
                 <echo message="    -DlocalIP=${localIP} = IP of this server"/>
                 <echo message="    -Dtype=${type} [pulse|profiler]"/>
                 <echo message="    -Dstate=${state} [on|off]"/>
                 <echo message="    -Dopts=${opts} [logmsgs,sessions[,requests[,calltrees,callstacks],ablobjs]]"/>
                 <echo message="    -Dmonitor=${monitor} = IP of the monitor endpoint (or 'file' for local output)"/>
                 <echo message="    -Dport=${port} = Port of the monitor endpoint"/>
-				<echo message="${line.separator}    Note: You cannot simultaneously use the 'calltrees' option in the pulse metrics and run profiler metrics."/>
-				<echo message="          The web UI will display whichever was reported, but an agent cannot collect both at the same time."/>
+                <echo message="${line.separator}    Note: You cannot simultaneously use the 'calltrees' option in the pulse metrics and run profiler metrics."/>
+                <echo message="          The web UI will display whichever was reported, but an agent cannot collect both at the same time."/>
             </then>
         </if>
         <echo message="${line.separator}proant revert - [Optional] Restore original PAS instance"/>
@@ -544,8 +544,8 @@
                 <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
                 <replaceregexp
                     file="${pas.path}/conf/logging-tomcat.properties"
-                    match="psc.as.logging.access.pattern=(.*) \%b %req(.*)"
-                    replace="psc.as.logging.access.pattern=\1 \%b \%D \%req\2"
+                    match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
+                    replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
                     byline="true"/>
             </else>
         </if>

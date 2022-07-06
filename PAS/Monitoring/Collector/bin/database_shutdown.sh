@@ -12,4 +12,3 @@ if [ "${DBDIR}" = "" ] ; then
 fi
 
 ${DLC}/bin/_mprshut -by ${DBDIR}/@DBNAME@.db &>/dev/null &
-

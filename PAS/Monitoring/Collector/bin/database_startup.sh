@@ -35,4 +35,3 @@ echo error code = $retcode
 exit $retcode
 ;;
 esac # case $retcode in
-

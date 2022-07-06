@@ -1039,6 +1039,7 @@ class Business.Intake use-widget-pool:
              *  %h %u [%{yyyy-MM-dd'T'HH:mm:ss.SSSZ}t] "%r" %s %b %D %I %S
              *  %h %{OEReq.userId}r [%{yyyy-MM-dd'T'HH:mm:ss.SSSZ}t] “%r” %s %b %D %{OEReq.requestId}r
              *  %h %l %reqAttribute{OEReq.userId} [%date{"yyyy-MM-dd'T'HH:mm:ss.SSSXXX"}] "%r" %s %b %D %reqAttribute{OEReq.requestId} %n
+             *  %h %l %reqAttribute{OEReq.userId} [%date{"yyyy-MM-dd'T'HH:mm:ss.SSSXXX"}] "%r" %s %b %reqAttribute{OEReq.requestId} %D %n
              *
              * Set format as psc.as.accesslog.pattern in conf/catalina.properties for OE11
              * or as psc.as.logging.access.pattern in conf/logging-tomcat.properties for OE12
@@ -1111,6 +1112,9 @@ class Business.Intake use-widget-pool:
                             assign iTime = 0. /* Not the elapsed time value. */
                         else
                             assign iTime = integer(cEntry).
+                    end.
+                    when 4 then do: /* Assumed %D */
+                        assign iTime = integer(cEntry).
                     end.
                 end case.
 

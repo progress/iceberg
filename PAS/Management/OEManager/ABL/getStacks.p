@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2021 Progress Software Corporation
+    Copyright 2020-2022 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ else
         cDebug    = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
-if can-do("true,yes,1", cDebug) then do:
+if can-do("enable,true,yes,1", cDebug) then do:
     log-manager:logfile-name    = "getStacks.log".
     log-manager:log-entry-types = "4GLTrace".
     log-manager:logging-level   = 5.

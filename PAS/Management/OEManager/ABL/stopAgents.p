@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2021 Progress Software Corporation
+    Copyright 2020-2022 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ define variable cDebug      as character       no-undo initial "false".
 define variable cWaitFinish as character       no-undo initial "120000".
 define variable cWaitAfter  as character       no-undo initial "60000".
 define variable cPID        as character       no-undo.
+define variable cProcID     as character       no-undo.
 
 /* Check for passed-in arguments/parameters. */
 if num-entries(session:parameter) ge 9 then
@@ -76,7 +77,8 @@ if num-entries(session:parameter) ge 9 then
         cAblApp     = entry(6, session:parameter)
         cWaitFinish = entry(7, session:parameter)
         cWaitAfter  = entry(8, session:parameter)
-        cDebug      = entry(9, session:parameter)
+        cProcID     = entry(9, session:parameter)
+        cDebug      = entry(10, session:parameter)
         .
 else if session:parameter ne "" then /* original method */
     assign cPort = session:parameter.
@@ -90,10 +92,11 @@ else
         cAblApp     = dynamic-function("getParameter" in source-procedure, "ABLApp") when (dynamic-function("getParameter" in source-procedure, "ABLApp") gt "") eq true
         cWaitFinish = dynamic-function("getParameter" in source-procedure, "WaitFinish") when (dynamic-function("getParameter" in source-procedure, "WaitFinish") gt "") eq true
         cWaitAfter  = dynamic-function("getParameter" in source-procedure, "WaitAfter") when (dynamic-function("getParameter" in source-procedure, "WaitAfter") gt "") eq true
+        cProcID     = dynamic-function("getParameter" in source-procedure, "ProcID") when (dynamic-function("getParameter" in source-procedure, "ProcID") gt "") eq true
         cDebug      = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
-if can-do("true,yes,1", cDebug) then do:
+if can-do("enable,true,yes,1", cDebug) then do:
     log-manager:logfile-name    = "trimAgents.log".
     log-manager:log-entry-types = "4GLTrace".
     log-manager:logging-level   = 5.
@@ -203,8 +206,12 @@ if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object)
     on stop undo, next AGENTBLK:
         oAgent = oAgents:GetJsonObject(iLoop).
 
+        /* We need the agent PID for user-friendly displays since that's how we identify the process. */
         if JsonPropertyHelper:HasTypedProperty(oAgent, "pid", JsonDataType:string) then
             assign cPID = oAgent:GetCharacter("pid").
+
+        /* If given a distinct Process ID to terminate, skip to the next agent if this does not match. */
+        if (cProcID gt "") eq true and cPID ne cProcID then next AGENTBLK.
 
         /* Write session stack information for any available MSAgents. */
         if oAgent:GetCharacter("state") eq "available" then do:
@@ -232,6 +239,7 @@ if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object)
             if retry then
                 undo, throw new Progress.Lang.AppError("Encountered stop condition", 0).
 
+            /* For security reasons, we use the internal AgentID to identify the MSAgent to be stopped. */
             assign cHttpUrl = substitute(oQueryURL:Get("AgentStop"), cInstance, cAblApp, oAgent:GetCharacter("agentId"))
                             + "?waitToFinish=" + cWaitFinish + "&waitAfterStop=" + cWaitAfter.
 
