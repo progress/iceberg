@@ -63,6 +63,7 @@ define variable cPassword  as character       no-undo initial "tomcat".
 define variable cAblApp    as character       no-undo initial "oepas1".
 define variable cWebApp    as character       no-undo initial "ROOT".
 define variable cWebAppUrl as character       no-undo.
+define variable cSessID    as character       no-undo.
 define variable cSession   as character       no-undo.
 define variable cTerminate as character       no-undo initial "0".
 define variable cDebug     as character       no-undo initial "false".
@@ -78,7 +79,8 @@ if num-entries(session:parameter) ge 9 then
         cAblApp    = entry(6, session:parameter)
         cWebApp    = entry(7, session:parameter)
         cTerminate = entry(8, session:parameter)
-        cDebug     = entry(9, session:parameter)
+        cSessID    = entry(9, session:parameter)
+        cDebug     = entry(10, session:parameter)
         .
 else if session:parameter ne "" then /* original method */
     assign cPort = session:parameter.
@@ -92,6 +94,7 @@ else
         cAblApp    = dynamic-function("getParameter" in source-procedure, "ABLApp") when (dynamic-function("getParameter" in source-procedure, "ABLApp") gt "") eq true
         cWebApp    = dynamic-function("getParameter" in source-procedure, "WebApp") when (dynamic-function("getParameter" in source-procedure, "WebApp") gt "") eq true
         cTerminate = dynamic-function("getParameter" in source-procedure, "TerminateOpt") when (dynamic-function("getParameter" in source-procedure, "TerminateOpt") gt "") eq true
+        cSessID    = dynamic-function("getParameter" in source-procedure, "SessionID") when (dynamic-function("getParameter" in source-procedure, "SessionID") gt "") eq true
         cDebug     = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
@@ -219,7 +222,10 @@ if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object)
         if JsonPropertyHelper:HasTypedProperty(oSession, "sessionID", JsonDataType:string) then
             assign cSession = oSession:GetCharacter("sessionID").
 
-        if oSession:Has("sessionID") then do
+        /* If given a distinct Session ID to terminate, skip to the next session if this does not match. */
+        if (cSessID gt "") eq true and cSession ne cSessID then next SESSIONBLK.
+
+        if (cSession gt "") eq true then do
         on error undo, next:
             message substitute("Found Session Manager Session: &1 [Elapsed &2 sec.]", cSession,
                                trim(string(oSession:GetInt64("elapsedTimeMs") / 1000, ">>>,>>>,>>9"))).
@@ -262,28 +268,31 @@ if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object)
     end. /* iLoop - sessions */
 end. /* client sessions */
 
-/* Expire all sessions via the Tomcat Web Application Manager. */
-assign cHttpUrl = substitute(oQueryURL:Get("TomcatSessions"), cInstance, cAblApp) + "?idle=0&path".
-if cWebApp eq "ROOT" then
-    assign cWebAppUrl = "/".
-else
-    assign cWebAppUrl = substitute("/&1", cWebApp).
+/* Continue with expriring Tomcat sessions only if not terminating a specific session. */
+if (cSessID gt "") ne true then do:
+    /* Expire any/all sessions via the Tomcat Web Application Manager for this ABLApp/WebApp pair. */
+    assign cHttpUrl = substitute(oQueryURL:Get("TomcatSessions"), cInstance, cAblApp) + "?idle=0&path".
+    if cWebApp eq "ROOT" then
+        assign cWebAppUrl = "/".
+    else
+        assign cWebAppUrl = substitute("/&1", cWebApp).
 
-assign cHttpUrl = substitute("&1=&2", cHttpUrl, cWebAppUrl). /* Specify the WebApp as a URL */
-message substitute("~nExpiring sessions via Tomcat for &1 ...", cWebAppUrl).
-assign oJsonResp = MakeRequest(cHttpUrl).
+    assign cHttpUrl = substitute("&1=&2", cHttpUrl, cWebAppUrl). /* Specify the WebApp as a URL */
+    message substitute("~nExpiring sessions via Tomcat for &1 ...", cWebAppUrl).
+    assign oJsonResp = MakeRequest(cHttpUrl).
 
-if valid-object(oJsonResp) and oJsonResp:Has("result") then
-do stop-after 30
-on error undo, leave
-on stop undo, leave:
-    define variable cTemp as character no-undo.
-    assign cTemp = string(oJsonResp:GetJsonText("result")).
-    assign cTemp = replace(cTemp, "~\r~\n", "~n").
-    assign cTemp = replace(cTemp, "~\n", "~n").
-    assign cTemp = replace(cTemp, "~\~/", "~/").
-    message substitute("Tomcat Manager Response:~n&1", cTemp).
-end. /* oJsonResp - Tomcat */
+    if valid-object(oJsonResp) and oJsonResp:Has("result") then
+    do stop-after 30
+    on error undo, leave
+    on stop undo, leave:
+        define variable cTemp as character no-undo.
+        assign cTemp = string(oJsonResp:GetJsonText("result")).
+        assign cTemp = replace(cTemp, "~\r~\n", "~n").
+        assign cTemp = replace(cTemp, "~\n", "~n").
+        assign cTemp = replace(cTemp, "~\~/", "~/").
+        message substitute("Tomcat Manager Response:~n&1", cTemp).
+    end. /* oJsonResp - Tomcat */
+end.
 
 finally:
     /* Return value expected by PCT Ant task. */
