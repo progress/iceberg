@@ -380,8 +380,8 @@
                     <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
                     <replaceregexp
                         file="${pas.path}/conf/logging-tomcat.properties"
-                        match="psc.as.logging.access.pattern=(.*) \%b %req(.*)"
-                        replace="psc.as.logging.access.pattern=\1 \%b \%D \%req\2"
+                        match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
+                        replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
                         byline="true"/>
                 </then>
             </if>

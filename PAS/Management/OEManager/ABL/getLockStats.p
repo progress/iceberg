@@ -82,11 +82,12 @@ repeat:
     if hConnQuery:query-off-end then leave CONNECTBLK.
 
     assign // Get some basic info which should always be present.
-        iUserNum    = hConnBuffer::_Connect-Usr
-        cUserName   = hConnBuffer::_Connect-Name
+        iUserNum  = hConnBuffer::_Connect-Usr
+        cUserName = hConnBuffer::_Connect-Name
         .
 
     // As of OE 12.5 a new field _Connect-Details was added to hold a unique string to identify connections from a PAS instance.
+    // https://docs.progress.com/bundle/openedge-whats-new/page/Whats-New-in-OpenEdge-12.5.html#ariaid-title15
 	assign hConnDetFld = hConnBuffer:Buffer-Field("_Connect-Details") no-error. // Purposeful no-error here.
 	if error-status:error then
 		error-status:error = false. // Ignore any generated error from above.

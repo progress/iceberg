@@ -108,7 +108,7 @@ else
         cDebug    = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
-if can-do("true,yes,1", cDebug) then do:
+if can-do("enable,true,yes,1", cDebug) then do:
     log-manager:logfile-name    = "getLocks.log".
     log-manager:log-entry-types = "4GLTrace".
     log-manager:logging-level   = 5.

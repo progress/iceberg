@@ -30,58 +30,68 @@
         <echo message="Tasks denoted with [RO] are read-only and do not impact operation."/>
         <echo message="${line.separator}Usage Instructions:"/>
         <echo message="${line.separator} TCMAN Shortcuts:"/>
-        <echo message="${line.separator} proant startup - Use TCMAN to start the ${instance} PAS instance"/>
-        <echo message="${line.separator} proant query - Use TCMAN to query the ${instance} PAS instance"/>
+        <echo message="${line.separator} proant query    - Use TCMAN to query the ${instance} PAS instance"/>
+        <echo message="${line.separator} proant startup  - Use TCMAN to start the ${instance} PAS instance"/>
+        <echo message="                   [OPTIONAL] -Dtimeout=${timeout} (Time to wait for a proper startup)"/>
         <echo message="${line.separator} proant shutdown - Use TCMAN to stop the ${instance} PAS instance"/>
+        <echo message="                   [OPTIONAL] -Dtimeout=${timeout} (Time to wait for a proper shutdown)"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Internal Tools:"/>
         <echo message="${line.separator} proant inventory - Bundle useful PAS instance files (as .zip) for support tickets"/>
-        <echo message="${line.separator} proant compile - Compile all utility procedures to r-code (for production use)"/>
+        <echo message="${line.separator} proant compile   - Compile all utility procedures to r-code (for production use)"/>
         <echo message="${line.separator}"/>
-        <echo message="${line.separator} Status/Management:"/>
-        <echo message="${line.separator} proant status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
-        <echo message="                      [OPTIONAL] -Dbasemem=${basemem} (Minimum memory threshold, in bytes, of unused agent sessions)"/>
+        <echo message="${line.separator} Status/Info:"/>
+        <echo message="${line.separator} proant stat   - [RO] Obtain MSAgent/connection status information for an ABL App"/>
+        <echo message="                 [OPTIONAL] -Dbasemem=${basemem} (Minimum memory threshold, in bytes, of unused agent sessions)"/>
         <echo message="${line.separator} proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
-        <echo message="${line.separator} proant flush - [RO] Flush the available deferred log buffer to agent log file"/>
-        <echo message="${line.separator} proant trimhttp - Trim all Session Manager and Tomcat HTTP sessions for an ABL/Web App"/>
-        <echo message="                   [OPTIONAL] -Dterminateopt=${terminateopt} (0 for graceful termination and 1 for forced termination)"/>
-        <echo message="${line.separator} proant trimidle - Trim all IDLE ABL Sessions for each MSAgent for an ABL App"/>
-        <echo message="${line.separator} proant trimall - Trim all ABL Sessions for each MSAgent for an ABL App"/>
-        <echo message="${line.separator} proant reset - Reset an aspect of each MSAgent for an ABL App"/>
-        <echo message="                [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
+        <echo message="${line.separator} proant flush  - [RO] Flush the available deferred log buffer to agent log file"/>
+        <echo message="${line.separator} proant locks  - [RO] Display database users and their table locks related to an MSAgent-Session"/>
+        <echo message="                 This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary"/>
+        <echo message="                 Note: Only provides session data if using self-service DB connections for OE versions under 12.5"/>
+        <echo message="                 [OPTIONAL]  -Dcodepage=${codepage} (Codepage)"/>
+        <echo message="                 [OPTIONAL] -Dcollation=${collation} (Collation)"/>
+        <echo message="                 [OPTIONAL]   -Ddb.name=${db.name} (Database name to check)"/>
+        <echo message="                 [OPTIONAL]   -Ddb.host=${db.host} (Database host to check)"/>
+        <echo message="                 [OPTIONAL]   -Ddb.port=${db.port} (Database port to check)"/>
+        <echo message="${line.separator} proant users  - [RO] Alias for 'locks' task"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator} Agent/Session Management:"/>
+        <echo message="${line.separator} proant add      - Add (read: start) one new MSAgent for an ABL App"/>
+        <echo message="${line.separator} proant close    - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)"/>
+        <echo message="                   [OPTIONAL] -Dsleep=${sleep} (Sleep time in minutes after stop)"/>
+        <echo message="${line.separator} proant clean    - Alias for 'close' task [Deprecated]"/>
         <if>
             <equals arg1="${oeMajor}" arg2="12"/>
             <then>
-                <echo message="${line.separator} proant refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)"/>
+                <echo message="${line.separator} proant refresh  - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)"/>
             </then>
         </if>
-        <echo message="${line.separator} proant close - Perform a 'soft restart' (status, flush, trimhttp, stop) of an ABL App"/>
-        <echo message="${line.separator} proant clean - Deprecated alias for 'close' target"/>
-        <echo message="                [OPTIONAL] -Dsleep={sleep time in minutes} (Default: 1)"/>
-        <echo message="${line.separator} proant stop - Gracefully stops all MSAgents (+stacks output) for an ABL App"/>
-        <echo message="               [OPTIONAL] -Dwaitfinish=${waitfinish} (How long to wait in milliseconds if the MSAgent is busy serving a request)"/>
-        <echo message="               [OPTIONAL] -Dwaitafter=${waitafter} (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)"/>
-        <echo message="${line.separator} proant locks - [RO] Display database users and their table locks related to an MSAgent-Session"/>
-        <echo message="                This utilizes a single DBConnection; edit build.xml to add more as needed"/>
-        <echo message="                Note: will only provide session data if using self-service DB connections"/>
-        <echo message="                [OPTIONAL]  -Dcodepage=${codepage} (Codepage)"/>
-        <echo message="                [OPTIONAL] -Dcollation=${collation} (Collation)"/>
-        <echo message="                [OPTIONAL]  -Ddb.name=${db.name} (Database name to check)"/>
-        <echo message="                [OPTIONAL]  -Ddb.host=${db.host} (Database host to check)"/>
-        <echo message="                [OPTIONAL]  -Ddb.port=${db.port} (Database port to check)"/>
-        <echo message="${line.separator} proant users - [RO] Alias for 'locks' target"/>
+        <echo message="${line.separator} proant reset    - Reset an aspect of each MSAgent for an ABL App"/>
+        <echo message="                   [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
+        <echo message="${line.separator} proant stop     - Gracefully stop one or all MSAgents (+stacks output) for an ABL App"/>
+        <echo message="                   [OPTIONAL] -Dwaitfinish=${waitfinish} (How long to wait in milliseconds if the MSAgent is busy serving a request)"/>
+        <echo message="                   [OPTIONAL]  -Dwaitafter=${waitafter} (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)"/>
+        <echo message="                   [OPTIONAL]        -Dpid=[PID] (Numeric process ID for a specific MSAgent to be stopped)"/>
+        <echo message="${line.separator} proant trimidle - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
+        <echo message="                   Allows for manually scaling down an MSAgent which may have many unused ABL Sessions"/>
+        <echo message="${line.separator} proant trimall  - Trim all active/idle ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
+        <echo message="                   Note: For any busy sessions considered stuck, use 'trimhttp' with a specific Session ID"/>
+        <echo message="${line.separator} proant trimhttp - Trim one or all Client Sessions (via the Session Manager) for an ABLApp/WebApp pair"/>
+        <echo message="                   Note: When no session ID provided, all available Tomcat HTTP sessions will be expired"/>
+        <echo message="                   [OPTIONAL] -Dterminateopt=${terminateopt} (0 for graceful termination and 1 for forced termination)"/>
+        <echo message="                   [OPTIONAL]       -Dsessid=[SESSION_ID] (Unique alphanumeric Session ID to be stopped)"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator}Available parameters with their defaults, override as necessary:"/>
-        <echo message="  -Dscheme=${scheme}"/>
-        <echo message="    -Dhost=${host}"/>
-        <echo message="    -Dport=${port}"/>
-        <echo message="  -Duserid=${userid}"/>
-        <echo message="  -Dpasswd=${passwd}"/>
+        <echo message="    -Dscheme=${scheme}"/>
+        <echo message="      -Dhost=${host}"/>
+        <echo message="      -Dport=${port}"/>
+        <echo message="    -Duserid=${userid}"/>
+        <echo message="    -Dpasswd=${passwd}"/>
         <echo message="  -Dpas.root=${pas.root} (PAS parent directory)"/>
         <echo message="  -Dinstance=${instance} (Physical instance name)"/>
-        <echo message="  -Dablapp=${ablapp}"/>
-        <echo message="  -Dwebapp=${webapp} (Used by trimhttp/close to access the Tomcat manager webapp)"/>
-        <echo message="  -Ddebug=${debug} (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)"/>
+        <echo message="    -Dablapp=${ablapp}"/>
+        <echo message="    -Dwebapp=${webapp} (Used by trimhttp/close to access the Tomcat manager webapp)"/>
+        <echo message="     -Ddebug=${debug} (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)"/>
         <echo message="${line.separator}NOTE: The name of the ABLApp is case-sensitive!"/>
         <echo message="${line.separator}"/>
         <echo message="CATALINA_HOME: ${dlcHome}${delim}servers${delim}pasoe"/>
@@ -135,27 +145,32 @@
             <loadfile property="release" srcFile="release.txt"/>
             <echo message="Code Release: ${release}"/>
 
-            <!-- Set general properties for this build file. -->
+            <!-- Set general properties for most tasks. -->
             <property name="scheme" value="http"/>
             <property name="host" value="localhost"/>
-            <property name="port" value="8810"/>
+            <property name="port" value="8810"/> <!-- Default for most demo application code -->
             <property name="userid" value="tomcat"/>
             <property name="passwd" value="tomcat"/>
-            <property name="instance" value="oepas1"/>
-            <property name="ablapp" value="oepas1"/>
+            <property name="instance" value="oepas1"/> <!-- Typical sample instance after DLC install -->
+            <property name="ablapp" value="${instance}"/> <!-- Default to the name of the instance -->
             <property name="webapp" value="ROOT"/>
+            <!-- Slightly more specific properties for tasks. -->
             <property name="codepage" value="UTF-8"/>
             <property name="collation" value="BASIC"/>
-            <property name="db.name" value="Sports2020"/>
+            <property name="db.name" value="Sports2020"/> <!-- Default for most demo application code -->
             <property name="db.host" value="localhost"/>
-            <property name="db.port" value="8600"/>
+            <property name="db.port" value="8600"/> <!-- Default for most demo application code -->
             <property name="db.dir" value=""/>
-            <property name="proc.ext" value=".p"/>
             <property name="debug" value="false"/>
+            <property name="pid" value=""/>
+            <property name="proc.ext" value=".p"/>
+            <property name="sessid" value=""/>
+            <property name="sleep" value="1"/>
             <property name="terminateopt" value="0"/>
+            <property name="timeout" value="300"/>
             <property name="waitfinish" value="120000"/>
             <property name="waitafter" value="60000"/>
-            <property name="basemem" value="819200"/>
+            <property name="basemem" value="819200"/> <!-- Defaulted to 8K -->
             <property name="resettype" value="stats"/>
         </sequential>
     </macrodef>
@@ -205,6 +220,63 @@
             <property name="pas.root" value="${wrk}"/>
             <property name="pas.path" value="${pas.root}${delim}${instance}"/>
             <property name="pas.bin" value="${pas.path}${delim}bin"/>
+
+            <!-- Set the appropriate TCMAN command for managing the server as based on OpenEdge release version. -->
+            <if>
+                <equals arg1="${oeMajor}" arg2="11"/>
+                <then>
+                    <!-- Use the pasoestart command for OpenEdge 11 -->
+                    <property name="serverCmd" value="pasoestart"/>
+                    <property name="stopOpts" value="-halt -abort"/>
+                </then>
+                <else>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="0"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.0 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="1"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.1 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="2"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.2 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="3"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.3 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="4"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.4 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+
+                    <!-- Use the new oeserver command for OpenEdge 12.5+ -->
+                    <property name="serverCmd" value="oeserver"/>
+                    <property name="stopOpts" value="-stop -force"/>
+                </else>
+            </if>
+            <property name="jsonOpts" value="-json -array"/>
         </sequential>
     </macrodef>
 
@@ -264,8 +336,10 @@
 
         <requireDir folder="${pas.path}"/>
 
+        <property name="commandLine" value="${serverCmd} -v ${stopOpts} -timeout ${timeout} ${jsonOpts}"/>
+        <echo message="${line.separator}Executing TCMAN with '${commandLine}'"/>
         <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="true">
-            <arg line="pasoestart -v -halt -abort -timeout 300 -json -array"/>
+            <arg line="${commandLine}"/>
         </exec>
     </target>
 
@@ -274,8 +348,10 @@
 
         <requireDir folder="${pas.path}"/>
 
+        <property name="commandLine" value="${serverCmd} -v -start -archive -timeout ${timeout} ${jsonOpts}"/>
+        <echo message="${line.separator}Executing TCMAN with '${commandLine}'"/>
         <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="false">
-            <arg line="pasoestart -v -archive -timeout 300 -json -array"/>
+            <arg line="${commandLine}"/>
         </exec>
     </target>
 
@@ -284,8 +360,10 @@
 
         <requireDir folder="${pas.path}"/>
 
+        <property name="commandLine" value="${serverCmd} -v -query ${jsonOpts}"/>
+        <echo message="${line.separator}Executing TCMAN with '${commandLine}'"/>
         <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="false">
-            <arg line="pasoestart -v -query -json -array"/>
+            <arg line="${commandLine}"/>
         </exec>
     </target>
 
@@ -377,8 +455,6 @@
     </target>
 
     <target name="close">
-        <property name="sleep" value="1"/>
-
         <!-- Perform a 'soft restart' of an ABL Application -->
         <antcall target="status"/>
         <antcall target="flush"/>
@@ -489,6 +565,7 @@
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="WebApp" value="${webapp}"/>
             <Parameter name="TerminateOpt" value="${terminateopt}"/>
+            <Parameter name="SessionID" value="${sessid}"/>
             <Parameter name="Debug" value="${debug}"/>
         </PCTRun>
     </target>
@@ -582,6 +659,27 @@
         </PCTRun>
     </target>
 
+    <target name="add">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="addAgent${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="Debug" value="${debug}"/>
+        </PCTRun>
+    </target>
+
     <target name="stop">
         <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
@@ -601,6 +699,7 @@
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="WaitFinish" value="${waitfinish}"/>
             <Parameter name="WaitAfter" value="${waitafter}"/>
+            <Parameter name="ProcID" value="${pid}"/> <!-- Considered optional, default "" -->
             <Parameter name="Debug" value="${debug}"/>
         </PCTRun>
     </target>
