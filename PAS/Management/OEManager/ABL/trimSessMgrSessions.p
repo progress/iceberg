@@ -113,6 +113,14 @@ assign oQueryURL = new StringStringMap().
 oQueryURL:Put("ClientSessions", "&1/oemanager/applications/&2/sessions").
 oQueryURL:Put("TomcatSessions", "&1/manager/text/expire").
 
+/* PROCEDURES / FUNCTIONS */
+
+function LogCommand returns logical ( input pcVerb as character, input pcCommand as character ):
+    output to value("commands.log") append.
+    put unformatted substitute("&1 - &2 &3", iso-date(now), pcVerb, pcCommand) skip.
+    output close.
+end function. /* LogCommand */
+
 function MakeRequest returns JsonObject ( input pcHttpUrl as character ):
     define variable oReq  as IHttpRequest  no-undo.
     define variable oResp as IHttpResponse no-undo.
@@ -137,8 +145,12 @@ function MakeRequest returns JsonObject ( input pcHttpUrl as character ):
                 :UsingBasicAuthentication(oCreds)
                 :Request.
 
-        if valid-object(oReq) then
+        if valid-object(oReq) then do:
+            /* Always log the OEM-API command URL with an exact time of execution. */
+            LogCommand("GET", cHttpUrl).
+
             oResp = oClient:Execute(oReq).
+        end.
         else
             undo, throw new Progress.Lang.AppError("Unable to create request object", 0).
     end.
@@ -191,7 +203,7 @@ function MakeRequest returns JsonObject ( input pcHttpUrl as character ):
 
     catch err as Progress.Lang.Error:
         /* Always report any errors during the API requests, and return an empty JSON object allowing remaining logic to continue. */
-        message substitute("~nError executing OEM-API request: &1 [URL: &2]", err:GetMessage(1) , pcHttpUrl).
+        message substitute("~nError executing OEM-API request: &1 [URL: &2]", err:GetMessage(1), pcHttpUrl).
         return new JsonObject().
     end catch.
     finally:
@@ -199,6 +211,9 @@ function MakeRequest returns JsonObject ( input pcHttpUrl as character ):
         delete object oResp no-error.
     end finally.
 end function. /* MakeRequest */
+
+/* Output the name of the program being executed. */
+LogCommand("RUN", this-procedure:name).
 
 /* Get client HTTP sessions from the Session Manager. */
 assign cHttpUrl = substitute(oQueryURL:Get("ClientSessions"), cInstance, cAblApp).
@@ -241,6 +256,9 @@ if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object)
 
                 if can-do("true,yes,1", cDebug) then
                     message substitute("Calling URL: &1", cHttpUrl).
+
+                /* Always log the OEM-API command URL with an exact time of execution. */
+                LogCommand("DELETE", cHttpUrl).
 
                 oDelResp = oClient:Execute(RequestBuilder
                                            :Delete(cHttpUrl)
@@ -292,7 +310,7 @@ if (cSessID gt "") ne true then do:
         assign cTemp = replace(cTemp, "~\~/", "~/").
         message substitute("Tomcat Manager Response:~n&1", cTemp).
     end. /* oJsonResp - Tomcat */
-end.
+end. /* sessions */
 
 finally:
     /* Return value expected by PCT Ant task. */

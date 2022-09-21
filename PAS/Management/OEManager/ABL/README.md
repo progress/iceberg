@@ -10,71 +10,91 @@ Use of **proant** is required to execute the **build.xml** included. This can be
 
 ## Deployment ##
 
-Simply run **proant** from this directory to obtain usage information as shown below. Parameters may be specified via command-line or by editing the `build.properties` file in advance.
+Simply run **proant** from this directory to obtain usage information as shown below. Parameters may be specified via command-line or by editing the `build.properties` file in advance. For actions which will alter a running PAS instance (read: those without the RO indicator), individual OEM-API commands will be logged to a `commands.log` file.
 
      [echo] Usage Instructions:
      [echo]
      [echo]  TCMAN Shortcuts:
      [echo]
-     [echo]  proant startup - Use TCMAN to start the oepas1 PAS instance
+     [echo]  proant query    - Use TCMAN to query the oepas1 PAS instance
      [echo]
-     [echo]  proant query - Use TCMAN to query the oepas1 PAS instance
+     [echo]  proant startup  - Use TCMAN to start the oepas1 PAS instance
+     [echo]                    [OPTIONAL] -Dtimeout=300 (Time to wait for a proper startup)
      [echo]
      [echo]  proant shutdown - Use TCMAN to stop the oepas1 PAS instance
+     [echo]                    [OPTIONAL] -Dtimeout=300 (Time to wait for a proper shutdown)
      [echo]
      [echo]
      [echo]  Internal Tools:
      [echo]
      [echo]  proant inventory - Bundle useful PAS instance files (as .zip) for support tickets
      [echo]
-     [echo]  proant compile - Compile all utility procedures to r-code (for production use)
+     [echo]  proant compile   - Compile all utility procedures to r-code (for production use)
      [echo]
      [echo]
-     [echo]  Status/Management:
+     [echo]  Status/Info:
      [echo]
-     [echo]  proant status - [RO] Obtain MSAgent/connection status information for an ABL App
+     [echo]  proant stat   - [RO] Obtain MSAgent/connection status information for an ABL App
+     [echo]                  [OPTIONAL] -Dbasemem=819200 (Minimum memory threshold, in bytes, of unused agent sessions)
      [echo]
      [echo]  proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App
      [echo]
-     [echo]  proant flush - [RO] Flush the available deferred log buffer to agent log file
+     [echo]  proant flush  - [RO] Flush the available deferred log buffer to agent log file
      [echo]
-     [echo]  proant trimhttp - Trim all Session Manager and Tomcat HTTP sessions for an ABL/Web App
+     [echo]  proant locks  - [RO] Display database users and their table locks related to an MSAgent-Session
+     [echo]                  This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary
+     [echo]                  Note: Only provides session data if using self-service DB connections for OE versions under 12.5
+     [echo]                  [OPTIONAL]  -Dcodepage=UTF-8 (Codepage)
+     [echo]                  [OPTIONAL] -Dcollation=BASIC (Collation)
+     [echo]                  [OPTIONAL]   -Ddb.name=Sports2020 (Database name to check)
+     [echo]                  [OPTIONAL]   -Ddb.host=localhost (Database host to check)
+     [echo]                  [OPTIONAL]   -Ddb.port=8600 (Database port to check)
+     [echo]
+     [echo]  proant users  - [RO] Alias for 'locks' task
+     [echo]
+     [echo]
+     [echo]  Agent/Session Management:
+     [echo]
+     [echo]  proant add      - Add (read: start) one new MSAgent for an ABL App
+     [echo]
+     [echo]  proant close    - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)
+     [echo]                    [OPTIONAL] -Dsleep=1 (Sleep time in minutes after stop)
+     [echo]
+     [echo]  proant clean    - Alias for 'close' task [Deprecated]
+     [echo]
+     [echo]  proant refresh  - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)
+     [echo]
+     [echo]  proant reset    - Reset an aspect of each MSAgent for an ABL App
+     [echo]                    [REQUIRED] -Dresettype=stats [stats|logs]
+     [echo]
+     [echo]  proant stop     - Gracefully stop one or all MSAgents (+stacks output) for an ABL App
+     [echo]                    [OPTIONAL] -Dwaitfinish=120000 (How long to wait in milliseconds if the MSAgent is busy serving a request)
+     [echo]                    [OPTIONAL]  -Dwaitafter=60000 (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)
+     [echo]                    [OPTIONAL]        -Dpid=[PID] (Numeric process ID for a specific MSAgent to be stopped)
+     [echo]
+     [echo]  proant trimidle - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
+     [echo]                    Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
+     [echo]
+     [echo]  proant trimall  - Trim all active/idle ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
+     [echo]                    Note: For any busy sessions considered stuck, use 'trimhttp' with a specific Session ID
+     [echo]
+     [echo]  proant trimhttp - Trim one or all Client Sessions (via the Session Manager) for an ABLApp/WebApp pair
+     [echo]                    Note: When no session ID provided, all available Tomcat HTTP sessions will be expired
      [echo]                    [OPTIONAL] -Dterminateopt=0 (0 for graceful termination and 1 for forced termination)
-     [echo]
-     [echo]  proant trimidle - Trim all IDLE ABL Sessions for each MSAgent for an ABL App
-     [echo]
-     [echo]  proant trimall - Trim all ABL Sessions for each MSAgent for an ABL App
-     [echo]
-     [echo]  proant refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)
-     [echo]
-     [echo]  proant clean - Perform a 'soft restart' (status, flush, trimhttp, stop) of an ABL App
-     [echo]                 [OPTIONAL] -Dsleep={sleep time in minutes} (Default: 1)
-     [echo]
-     [echo]  proant stop - Gracefully stops all MSAgents (+stacks output) for an ABL App
-     [echo]                [OPTIONAL] -Dwaitfinish=120000 (How long to wait in milliseconds if the MSAgent is busy serving a request)
-     [echo]                [OPTIONAL] -Dwaitafter=60000 (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)
-     [echo]
-     [echo]  proant locks - [RO] Display database users and their table locks related to an MSAgent-Session
-     [echo]                 This utilizes a single DBConnection; edit build.xml to add more as needed
-     [echo]                 Note: will only provide session data if using self-service DB connections
-     [echo]                 [OPTIONAL] -Ddb.name=Sports2020 (Database name to check)
-     [echo]                 [OPTIONAL] -Ddb.host=localhost (Database host to check)
-     [echo]                 [OPTIONAL] -Ddb.port=8600 (Database port to check)
-     [echo]
-     [echo]  proant users - [RO] Alias for 'locks' target
+     [echo]                    [OPTIONAL]       -Dsessid=[SESSION_ID] (Unique alphanumeric Session ID to be stopped)
      [echo]
      [echo]
      [echo] Available parameters with their defaults, override as necessary:
-     [echo]   -Dscheme=http
-     [echo]     -Dhost=localhost
-     [echo]     -Dport=8810
-     [echo]   -Duserid=tomcat
-     [echo]   -Dpasswd=tomcat
+     [echo]     -Dscheme=http
+     [echo]       -Dhost=localhost
+     [echo]       -Dport=8810
+     [echo]     -Duserid=tomcat
+     [echo]     -Dpasswd=tomcat
      [echo]   -Dpas.root=C:\OpenEdge\WRK (PAS parent directory)
      [echo]   -Dinstance=oepas1 (Physical instance name)
-     [echo]   -Dablapp=oepas1
-     [echo]   -Dwebapp=ROOT (Used by trimhttp/clean to access the Tomcat manager webapp)
-     [echo]   -Ddebug=false (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)
+     [echo]     -Dablapp=oepas1
+     [echo]     -Dwebapp=ROOT (Used by trimhttp/close to access the Tomcat manager webapp)
+     [echo]      -Ddebug=false (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)
      [echo]
      [echo] NOTE: The name of the ABLApp is case-sensitive!
      [echo]

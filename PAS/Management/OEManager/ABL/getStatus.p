@@ -269,7 +269,7 @@ function MakeRequest returns JsonObject ( input pcHttpUrl as character ):
 
     catch err as Progress.Lang.Error:
         /* Always report any errors during the API requests, and return an empty JSON object allowing remaining logic to continue. */
-        put unformatted substitute("~nError executing OEM-API request: &1 [URL: &2]", err:GetMessage(1) , pcHttpUrl) skip.
+        put unformatted substitute("~nError executing OEM-API request: &1 [URL: &2]", err:GetMessage(1), pcHttpUrl) skip.
         return new JsonObject().
     end catch.
     finally:
