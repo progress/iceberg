@@ -207,6 +207,8 @@
 
             <!-- Load the current PCT library from DLC. -->
             <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
+            <!-- Define this property to disable anonymous PCT statistics telemetry. -->
+            <property name="pct.skip.analytics" value=""/>
 
             <!-- Access the OE version info, and read into a property. -->
             <ProgressVersion dlcHome="${dlcHome}" majorVersion="oeMajor" minorVersion="oeMinor" revision="oeRev" fullVersion="full"/>
