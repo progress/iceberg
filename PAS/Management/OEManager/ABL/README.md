@@ -34,7 +34,7 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]
      [echo]  Status/Info:
      [echo]
-     [echo]  proant stat   - [RO] Obtain MSAgent/connection status information for an ABL App
+     [echo]  proant status - [RO] Obtain MSAgent/connection status information for an ABL App
      [echo]                  [OPTIONAL] -Dbasemem=819200 (Minimum memory threshold, in bytes, of unused agent sessions)
      [echo]
      [echo]  proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App
@@ -53,35 +53,47 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]  proant users  - [RO] Alias for 'locks' task
      [echo]
      [echo]
-     [echo]  Agent/Session Management:
+     [echo]  Agent Management:
      [echo]
-     [echo]  proant add      - Add (read: start) one new MSAgent for an ABL App
+     [echo]  proant add     - Add (read: start) one new MSAgent for an ABL App
      [echo]
-     [echo]  proant close    - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)
-     [echo]                    [OPTIONAL] -Dsleep=1 (Sleep time in minutes after stop)
+     [echo]  proant close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)
+     [echo]                   [OPTIONAL] -Dsleep=1 (Sleep time in minutes after stop)
      [echo]
-     [echo]  proant clean    - Alias for 'close' task [Deprecated]
+     [echo]  proant clean   - Alias for 'close' task [Deprecated]
      [echo]
-     [echo]  proant refresh  - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)
+     [echo]  proant refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)
+     [echo]                   Note: This will essentially terminate all sessions (gracefully),
+     [echo]                         and prepare the Agent to pick up any R-code changes
      [echo]
-     [echo]  proant reset    - Reset an aspect of each MSAgent for an ABL App
-     [echo]                    [REQUIRED] -Dresettype=stats [stats|logs]
+     [echo]  proant reset   - Reset an aspect of each MSAgent for an ABL App
+     [echo]                   [REQUIRED] -Dresettype=stats [stats|logs]
      [echo]
-     [echo]  proant stop     - Gracefully stop one or all MSAgents (+stacks output) for an ABL App
-     [echo]                    [OPTIONAL] -Dwaitfinish=120000 (How long to wait in milliseconds if the MSAgent is busy serving a request)
-     [echo]                    [OPTIONAL]  -Dwaitafter=60000 (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)
-     [echo]                    [OPTIONAL]        -Dpid=[PID] (Numeric process ID for a specific MSAgent to be stopped)
+     [echo]  proant stop    - Gracefully stop one or all MSAgents (+stacks output) for an ABL App
+     [echo]                   [OPTIONAL] -Dwaitfinish=120000 (How long to wait in milliseconds if the MSAgent is busy serving a request)
+     [echo]                   [OPTIONAL]  -Dwaitafter=60000 (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)
+     [echo]                   [OPTIONAL]        -Dpid=[AGENT_PID] (Numeric process ID for a specific MSAgent to be stopped)
      [echo]
-     [echo]  proant trimidle - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
-     [echo]                    Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
      [echo]
-     [echo]  proant trimall  - Trim all active/idle ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
-     [echo]                    Note: For any busy sessions considered stuck, use 'trimhttp' with a specific Session ID
+     [echo]  Session Management:
      [echo]
-     [echo]  proant trimhttp - Trim one or all Client Sessions (via the Session Manager) for an ABLApp/WebApp pair
-     [echo]                    Note: When no session ID provided, all available Tomcat HTTP sessions will be expired
-     [echo]                    [OPTIONAL] -Dterminateopt=0 (0 for graceful termination and 1 for forced termination)
-     [echo]                    [OPTIONAL]       -Dsessid=[SESSION_ID] (Unique alphanumeric Session ID to be stopped)
+     [echo]  proant trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
+     [echo]                      Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
+     [echo]
+     [echo]  proant trimsingle - Trim a single ABL Session (via the Agent Manager) for a specific MSAgent
+     [echo]                      [REQUIRED]          -Dpid=[AGENT_PID] (Numeric process ID of the MSAgent for context)
+     [echo]                      [REQUIRED]       -Dsessid=[SESSION_ID] (Numeric ID for the ABL Session to be stopped)
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
+     [echo]
+     [echo]  proant trimall    - Trim all active/idle ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
+     [echo]                      Note: For any busy sessions considered stuck, use 'trimhttp' with a specific Session ID
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
+     [echo]
+     [echo]  proant trimhttp   - Trim one or all Client Sessions (via the Session Manager) for an ABLApp/WebApp pair
+     [echo]                      Note: When no session ID provided, all available Tomcat HTTP sessions will be expired
+     [echo]                      [OPTIONAL]       -Dsessid=[SESSION_ID] (Unique alphanumeric Session ID to be stopped)
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (0 for graceful termination and 1 for forced termination)
      [echo]
      [echo]
      [echo] Available parameters with their defaults, override as necessary:
@@ -93,7 +105,7 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]   -Dpas.root=C:\OpenEdge\WRK (PAS parent directory)
      [echo]   -Dinstance=oepas1 (Physical instance name)
      [echo]     -Dablapp=oepas1
-     [echo]     -Dwebapp=ROOT (Used by trimhttp/close to access the Tomcat manager webapp)
+     [echo]     -Dwebapp=ROOT (Used by trimhttp/close as context for the Tomcat manager webapp)
      [echo]      -Ddebug=false (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)
      [echo]
      [echo] NOTE: The name of the ABLApp is case-sensitive!

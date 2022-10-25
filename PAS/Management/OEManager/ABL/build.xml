@@ -41,7 +41,7 @@
         <echo message="${line.separator} proant compile   - Compile all utility procedures to r-code (for production use)"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Status/Info:"/>
-        <echo message="${line.separator} proant stat   - [RO] Obtain MSAgent/connection status information for an ABL App"/>
+        <echo message="${line.separator} proant status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
         <echo message="                 [OPTIONAL] -Dbasemem=${basemem} (Minimum memory threshold, in bytes, of unused agent sessions)"/>
         <echo message="${line.separator} proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
         <echo message="${line.separator} proant flush  - [RO] Flush the available deferred log buffer to agent log file"/>
@@ -55,31 +55,43 @@
         <echo message="                 [OPTIONAL]   -Ddb.port=${db.port} (Database port to check)"/>
         <echo message="${line.separator} proant users  - [RO] Alias for 'locks' task"/>
         <echo message="${line.separator}"/>
-        <echo message="${line.separator} Agent/Session Management:"/>
-        <echo message="${line.separator} proant add      - Add (read: start) one new MSAgent for an ABL App"/>
-        <echo message="${line.separator} proant close    - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)"/>
-        <echo message="                   [OPTIONAL] -Dsleep=${sleep} (Sleep time in minutes after stop)"/>
-        <echo message="${line.separator} proant clean    - Alias for 'close' task [Deprecated]"/>
+        <echo message="${line.separator} Agent Management:"/>
+        <echo message="${line.separator} proant add     - Add (read: start) one new MSAgent for an ABL App"/>
+        <echo message="${line.separator} proant close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)"/>
+        <echo message="                  Note: For this task the 'trimhttp' will be called with the termination option 1 (forced)"/>
+        <echo message="                  [OPTIONAL] -Dsleep=${sleep} (Sleep time in minutes after stop)"/>
+        <echo message="${line.separator} proant clean   - Alias for 'close' task [Deprecated]"/>
         <if>
             <equals arg1="${oeMajor}" arg2="12"/>
             <then>
-                <echo message="${line.separator} proant refresh  - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)"/>
+                <echo message="${line.separator} proant refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)"/>
+                <echo message="                  Note: This will essentially terminate all sessions (gracefully),"/>
+                <echo message="                        and prepare the Agent to pick up any R-code changes"/>
             </then>
         </if>
-        <echo message="${line.separator} proant reset    - Reset an aspect of each MSAgent for an ABL App"/>
-        <echo message="                   [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
-        <echo message="${line.separator} proant stop     - Gracefully stop one or all MSAgents (+stacks output) for an ABL App"/>
-        <echo message="                   [OPTIONAL] -Dwaitfinish=${waitfinish} (How long to wait in milliseconds if the MSAgent is busy serving a request)"/>
-        <echo message="                   [OPTIONAL]  -Dwaitafter=${waitafter} (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)"/>
-        <echo message="                   [OPTIONAL]        -Dpid=[PID] (Numeric process ID for a specific MSAgent to be stopped)"/>
-        <echo message="${line.separator} proant trimidle - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
-        <echo message="                   Allows for manually scaling down an MSAgent which may have many unused ABL Sessions"/>
-        <echo message="${line.separator} proant trimall  - Trim all active/idle ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
-        <echo message="                   Note: For any busy sessions considered stuck, use 'trimhttp' with a specific Session ID"/>
-        <echo message="${line.separator} proant trimhttp - Trim one or all Client Sessions (via the Session Manager) for an ABLApp/WebApp pair"/>
-        <echo message="                   Note: When no session ID provided, all available Tomcat HTTP sessions will be expired"/>
-        <echo message="                   [OPTIONAL] -Dterminateopt=${terminateopt} (0 for graceful termination and 1 for forced termination)"/>
-        <echo message="                   [OPTIONAL]       -Dsessid=[SESSION_ID] (Unique alphanumeric Session ID to be stopped)"/>
+        <echo message="${line.separator} proant reset   - Reset an aspect of each MSAgent for an ABL App"/>
+        <echo message="                  [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
+        <echo message="${line.separator} proant stop    - Gracefully stop one or all MSAgents (+stacks output) for an ABL App"/>
+        <echo message="                  [OPTIONAL] -Dwaitfinish=${waitfinish} (How long to wait in milliseconds if the MSAgent is busy serving a request)"/>
+        <echo message="                  [OPTIONAL]  -Dwaitafter=${waitafter} (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)"/>
+        <echo message="                  [OPTIONAL]        -Dpid=[AGENT_PID] (Numeric process ID for a specific MSAgent to be stopped)"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator} Session Management:"/>
+        <echo message="${line.separator} proant trimsingle - Trim a single ABL Session (via the Agent Manager) for a specific MSAgent"/>
+        <echo message="                     [REQUIRED]          -Dpid=[AGENT_PID] (Numeric process ID of the MSAgent for context)"/>
+        <echo message="                     [REQUIRED]       -Dsessid=[SESSION_ID] (Numeric ID for the ABL Session to be stopped)"/>
+        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} (Termination Option: 0=graceful, 1=forced, 2=finish+stop)"/>
+        <echo message="${line.separator} proant trimall    - Trim all available ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
+        <echo message="                     Note: For any busy sessions considered stuck use 'trimhttp' with a specific Session ID"/>
+        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} (Termination Option: 0=graceful, 1=forced, 2=finish/stop)"/>
+        <echo message="${line.separator} proant trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
+        <echo message="                     Allows for manually scaling down an MSAgent which may have many unused ABL Sessions"/>
+        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} (Termination Option: 0=graceful, 1=forced, 2=finish+stop)"/>
+        <echo message="${line.separator} proant trimhttp   - Trim one or all Client HTTP Sessions (via the Session Manager) for an ABLApp/WebApp pair"/>
+        <echo message="                     Terminating a client HTTP session will also terminate its associated ABL Session"/>
+        <echo message="                     [OPTIONAL]       -Dsessid=[SESSION_ID] (Alphanumeric Client Session ID to be stopped)"/>
+        <echo message="                     Note: When no session ID provided, all available Client HTTP Sessions will be expired"/>
+        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} (Termination Option: 0=graceful, 1=forced, 2=finish+stop)"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator}Available parameters with their defaults, override as necessary:"/>
         <echo message="    -Dscheme=${scheme}"/>
@@ -90,7 +102,7 @@
         <echo message="  -Dpas.root=${pas.root} (PAS parent directory)"/>
         <echo message="  -Dinstance=${instance} (Physical instance name)"/>
         <echo message="    -Dablapp=${ablapp}"/>
-        <echo message="    -Dwebapp=${webapp} (Used by trimhttp/close to access the Tomcat manager webapp)"/>
+        <echo message="    -Dwebapp=${webapp} (Used by trimhttp/close as context for the Tomcat manager webapp)"/>
         <echo message="     -Ddebug=${debug} (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)"/>
         <echo message="${line.separator}NOTE: The name of the ABLApp is case-sensitive!"/>
         <echo message="${line.separator}"/>
@@ -162,6 +174,7 @@
             <property name="db.port" value="8600"/> <!-- Default for most demo application code -->
             <property name="db.dir" value=""/>
             <property name="debug" value="false"/>
+            <property name="pattern" value="2"/>
             <property name="pid" value=""/>
             <property name="proc.ext" value=".p"/>
             <property name="sessid" value=""/>
@@ -374,7 +387,6 @@
     <target name="compile">
         <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
-        <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
         <PCTVersion/>
 
         <!-- Compile the code in the current directory, whether source or xcode. -->
@@ -395,7 +407,6 @@
     <target name="bundle">
         <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
-        <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
         <PCTVersion/>
 
         <mkdir dir="${basedir}/xbuild"/>
@@ -578,7 +589,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
-               procedure="trimABLSessions${proc.ext}">
+               procedure="trimABLSessions${proc.ext}"> <!-- Plural name, works on multiple sessions. -->
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
@@ -595,13 +606,37 @@
         </PCTRun>
     </target>
 
+    <target name="trimsingle">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="trimABLSession${proc.ext}"> <!-- Singular name, works on just one session. -->
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="TerminateOpt" value="${terminateopt}"/>
+            <Parameter name="ProcID" value="${pid}"/>
+            <Parameter name="SessionID" value="${sessid}"/>
+            <Parameter name="Debug" value="${debug}"/>
+        </PCTRun>
+    </target>
+
     <target name="trimall">
         <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
-               procedure="trimABLSessions${proc.ext}">
+               procedure="trimABLSessions${proc.ext}"> <!-- Plural name, works on multiple sessions. -->
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
@@ -614,6 +649,32 @@
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="Idle" value="false"/>
             <Parameter name="TerminateOpt" value="${terminateopt}"/>
+            <Parameter name="Debug" value="${debug}"/>
+        </PCTRun>
+    </target>
+
+    <target name="trimrand">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <!-- THIS IS AN UNLISTED TARGET! -->
+        <!-- This will psuedo-randomly terminate ABL Sessions and should NOT be used in any production environment. -->
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="trimABLSessionsTest${proc.ext}"> <!-- Special test utility to trim random/select sessions. -->
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="Idle" value="false"/>
+            <Parameter name="TerminateOpt" value="${terminateopt}"/>
+            <Parameter name="Pattern" value="${pattern}"/> <!-- Call with -Dpattern=# or -Dpattern=rand[om] -->
             <Parameter name="Debug" value="${debug}"/>
         </PCTRun>
     </target>

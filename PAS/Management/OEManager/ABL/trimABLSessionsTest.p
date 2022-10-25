@@ -16,8 +16,8 @@
 /**
  * Author(s): Dustin Grau (dugrau@progress.com)
  *
- * Trim all Session Manager and Tomcat HTTP sessions for an ABL/Web App.
- * Usage: trimSessMgrSessions.p <params>
+ * Trim random (or alternating) ABL sessions for all MSAgents of an ABLApp.
+ * Usage: trimABLSessionsTest.p <params>
  *  Parameter Default/Allowed
  *   Scheme       [http|https]
  *   Hostname     [localhost]
@@ -25,8 +25,8 @@
  *   UserId       [tomcat]
  *   Password     [tomcat]
  *   ABL App      [oepas1]
- *   Web App      [ROOT]
- *   TerminateOpt [0|1]
+ *   TerminateOpt [0|1|2]
+ *   Pattern      [#|RAND]
  *   Debug        [false|true]
  */
 
@@ -49,22 +49,24 @@ define variable oCreds     as Credentials     no-undo.
 define variable cHttpUrl   as character       no-undo.
 define variable cInstance  as character       no-undo.
 define variable oJsonResp  as JsonObject      no-undo.
+define variable oAgents    as JsonArray       no-undo.
+define variable oAgent     as JsonObject      no-undo.
 define variable oSessions  as JsonArray       no-undo.
-define variable oSession   as JsonObject      no-undo.
+define variable oTemp      as JsonObject      no-undo.
 define variable oQueryURL  as StringStringMap no-undo.
 define variable iLoop      as integer         no-undo.
-define variable iSessions  as integer         no-undo.
-define variable iLimit     as integer         no-undo.
+define variable iLoop2     as integer         no-undo.
+define variable iTotSess   as integer         no-undo.
 define variable cScheme    as character       no-undo initial "http".
 define variable cHost      as character       no-undo initial "localhost".
 define variable cPort      as character       no-undo initial "8810".
 define variable cUserId    as character       no-undo initial "tomcat".
 define variable cPassword  as character       no-undo initial "tomcat".
 define variable cAblApp    as character       no-undo initial "oepas1".
-define variable cWebApp    as character       no-undo initial "ROOT".
-define variable cWebAppUrl as character       no-undo.
-define variable cSessID    as character       no-undo.
-define variable cSession   as character       no-undo.
+define variable cPID       as character       no-undo.
+define variable iSession   as integer         no-undo.
+define variable iSelect    as integer         no-undo.
+define variable cPattern   as character       no-undo.
 define variable cTerminate as character       no-undo initial "0".
 define variable cTermType  as character       no-undo.
 define variable cDebug     as character       no-undo initial "false".
@@ -78,10 +80,9 @@ if num-entries(session:parameter) ge 9 then
         cUserId    = entry(4, session:parameter)
         cPassword  = entry(5, session:parameter)
         cAblApp    = entry(6, session:parameter)
-        cWebApp    = entry(7, session:parameter)
-        cTerminate = entry(8, session:parameter)
-        cSessID    = entry(9, session:parameter)
-        cDebug     = entry(10, session:parameter)
+        cTerminate = entry(7, session:parameter)
+        cPattern   = entry(8, session:parameter)
+        cDebug     = entry(9, session:parameter)
         .
 else if session:parameter ne "" then /* original method */
     assign cPort = session:parameter.
@@ -93,14 +94,13 @@ else
         cUserId    = dynamic-function("getParameter" in source-procedure, "UserID") when (dynamic-function("getParameter" in source-procedure, "UserID") gt "") eq true
         cPassword  = dynamic-function("getParameter" in source-procedure, "PassWD") when (dynamic-function("getParameter" in source-procedure, "PassWD") gt "") eq true
         cAblApp    = dynamic-function("getParameter" in source-procedure, "ABLApp") when (dynamic-function("getParameter" in source-procedure, "ABLApp") gt "") eq true
-        cWebApp    = dynamic-function("getParameter" in source-procedure, "WebApp") when (dynamic-function("getParameter" in source-procedure, "WebApp") gt "") eq true
         cTerminate = dynamic-function("getParameter" in source-procedure, "TerminateOpt") when (dynamic-function("getParameter" in source-procedure, "TerminateOpt") gt "") eq true
-        cSessID    = dynamic-function("getParameter" in source-procedure, "SessionID") when (dynamic-function("getParameter" in source-procedure, "SessionID") gt "") eq true
+        cPattern   = dynamic-function("getParameter" in source-procedure, "Pattern") when (dynamic-function("getParameter" in source-procedure, "Pattern") gt "") eq true
         cDebug     = dynamic-function("getParameter" in source-procedure, "Debug") when (dynamic-function("getParameter" in source-procedure, "Debug") gt "") eq true
         .
 
 if can-do("enable,true,yes,1", cDebug) then do:
-    log-manager:logfile-name    = "trimSessMgrSessions.log".
+    log-manager:logfile-name    = "trimABLSessions.log".
     log-manager:log-entry-types = "4GLTrace".
     log-manager:logging-level   = 5.
 end.
@@ -122,8 +122,9 @@ assign cInstance = substitute("&1://&2:&3", cScheme, cHost, cPort).
 assign oQueryURL = new StringStringMap().
 
 /* Register the URL's to the OEM-API endpoints as will be used in this utility. */
-oQueryURL:Put("ClientSessions", "&1/oemanager/applications/&2/sessions").
-oQueryURL:Put("TomcatSessions", "&1/manager/text/expire").
+oQueryURL:Put("Agents", "&1/oemanager/applications/&2/agents").
+oQueryURL:Put("AgentSessions", "&1/oemanager/applications/&2/agents/&3/sessions").
+oQueryURL:Put("AgentSession", "&1/oemanager/applications/&2/agents/&3/sessions/&4").
 
 /* PROCEDURES / FUNCTIONS */
 
@@ -171,14 +172,6 @@ function MakeRequest returns JsonObject ( input pcHttpUrl as character ):
         /* If we have an HTTP-200 status and a JSON object as the response payload, return that. */
         if valid-object(oResp:Entity) and type-of(oResp:Entity, JsonObject) then
             return cast(oResp:Entity, JsonObject).
-        else if valid-object(oResp:Entity) and type-of(oResp:Entity, OpenEdge.Core.String) then do:
-                /* If we got a response as a string, insert that in a new JSON object. */
-                /* This would be expected when communicating with the Tomcat Web Mngr. */
-                define variable oRespObj as JsonObject no-undo.
-                assign oRespObj = new JsonObject().
-                oRespObj:Add("result", string(cast(oResp:Entity, OpenEdge.Core.String):value)).
-                return oRespObj.
-        end.
         else if valid-object(oResp:Entity) then
             /* Anything other than a JSON payload should be treated as an error condition. */
             undo, throw new Progress.Lang.AppError(substitute("Successful but non-JSON response object returned: &1",
@@ -227,102 +220,111 @@ end function. /* MakeRequest */
 /* Output the name of the program being executed. */
 LogCommand("RUN", this-procedure:name).
 
-/* Get client HTTP sessions from the Session Manager. */
-assign cHttpUrl = substitute(oQueryURL:Get("ClientSessions"), cInstance, cAblApp).
-message substitute("Looking for SessionManager Sessions of &1...", cAblApp).
-message substitute("[Using &1 Termination]", cTermType).
+/* Initial URL to obtain a list of all MSAgents for an ABL Application. */
+assign cHttpUrl = substitute(oQueryURL:Get("Agents"), cInstance, cAblApp).
+message substitute("Looking for MSAgents of &1...", cAblApp).
 assign oJsonResp = MakeRequest(cHttpUrl).
 if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
-    oSessions = oJsonResp:GetJsonObject("result"):GetJsonArray("OEABLSession").
-
-    assign iSessions = oSessions:Length.
-    assign iLimit = 1000 * 60 * 60 * 24. /* Calculate milliseconds in a day. */ 
-    message substitute("~nSession Manager Sessions: &1", iSessions).
-
-    if iSessions gt 0 then
-    SESSIONBLK:
-    do iLoop = 1 to iSessions
-    on error undo, next SESSIONBLK
-    on stop undo, next SESSIONBLK:
-        oSession = oSessions:GetJsonObject(iLoop).
-
-        if JsonPropertyHelper:HasTypedProperty(oSession, "sessionID", JsonDataType:string) then
-            assign cSession = oSession:GetCharacter("sessionID").
-
-        /* If given a distinct Session ID to terminate, skip to the next session if this does not match. */
-        if (cSessID gt "") eq true and cSession ne cSessID then next SESSIONBLK.
-
-        if (cSession gt "") eq true then do
-        on error undo, next:
-            message substitute("Found Session Manager Session: &1 [Elapsed &2 sec.]", cSession,
-                               trim(string(oSession:GetInt64("elapsedTimeMs") / 1000, ">>>,>>>,>>9"))).
-
-            do stop-after 10
-            on error undo, throw
-            on stop undo, retry:
-                if retry then
-                    undo, throw new Progress.Lang.AppError("Encountered stop condition", 0).
-
-                assign cHttpUrl = substitute(oQueryURL:Get("ClientSessions"), cInstance, cAblApp) + "?terminateOpt=" + cTerminate + "&sessionID".
-                assign cHttpUrl = substitute("&1=&2", cHttpUrl, cSession). /* Specify the SessionID */
-
-                if can-do("true,yes,1", cDebug) then
-                    message substitute("Calling URL: &1", cHttpUrl).
-
-                /* Always log the OEM-API command URL with an exact time of execution. */
-                LogCommand("DELETE", cHttpUrl).
-
-                oDelResp = oClient:Execute(RequestBuilder
-                                           :Delete(cHttpUrl)
-                                           :AcceptContentType("application/vnd.progress+json")
-                                           :ContentType("application/vnd.progress+json")
-                                           :UsingBasicAuthentication(oCreds)
-                                           :Request).
-
-                if valid-object(oDelResp) and valid-object(oDelResp:Entity) and type-of(oDelResp:Entity, JsonObject) then do:
-                    assign oJsonResp = cast(oDelResp:Entity, JsonObject).
-                    if oJsonResp:Has("operation") and oJsonResp:Has("outcome") then
-                        message substitute("~t&1 (&2): &3 [&4]",
-                                           oJsonResp:GetCharacter("operation"),
-                                           cTermType,
-                                           oJsonResp:GetCharacter("outcome"),
-                                           cSession).
-                end.
-
-                catch err as Progress.Lang.Error:
-                    message substitute("Error Closing Session &1: &2", cSession, err:GetMessage(1)).
-                    next SESSIONBLK.
-                end catch.
-            end. /* do stop-after */
-        end. /* Has sessionID */
-    end. /* iLoop - sessions */
-end. /* client sessions */
-
-/* Continue with expriring Tomcat sessions only if not terminating a specific session. */
-if (cSessID gt "") ne true then do:
-    /* Expire any/all sessions via the Tomcat Web Application Manager for this ABLApp/WebApp pair. */
-    assign cHttpUrl = substitute(oQueryURL:Get("TomcatSessions"), cInstance, cAblApp) + "?idle=0&path".
-    if cWebApp eq "ROOT" then
-        assign cWebAppUrl = "/".
+    oAgents = oJsonResp:GetJsonObject("result"):GetJsonArray("agents").
+    if oAgents:Length eq 0 then
+        message "No MSAgents running".
     else
-        assign cWebAppUrl = substitute("/&1", cWebApp).
+    AGENTBLK:
+    do iLoop = 1 to oAgents:Length
+    on error undo, next AGENTBLK
+    on stop undo, next AGENTBLK:
+        oAgent = oAgents:GetJsonObject(iLoop).
 
-    assign cHttpUrl = substitute("&1=&2", cHttpUrl, cWebAppUrl). /* Specify the WebApp as a URL */
-    message substitute("~nExpiring sessions via Tomcat for &1 ...", cWebAppUrl).
-    assign oJsonResp = MakeRequest(cHttpUrl).
+        if JsonPropertyHelper:HasTypedProperty(oAgent, "pid", JsonDataType:string) then
+            assign cPID = oAgent:GetCharacter("pid").
 
-    if valid-object(oJsonResp) and oJsonResp:Has("result") then
-    do stop-after 30
-    on error undo, leave
-    on stop undo, leave:
-        define variable cTemp as character no-undo.
-        assign cTemp = string(oJsonResp:GetJsonText("result")).
-        assign cTemp = replace(cTemp, "~\r~\n", "~n").
-        assign cTemp = replace(cTemp, "~\n", "~n").
-        assign cTemp = replace(cTemp, "~\~/", "~/").
-        message substitute("Tomcat Manager Response:~n&1", cTemp).
-    end. /* oJsonResp - Tomcat */
-end. /* sessions */
+        /* Get sessions and determine non-idle states on active MSAgents. */
+        if oAgent:GetCharacter("state") eq "available" then do:
+            assign cHttpUrl = substitute(oQueryURL:Get("AgentSessions"), cInstance, cAblApp, cPID).
+            assign oJsonResp = MakeRequest(cHttpUrl).
+            if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
+                if oJsonResp:Has("result") then do:
+                    oSessions = oJsonResp:GetJsonObject("result"):GetJsonArray("AgentSession").
+                    assign iTotSess = oSessions:Length.
+
+                    message substitute("Found MSAgent PID &1 with &2 sessions", cPID, iTotSess).
+
+                    /* If a random number is selected, pick a session number between 1 and the total for this agent. */
+                    if cPattern begins "rand" then do:
+                        if iTotSess gt 2 then
+                            assign iSelect = random(2, iTotSess).
+                        else
+                            assign iSelect = 2. /* Force every 2 sessions. */
+                    end.
+                    else
+                        assign iSelect = integer(cPattern) no-error.
+
+                    if error-status:error then
+                        undo, throw new Progress.Lang.AppError("Invalid pattern value, must be a number or 'random'", 0).
+
+                    if iSelect eq 1 then
+                        undo, throw new Progress.Lang.AppError("Pattern of 1 will terminate all, please use 'trimall'", 0).
+
+                    message substitute("Termination Pattern: Every &1 Sessions", iSelect).
+
+                    if iTotSess gt 0 then
+                    SESSIONBLK:
+                    do iLoop2 = 1 to iTotSess
+                    on error undo, next SESSIONBLK
+                    on stop undo, next SESSIONBLK:
+                        if oSessions:GetType(iLoop2) eq JsonDataType:Object then
+                            assign oTemp = oSessions:GetJsonObject(iLoop2).
+                        else
+                            next SESSIONBLK.
+
+                        if JsonPropertyHelper:HasTypedProperty(oTemp, "SessionId", JsonDataType:number) then
+                            assign iSession = oTemp:GetInteger("SessionId").
+
+                        if (iLoop2 modulo iSelect) eq 0 then
+                            message substitute("Terminating &1 ABL Session: &2 [Using &3 Termination]", oTemp:GetCharacter("SessionState"), iSession, cTermType).
+                        else
+                            next SESSIONBLK.
+
+                        do stop-after 10
+                        on error undo, throw
+                        on stop undo, retry:
+                            if retry then
+                                undo, throw new Progress.Lang.AppError("Encountered stop condition", 0).
+
+                            assign cHttpUrl = substitute(oQueryURL:Get("AgentSession"), cInstance, cAblApp, cPID, iSession) + "?terminateOpt=" + cTerminate.
+
+                            if can-do("true,yes,1", cDebug) then
+                                message substitute("Calling URL: &1", cHttpUrl).
+
+                            /* Always log the OEM-API command URL with an exact time of execution. */
+                            LogCommand("DELETE", cHttpUrl).
+
+                            oDelResp = oClient:Execute(RequestBuilder
+                                                       :Delete(cHttpUrl)
+                                                       :AcceptContentType("application/vnd.progress+json")
+                                                       :ContentType("application/vnd.progress+json")
+                                                       :UsingBasicAuthentication(oCreds)
+                                                       :Request).
+
+                            if valid-object(oDelResp) and valid-object(oDelResp:Entity) and type-of(oDelResp:Entity, JsonObject) then do:
+                                assign oJsonResp = cast(oDelResp:Entity, JsonObject).
+                                if oJsonResp:Has("operation") and oJsonResp:Has("outcome") then
+                                    message substitute("~t&1: &2", oJsonResp:GetCharacter("operation"), oJsonResp:GetCharacter("outcome")).
+                            end.
+
+                            catch err as Progress.Lang.Error:
+                                message substitute("Error Terminating ABL Session &1: &2", iSession, err:GetMessage(1)).
+                                next SESSIONBLK.
+                            end catch.
+                        end. /* do stop-after */
+                    end. /* iLoop2 - session */
+                end. /* has result */
+            end. /* agent sessions */
+        end. /* agent state = available */
+        else
+            message substitute("MSAgent PID &1 not AVAILABLE, skipping trim.", cPID).
+    end. /* iLoop - agent */
+end. /* agents */
 
 finally:
     /* Return value expected by PCT Ant task. */

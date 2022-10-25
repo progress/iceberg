@@ -19,13 +19,15 @@
  * Trim ABL sessions for all MSAgents of an ABLApp.
  * Usage: trimABLSessions.p <params>
  *  Parameter Default/Allowed
- *   Scheme   [http|https]
- *   Hostname [localhost]
- *   PAS Port [8810]
- *   UserId   [tomcat]
- *   Password [tomcat]
- *   ABL App  [oepas1]
- *   Debug    [false|true]
+ *   Scheme       [http|https]
+ *   Hostname     [localhost]
+ *   PAS Port     [8810]
+ *   UserId       [tomcat]
+ *   Password     [tomcat]
+ *   ABL App      [oepas1]
+ *   IdleOnly     [false|true]
+ *   TerminateOpt [0|1|2]
+ *   Debug        [false|true]
  */
 
 using OpenEdge.Core.Json.JsonPropertyHelper.
@@ -65,6 +67,7 @@ define variable cPID       as character       no-undo.
 define variable iSession   as integer         no-undo.
 define variable cIdleOnly  as character       no-undo initial "false".
 define variable cTerminate as character       no-undo initial "0".
+define variable cTermType  as character       no-undo.
 define variable cDebug     as character       no-undo initial "false".
 
 /* Check for passed-in arguments/parameters. */
@@ -100,6 +103,17 @@ if can-do("enable,true,yes,1", cDebug) then do:
     log-manager:log-entry-types = "4GLTrace".
     log-manager:logging-level   = 5.
 end.
+
+case cTerminate:
+    when "0" then assign cTermType = "Graceful".
+    when "1" then assign cTermType = "Forced".
+    when "2" then assign cTermType = "Finish".
+    otherwise
+        assign /* Must assume graceful option. */
+            cTerminate = "0"
+            cTermType  = "Graceful"
+            .
+end case.
 
 assign oClient = ClientBuilder:Build():Client.
 assign oCreds = new Credentials("PASOE Manager Application", cUserId, cPassword).
@@ -208,7 +222,6 @@ LogCommand("RUN", this-procedure:name).
 /* Initial URL to obtain a list of all MSAgents for an ABL Application. */
 assign cHttpUrl = substitute(oQueryURL:Get("Agents"), cInstance, cAblApp).
 message substitute("Looking for MSAgents of &1...", cAblApp).
-message substitute("[Using &1 Termination]", if cTerminate eq "0" then "Graceful" else "Forced").
 assign oJsonResp = MakeRequest(cHttpUrl).
 if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
     oAgents = oJsonResp:GetJsonObject("result"):GetJsonArray("agents").
@@ -249,15 +262,15 @@ if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object)
                             assign iSession = oTemp:GetInteger("SessionId").
 
                         if can-do("true,yes,1", cIdleOnly) then do:
-                            /* Only IDLE sessions should be terminated, so continue if that's not the case. */
+                            /* Only IDLE sessions should be terminated when flag is set, so continue if that's not the case. */
                             if oTemp:GetCharacter("SessionState") ne "IDLE" then next SESSIONBLK.
 
                             if iSession eq 0 then next SESSIONBLK. /* Skip if not IDLE. */
 
-                            message substitute("Terminating Idle ABL Session: &1", iSession).
+                            message substitute("Terminating IDLE ABL Session: &1 [Using &2 Termination]", iSession, cTermType).
                         end.
                         else
-                            message substitute("Terminating ABL Session: &1", iSession).
+                            message substitute("Terminating &1 ABL Session: &2 [Using &3 Termination]", oTemp:GetCharacter("SessionState"), iSession, cTermType).
 
                         do stop-after 10
                         on error undo, throw
@@ -292,7 +305,7 @@ if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object)
                             end catch.
                         end. /* do stop-after */
                     end. /* iLoop2 - session */
-                end.
+                end. /* has result */
             end. /* agent sessions */
         end. /* agent state = available */
         else
