@@ -77,6 +77,8 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]
      [echo]  Session Management:
      [echo]
+     [echo]  Note: All trim actions listed below will write application stack information to a file.
+     [echo]
      [echo]  proant trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
      [echo]                      Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
      [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
@@ -93,7 +95,7 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]  proant trimhttp   - Trim one or all Client Sessions (via the Session Manager) for an ABLApp/WebApp pair
      [echo]                      Note: When no session ID provided, all available Tomcat HTTP sessions will be expired
      [echo]                      [OPTIONAL]       -Dsessid=[SESSION_ID] (Unique alphanumeric Session ID to be stopped)
-     [echo]                      [OPTIONAL] -Dterminateopt=0 (0 for graceful termination and 1 for forced termination)
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
      [echo]
      [echo]
      [echo] Available parameters with their defaults, override as necessary:
@@ -106,7 +108,6 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]   -Dinstance=oepas1 (Physical instance name)
      [echo]     -Dablapp=oepas1
      [echo]     -Dwebapp=ROOT (Used by trimhttp/close as context for the Tomcat manager webapp)
-     [echo]      -Ddebug=false (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)
      [echo]
      [echo] NOTE: The name of the ABLApp is case-sensitive!
      [echo]
