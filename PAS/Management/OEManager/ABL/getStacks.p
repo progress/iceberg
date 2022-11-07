@@ -99,6 +99,8 @@ on stop undo, next AGENTBLK:
             oStacks:WriteFile(cOutFile, true). /* Write entire response to disk. */
             message substitute("~tStack data written to &1", cOutFile).
         end.
+        else
+            message substitute("No stack data for MSAgent PID &1", iPID).
     end. /* agent state = available */
     else
         message substitute("Agent PID &1 not AVAILABLE, skipping stacks.", iPID).
