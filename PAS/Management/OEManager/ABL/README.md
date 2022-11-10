@@ -114,6 +114,10 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo] CATALINA_HOME: C:\Progress\OpenEdge\servers\pasoe
      [echo] CATALINA_BASE: C:\OpenEdge\WRK\oepas1
 
+## Output ##
+
+Output for all commands should be displayed via standard out and appear within the same terminal/command window where executed. There are some log files generated for sanity checks as part of the normal operation. All commands will be logged to a `commands.log` file and cannot be disabled as this ensures an audit trail of management actions taken for a PAS instance. The included `logging.config` enabled logging via the ABL Logger framework for additional insight into the operations made against a PAS instance and can be configured with varying logging levels and output. By default the logging level is set to DEBUG and will output messages to a `OEMgrConn.log` file. This will produce output similar to the `commands.log` file though it can be made more silent by changing the logging level to ERROR or lower.
+
 ## Security Notes ##
 
 It is strongly recommended to [secure the oemanager and manager WebApps](https://docs.progress.com/bundle/openedge-security-and-auditing/page/Secure-the-Tomcat-Manager-and-OpenEdge-Manager-web-applications.html) when deployed in a production environment.

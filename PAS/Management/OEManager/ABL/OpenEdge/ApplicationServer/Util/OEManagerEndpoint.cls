@@ -16,7 +16,7 @@
 /*------------------------------------------------------------------------
     File        : OEManagerEndpoint
     Purpose     : Provides easy access to API endpoints for substitutions
-    Description : https://docs.progress.com/bundle/pas-for-openedge-reference/page/REST-API-Reference-for-oemanager.war.html
+    Description : See https://docs.progress.com/bundle/pas-for-openedge-reference/page/REST-API-Reference-for-oemanager.war.html
     Author(s)   : Dustin Grau
     Created     : Wed Oct 26 10:18:21 EDT 2022
     Notes       : All URL's should include the WebApp name (eg. oemanager/)
@@ -87,7 +87,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerEndpoint:
     define public static property SessionMetrics as character no-undo init "oemanager/applications/&1/metrics" get. 
         private set.
 
-    /* Tomcat Manager Endpoints (This will use the manager webapp, not oemanager) */
+    /* Tomcat Manager Endpoints (This intentionally uses the "manager" webapp, not oemanager) */
 
     define public static property TomcatSessions as character no-undo init "manager/text/expire" get.
         private set.

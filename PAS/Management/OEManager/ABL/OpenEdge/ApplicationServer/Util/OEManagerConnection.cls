@@ -16,12 +16,14 @@
 /*------------------------------------------------------------------------
     File        : OEManagerConnection
     Purpose     : Create a reusable connection for OEManager RESTful API's
-    Description : https://docs.progress.com/bundle/pas-for-openedge-reference/page/REST-API-Reference-for-oemanager.war.html
+    Description : See https://docs.progress.com/bundle/pas-for-openedge-reference/page/REST-API-Reference-for-oemanager.war.html
     Author(s)   : Dustin Grau
     Created     : Wed Oct 26 09:27:39 EDT 2022
     Notes       : Each instance of this class shall include and retain the
                   relevant server information (host, port, credentials, etc.)
                   required for accessing only one specific PAS instance.
+                  For instructions on securing the OEManager endpoint, see:
+                  https://docs.progress.com/bundle/openedge-security-and-auditing/page/Secure-the-Tomcat-Manager-and-OpenEdge-Manager-web-applications.html
   ----------------------------------------------------------------------*/
 
 block-level on error undo, throw.
@@ -75,7 +77,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         end get.
         set.
 
-    /* Create the basic URL to the PAS instance. */
+    /* Create the basic URL to a unique PAS instance (scheme, host, port). */
     define public property Instance as character no-undo initial ?
         get():
             if (this-object:Instance eq ?) then
@@ -141,7 +143,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         assign oCreds = new Credentials("PASOE Manager Application", cUserId, cPassword).
     end method.
 
-    /* Creates a connection using a valid URI
+    /* Creates a client connection using a valid URI
 
        @param URI Server Uri with credentials for Basic Auth
        @return OEManagerConnection */
@@ -149,7 +151,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         return new OEManagerConnection(poURI).
     end method. /* Build */
 
-    /* Creates a connection using a valid URI
+    /* Creates a client connection using a valid URI
 
        @param character Scheme
        @param character Host
@@ -167,8 +169,10 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
 
     /** Helper methods for OEManager requests **/
 
-    /* Perform a request to the PAS instance; expects a verb and valid URL
-       where all parameters must be passed in (excluding the server instance)
+    /* Perform a request to the PAS instance; expects an HTTP verb and valid URL
+       where all parameters must be passed in (excluding the server instance).
+       This handles various error conditions which may occur when attempting
+       to reach the server or obtain the expected status or JSON results.
 
        @param MethodEnum HTTP Method (Verb)
        @param character RESTful API endpoint URL
@@ -197,7 +201,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             this-object:Logger:Debug(substitute("Calling URL: &1 &2", poVerb:ToString(), cURL)).
 
             /* Always log the OEM-API command URL with an exact time of execution. */
-            LogCommand(poVerb:ToString(), cURL).
+            this-object:LogCommand(poVerb:ToString(), cURL).
 
             case poVerb:
                 when MethodEnum:GET then
@@ -233,13 +237,21 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         end.
 
         if valid-object(oResp) and oResp:StatusCode eq 200 then do:
-            /* If we have an HTTP-200 status and a JSON object as the response payload, return that. */
             if valid-object(oResp:Entity) and type-of(oResp:Entity, JsonObject) then
+                /* If we have an HTTP-200 status and a JSON object as the response payload, return the entity as-is. */
                 return cast(oResp:Entity, JsonObject).
-            else if valid-object(oResp:Entity) then
-                /* Anything other than a JSON payload should be treated as an error condition. */
-                undo, throw new Progress.Lang.AppError(substitute("Successful but non-JSON response object returned: &1",
+            else if valid-object(oResp:Entity) and type-of(oResp:Entity, OpenEdge.Core.String) then do:
+                /* If we have an HTTP-200 status and a String as the response payload, return it within a "result" property. */
+                define variable oStringResp as JsonObject no-undo.
+                assign oStringResp = new JsonObject().
+                oStringResp:Add("result", cast(oResp:Entity, OpenEdge.Core.String):Value).
+                return oStringResp.
+            end.
+            else if valid-object(oResp:Entity) then do:
+                /* Anything other than a JSON or String payload should be treated as a possible error condition. */
+                undo, throw new Progress.Lang.AppError(substitute("Successful but non-JSON/String response object returned: &1",
                                                                   oResp:Entity:GetClass():TypeName), 0).
+            end.
             else
                 /* Anything other than a JSON payload should be treated as an error condition. */
                 undo, throw new Progress.Lang.AppError("Successful but non-JSON response object returned", 0).
@@ -290,7 +302,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         return this-object:MakeRequest(MethodEnum:GET, pcHttpUrl).
     end method.
 
-    /* Perform some update action against the PAS instance; a valid URL
+    /* Perform an update action against the PAS instance; a valid URL
        with all parameters must be passed in (excluding the server instance)
 
        @param character RESTful API endpoint URL
@@ -299,7 +311,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         return this-object:MakeRequest(MethodEnum:POST, pcHttpUrl).
     end method. /* PostData */
 
-    /* Perform a request to terminate something; a valid URL
+    /* Perform a termination action against the PAS instance; a valid URL
        with all parameters must be passed in (excluding the server instance)
 
        @param character RESTful API endpoint URL
@@ -308,9 +320,9 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         return this-object:MakeRequest(MethodEnum:DELETE, pcHttpUrl).
     end method. /* DeleteData */
 
-    /* Return the operation outcome from a standard response
+    /* Return the operation outcome from a standard JSON response
 
-       @param JsonObject JSON response
+       @param JsonObject Server's JSON response
        @return character Status as text */
     method public character GetOpOutcome ( input poResponse as JsonObject ):
         if not valid-object(poResponse) then return "".
@@ -322,7 +334,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return "".
     end method. /* GetOpOutcome */
 
-    /* Write a command (URL) to the commands.log file
+    /* Write a server command (Verb+URL) to the commands.log file
 
        @param character Action or HTTP Verb
        @param character Command bound for the OEManager webapp */
@@ -335,9 +347,10 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
 
     /** Specific methods for OEManager requests **/
 
-    /* Get a JSON array of ABL Applications for a PAS instance
+    /* Get a listing of ABL Applications for a PAS instance
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/List-ABL-application-information.html
 
-       @return JsonArray An array of ABL Application information */
+       @return JsonArray Array of ABL Application information */
     method public JsonArray GetApplications ( ):
         define variable oJsonResp as JsonObject no-undo.
 
@@ -353,6 +366,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
     end method. /* GetApplications */
 
     /* Add (start) a new MSAgent for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Add-a-multi-session-agent.html
 
        @param character ABL Application Name
        @return character Returned status as text */
@@ -378,10 +392,11 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         end finally.
     end method. /* AddAgent */
 
-    /* Get a JSON array of MSAgent information for an ABL Application
+    /* Get a listing of available MSAgents for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/List-agents.html
 
        @param character ABL Application Name
-       @return JsonArray An array of MSAgent information */
+       @return JsonArray Array of MSAgent information */
     method public JsonArray GetAgents ( input pcAblApp as character ):
         define variable oJsonResp as JsonObject no-undo.
 
@@ -396,10 +411,11 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetAgents */
 
-    /* Get a JSON object with the agent manager properties for an ABL Application
+    /* Get all the agent manager properties for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Get-agent-configuration-properties.html
 
        @param character ABL Application Name
-       @return JsonObject An object of properties */
+       @return JsonObject Object with AgentManager properties */
     method public JsonObject GetAgentManagerProperties ( input pcAblApp as character ):
         define variable oJsonResp as JsonObject no-undo.
 
@@ -410,11 +426,11 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonObject().
     end method. /* GetAgentManagerProperties */
 
-    /* Get a JSON array of agent metrics for an ABL Application
+    /* Get available agent metrics for an ABL Application
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
-       @return JsonArray An object with agent metrics */
+       @return JsonArray Object with agent metrics */
     method public JsonArray GetAgentMetrics ( input pcAblApp as character,
                                               input piPID    as integer ):
         define variable oJsonResp as JsonObject no-undo.
@@ -428,11 +444,12 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         end. /* result */
     end method. /* GetAgentMetrics */
 
-    /* Get a JSON array of agent (ABL) sessions for an ABL Application
+    /* Get a listng of agent (ABL) sessions for a single agent of an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Get-session-metrics.html
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
-       @return JsonArray An array of agent sessions */
+       @return JsonArray Array of ABL Sessions */
     method public JsonArray GetAgentSessions ( input pcAblApp as character,
                                                input piPID    as integer ):
         define variable oJsonResp as JsonObject no-undo.
@@ -448,12 +465,13 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetAgentSessions */
 
-    /* Get a JSON array of stack information about a session of an MSAgent for an ABL Application
+    /* Get the runtime stack information about a session of an MSAgent for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Dump-a-session-stack.html
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
        @param integer ABL Session ID (numeric)
-       @return JsonArray An array of MSAgent information */
+       @return JsonArray Array of MSAgent information */
     method public JsonArray GetAgentSessionStacks ( input pcAblApp  as character,
                                                     input piPID     as integer,
                                                     input piSession as integer ):
@@ -470,12 +488,13 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetAgentSessionStacks */
 
-    /* Get a JSON array of stack information about a session of an MSAgent for an ABL Application
+    /* Get the runtime stack information about a session of an MSAgent for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Dump-a-session-stack.html
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
        @param character Client Session ID (alphanumeric)
-       @return JsonArray An array of MSAgent information */
+       @return JsonArray Array of MSAgent information */
     method public JsonArray GetAgentSessionStacks ( input pcAblApp  as character,
                                                     input piPID     as integer,
                                                     input pcSession as character ):
@@ -492,11 +511,11 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetAgentSessionStacks */
 
-    /* Get a JSON array of stack information about an MSAgent for an ABL Application
+    /* Get the runtime stack information about an MSAgent for an ABL Application
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
-       @return JsonArray An array of MSAgent information */
+       @return JsonArray Array of MSAgent information */
     method public JsonArray GetAgentStacks ( input pcAblApp as character,
                                              input piPID    as integer ):
         define variable oJsonResp as JsonObject no-undo.
@@ -512,11 +531,12 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetAgentStacks */
 
-    /* Get a JSON array of agent (ABL) threads for an ABL Application
+    /* Get a listing of agent (ABL) threads for an ABL Application;
+       Useful for calculating the lifetime of an ABLSession from its start time
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
-       @return JsonArray An array of agent sessions */
+       @return JsonArray Array of MSAgent threads */
     method public JsonArray GetAgentThreads ( input pcAblApp as character,
                                               input piPID    as integer ):
         define variable oJsonResp as JsonObject no-undo.
@@ -532,11 +552,12 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetAgentThreads */
 
-    /* Get a JSON array of client (HTTP) sessions for an ABL Application
+    /* Get a listing of client (HTTP) sessions for an ABL Application
+       https://docs.progress.com/bundle/pas-for-openedge-reference/page/Get-session-information.html
        https://docs.progress.com/bundle/pas-for-openedge-management/page/About-session-and-request-states.html
 
        @param character ABL Application Name
-       @return JsonArray An array of client sessions */
+       @return JsonArray Array of client sessions */
     method public JsonArray GetClientSessions ( input pcAblApp as character ):
         define variable oJsonResp as JsonObject no-undo.
 
@@ -551,11 +572,12 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetClientSessions */
 
-    /* Get a JSON array of session info (incl. the dynamic session limit) for an ABL Application
+    /* Get a listing of session info (incl. the dynamic session limit) for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Get-dynamic-session-limit.html
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
-       @return JsonArray An array of session information */
+       @return JsonArray Array of session information */
     method public JsonArray GetDynamicSessionLimit ( input pcAblApp as character,
                                                      input piPID as integer ):
         define variable oJsonResp as JsonObject no-undo.
@@ -571,10 +593,11 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetDynamicSessionLimit */
 
-    /* Get a JSON object with the session manager properties for an ABL Application
+    /* Get all the session manager properties for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Get-configuration-properties.html
 
        @param character ABL Application Name
-       @return JsonObject An object of properties */
+       @return JsonObject Object with SessionManager properties */
     method public JsonObject GetSessionManagerProperties ( input pcAblApp as character ):
         define variable oJsonResp as JsonObject no-undo.
 
@@ -586,9 +609,10 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
     end method. /* GetSessionManagerProperties */
 
     /* Get metrics about the session manager which comes from the collectMetrics flag
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Get-runtime-metrics.html
 
        @param character ABL Application Name
-       @return JsonObject An object of session metrics */
+       @return JsonObject Abject of session metrics */
     method public JsonObject GetSessionMetrics ( input pcAblApp as character ):
         define variable oJsonResp as JsonObject no-undo.
 
@@ -599,21 +623,23 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonObject().
     end method. /* GetSessionMetrics */
 
-    /* Write any accumulated deferred log data of an MSAgent for an ABL Application to a file
+    /* Write any accumulated deferred log data of an MSAgent for an ABL Application to the configured output file
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Flush-deferred-log-buffer-to-agent-log-file.html
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
-       @return JsonObject Returned JSON object as response */
+       @return JsonObject Object as server response */
     method public JsonObject FlushDeferredLog ( input pcAblApp as character,
                                                 input piPID    as integer ):
         return this-object:GetData(substitute(OEManagerEndpoint:FlushDeferredLog, pcAblApp, piPID)).
     end method. /* FlushDeferredLog */
 
     /* Trigger a refresh (termination) of all sessions of an MSAgent for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Refresh-all-ABL-sessions-of-one-or-all-agents.html
 
        @param character ABL Application Name
        @param character Agent ID (alphanumeric)
-       @return JsonObject Returned JSON object as response */
+       @return JsonObject Object as server response */
     method public JsonObject RefreshAgent ( input pcAblApp  as character,
                                             input pcAgentID as character ):
         return this-object:DeleteData(substitute(OEManagerEndpoint:AgentSessions, pcAblApp, pcAgentID)).
@@ -623,17 +649,18 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
-       @return JsonObject Returned JSON object as response */
+       @return JsonObject Object as server response */
     method public JsonObject ResetAgentStats ( input pcAblApp as character,
                                                input piPID    as integer ):
         return this-object:DeleteData(substitute(OEManagerEndpoint:AgentStatData, pcAblApp, piPID)).
     end method. /* ResetAgentStats */
 
     /* Clear (reset) any accumulated deferred log data of an MSAgent for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Reset-deferred-log-buffer.html
 
        @param character ABL Application Name
        @param integer Agent Process ID (PID)
-       @return JsonObject Returned JSON object as response */
+       @return JsonObject Object as server response */
     method public JsonObject ResetDeferredLog ( input pcAblApp as character,
                                                 input piPID    as integer ):
         return this-object:DeleteData(substitute(OEManagerEndpoint:ResetDeferredLog, pcAblApp, piPID)).
@@ -645,7 +672,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
        @param integer Agent Process ID (PID)
        @param integer ABL Session ID (numeric)
        @param integer Termination option [0-2]
-       @return JsonObject Returned JSON object as response */
+       @return JsonObject Object as server response */
     method public JsonObject TerminateAblSession ( input pcAblApp  as character,
                                                    input piPID     as integer,
                                                    input piSession as integer,
@@ -654,11 +681,12 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
     end method. /* TerminateAblSession */
 
     /* Terminate a client (HTTP) session for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Terminate-a-session.html
 
        @param character ABL Application Name
        @param integer Termination option [0-2]
        @param character Client Session ID (alphanumeric)
-       @return JsonObject Returned JSON object as response */
+       @return JsonObject Object as server response */
     method public JsonObject TerminateClientSession ( input pcAblApp  as character,
                                                       input piTermOpt as integer,
                                                       input pcSession as character ):
@@ -671,12 +699,13 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
     end method. /* TerminateClientSession */
 
     /* Stop (terminate) a single MSAgent for an ABL Application
+        https://docs.progress.com/bundle/pas-for-openedge-reference/page/Stop-a-multi-session-agent.html
 
        @param character ABL Application Name
        @param character Internal Agent ID (alphanumeric)
        @param character Time to wait (ms) for current request to finish
        @param character Time to wait (ms) after the current request
-       @return JsonObject Returned JSON object as response */
+       @return JsonObject Object as server response */
     method public JsonObject StopAgent ( input pcAblApp     as character,
                                          input pcAgentID    as character,
                                          input piWaitFinish as character,

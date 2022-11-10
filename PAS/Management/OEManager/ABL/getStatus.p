@@ -133,11 +133,11 @@ message substitute("Starting output to file: &1 ...", cOutFile).
 output to value(cOutFile).
 
 /* Start with some basic header information for this report. */
-put unformatted substitute("Utility Runtime: &1", proversion(1)) skip. /* Reports the OE runtime version used by this utility.     */
-put unformatted substitute("Report Executed: &1", iso-date(now)) skip. /* Produce a timestamp relative to where utility was run.   */
-put unformatted substitute(" PASOE Instance: &1", oMgrConn:Instance) skip. /* Reports the combined scheme, hostname, and port of instance. */
+put unformatted substitute("Utility Runtime: &1", proversion(1)) skip.     /* Reports the OE runtime version used by this utility.             */
+put unformatted substitute("Report Executed: &1", iso-date(now)) skip.     /* Produce a timestamp relative to where utility was run.           */
+put unformatted substitute(" PASOE Instance: &1", oMgrConn:Instance) skip. /* Reports the combined scheme, hostname, and port of the instance. */
 
-/* Gather the necessary metrics. */
+/* Gather all necessary metrics. */
 run GetApplications.
 run GetProperties.
 run GetAgents.
