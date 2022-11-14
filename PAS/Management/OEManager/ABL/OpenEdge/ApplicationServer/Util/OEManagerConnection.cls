@@ -106,7 +106,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         Assert:NotNullOrEmpty(cPassword).
 
         this-object:CreateClient().
-    end method.
+    end constructor.
 
     /* Creates a connection using a valid URI
 
@@ -135,7 +135,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         Assert:NotNullOrEmpty(cPassword).
 
         this-object:CreateClient().
-    end method.
+    end constructor.
 
     /* Create the HttpClient and Credentials objects for this connection. */
     method private void CreateClient ( ):
@@ -215,7 +215,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
                                          :ContentType(cContentType)
                                          :UsingBasicAuthentication(oCreds)
                                          :Request.
-                when MethodEnum:DELETE then    
+                when MethodEnum:DELETE then
                     oReq = RequestBuilder:Delete(cURL)
                                          :AcceptContentType(cContentType)
                                          :ContentType(cContentType)
@@ -268,6 +268,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
                         undo, throw new Progress.Lang.AppError(string(cast(oResp:Entity, OpenEdge.Core.String):Value), 0).
 
                     when type-of(oResp:Entity, JsonObject) then
+                        {&_proparse_ prolint-nowarn(overflow)}
                         undo, throw new Progress.Lang.AppError(string(cast(oResp:Entity, JsonObject):GetJsonText()), 0).
 
                     otherwise
@@ -388,6 +389,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         end. /* result */
 
         finally:
+            {&_proparse_ prolint-nowarn(returnfinally)}
             return cOutMsg. // Always return available content.
         end finally.
     end method. /* AddAgent */
