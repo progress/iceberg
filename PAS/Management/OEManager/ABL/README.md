@@ -77,6 +77,8 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]
      [echo]  Session Management:
      [echo]
+     [echo]  Note: All trim actions listed below will write application stack information to a file.
+     [echo]
      [echo]  proant trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
      [echo]                      Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
      [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
@@ -93,7 +95,7 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]  proant trimhttp   - Trim one or all Client Sessions (via the Session Manager) for an ABLApp/WebApp pair
      [echo]                      Note: When no session ID provided, all available Tomcat HTTP sessions will be expired
      [echo]                      [OPTIONAL]       -Dsessid=[SESSION_ID] (Unique alphanumeric Session ID to be stopped)
-     [echo]                      [OPTIONAL] -Dterminateopt=0 (0 for graceful termination and 1 for forced termination)
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
      [echo]
      [echo]
      [echo] Available parameters with their defaults, override as necessary:
@@ -106,12 +108,15 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]   -Dinstance=oepas1 (Physical instance name)
      [echo]     -Dablapp=oepas1
      [echo]     -Dwebapp=ROOT (Used by trimhttp/close as context for the Tomcat manager webapp)
-     [echo]      -Ddebug=false (When enabled, outputs OEManager REST API URL's and enables [ABL] HttpClient logging)
      [echo]
      [echo] NOTE: The name of the ABLApp is case-sensitive!
      [echo]
      [echo] CATALINA_HOME: C:\Progress\OpenEdge\servers\pasoe
      [echo] CATALINA_BASE: C:\OpenEdge\WRK\oepas1
+
+## Output ##
+
+Output for all commands should be displayed via standard out and appear within the same terminal/command window where executed. There are some log files generated for sanity checks as part of the normal operation. All commands will be logged to a `commands.log` file and cannot be disabled as this ensures an audit trail of management actions taken for a PAS instance. The included `logging.config` enabled logging via the ABL Logger framework for additional insight into the operations made against a PAS instance and can be configured with varying logging levels and output. By default the logging level is set to DEBUG and will output messages to a `OEMgrConn.log` file. This will produce output similar to the `commands.log` file though it can be made more silent by changing the logging level to ERROR or lower.
 
 ## Security Notes ##
 
