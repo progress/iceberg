@@ -444,6 +444,8 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             else
                 return new JsonArray().
         end. /* result */
+        else
+            return new JsonArray().
     end method. /* GetAgentMetrics */
 
     /* Get a listng of agent (ABL) sessions for a single agent of an ABL Application
