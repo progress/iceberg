@@ -58,6 +58,9 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]  proant add     - Add (read: start) one new MSAgent for an ABL App
      [echo]
      [echo]  proant close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)
+     [echo]                                    For this task the 'trimhttp' will be called with the termination option 1 (forced)
+     [echo]                   [REQUIRED] -Dwebapp= (WebApp for Tomcat Manager to terminate active sessions)
+     [echo]                               The given WebApp is expected to be associated with the provided -Dablapp name
      [echo]                   [OPTIONAL] -Dsleep=1 (Sleep time in minutes after stop)
      [echo]
      [echo]  proant clean   - Alias for 'close' task [Deprecated]
@@ -79,26 +82,29 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]
      [echo]  Note: All trim actions listed below will write application stack information to a file.
      [echo]
-     [echo]  proant trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
-     [echo]                      Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
-     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
-     [echo]
      [echo]  proant trimsingle - Trim a single ABL Session (via the Agent Manager) for a specific MSAgent
      [echo]                      [REQUIRED]          -Dpid=[AGENT_PID] (Numeric process ID of the MSAgent for context)
      [echo]                      [REQUIRED]       -Dsessid=[SESSION_ID] (Numeric ID for the ABL Session to be stopped)
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish+stop)
+     [echo]
+     [echo]  proant trimall    - Trim all available ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
+     [echo]                      Note: For any busy sessions considered stuck use 'trimhttp' with a specific Session ID
      [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
      [echo]
-     [echo]  proant trimall    - Trim all active/idle ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
-     [echo]                      Note: For any busy sessions considered stuck, use 'trimhttp' with a specific Session ID
-     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
+     [echo]  proant trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
+     [echo]                      Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish+stop)
      [echo]
-     [echo]  proant trimhttp   - Trim one or all Client Sessions (via the Session Manager) for an ABLApp/WebApp pair
-     [echo]                      Note: When no session ID provided, all available Tomcat HTTP sessions will be expired
-     [echo]                      [OPTIONAL]       -Dsessid=[SESSION_ID] (Unique alphanumeric Session ID to be stopped)
-     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish/stop)
+     [echo]  proant trimhttp   - Trim one or all Client HTTP Sessions (via the Session Manager) for an ABLApp + WebApp
+     [echo]                      Terminating a client HTTP session will also terminate its associated ABL Session
+     [echo]                      [REQUIRED]       -Dwebapp= (WebApp for Tomcat Manager to terminate active sessions)
+     [echo]                                        The given WebApp is expected to be associated with the provided -Dablapp name
+     [echo]                      [OPTIONAL]       -Dsessid=[SESSION_ID] (Alphanumeric Client Session ID to be stopped)
+     [echo]                                        When no session ID provided, all available Client HTTP Sessions will be expired
+     [echo]                      [OPTIONAL] -Dterminateopt=0 (Termination Option: 0=graceful, 1=forced, 2=finish+stop)
      [echo]
      [echo]
-     [echo] Available parameters with their defaults, override as necessary:
+     [echo] Available common parameters with their defaults, override as necessary:
      [echo]     -Dscheme=http
      [echo]       -Dhost=localhost
      [echo]       -Dport=8810
@@ -106,8 +112,7 @@ Simply run **proant** from this directory to obtain usage information as shown b
      [echo]     -Dpasswd=tomcat
      [echo]   -Dpas.root=C:\OpenEdge\WRK (PAS parent directory)
      [echo]   -Dinstance=oepas1 (Physical instance name)
-     [echo]     -Dablapp=oepas1
-     [echo]     -Dwebapp=ROOT (Used by trimhttp/close as context for the Tomcat manager webapp)
+     [echo]     -Dablapp=oepas1   (ABL Application name)
      [echo]
      [echo] NOTE: The name of the ABLApp is case-sensitive!
      [echo]
