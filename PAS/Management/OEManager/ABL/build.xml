@@ -472,6 +472,17 @@
     </target>
 
     <target name="close">
+        <fail message="WebApp parameter (-Dwebapp) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${webapp}" arg2=""/>
+                    <not>
+                        <isset property="webapp"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
         <!-- Perform a 'soft restart' of an ABL Application -->
         <antcall target="status"/>
         <antcall target="flush"/>
