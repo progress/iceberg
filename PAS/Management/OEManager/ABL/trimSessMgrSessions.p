@@ -54,7 +54,7 @@ define variable cSessID    as character       no-undo.
 define variable cSession   as character       no-undo.
 define variable cTerminate as character       no-undo initial "0".
 define variable cTermType  as character       no-undo.
-define variable cWebApp    as character       no-undo initial "ROOT".
+define variable cWebApp    as character       no-undo initial "".
 define variable cWebAppUrl as character       no-undo.
 
 /* Manage the server connection to the OEManager webapp */
@@ -102,6 +102,10 @@ case cTerminate:
             cTermType  = "Graceful"
             .
 end case.
+
+/* We should not proceed unless all required parameters are provided. */
+if (cWebApp gt "") ne true then
+    undo, throw new Progress.Lang.AppError("WebApp name was not provided", 0).
 
 /* Create and OEManager connection for API calls. */
 assign oMgrConn = OEManagerConnection:Build(cScheme, cHost, integer(cPort), cUserId, cPassword).

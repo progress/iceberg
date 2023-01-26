@@ -32,9 +32,9 @@
         <echo message="${line.separator} TCMAN Shortcuts:"/>
         <echo message="${line.separator} proant query    - Use TCMAN to query the ${instance} PAS instance"/>
         <echo message="${line.separator} proant startup  - Use TCMAN to start the ${instance} PAS instance"/>
-        <echo message="                   [OPTIONAL] -Dtimeout=${timeout} (Time to wait for a proper startup)"/>
+        <echo message="                   [OPTIONAL] -Dtimeout=${timeout} - Time to wait for a proper startup"/>
         <echo message="${line.separator} proant shutdown - Use TCMAN to stop the ${instance} PAS instance"/>
-        <echo message="                   [OPTIONAL] -Dtimeout=${timeout} (Time to wait for a proper shutdown)"/>
+        <echo message="                   [OPTIONAL] -Dtimeout=${timeout} - Time to wait for a proper shutdown"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Internal Tools:"/>
         <echo message="${line.separator} proant inventory - Bundle useful PAS instance files (as .zip) for support tickets"/>
@@ -42,24 +42,26 @@
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Status/Info:"/>
         <echo message="${line.separator} proant status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
-        <echo message="                 [OPTIONAL] -Dbasemem=${basemem} (Minimum memory threshold, in bytes, of unused agent sessions)"/>
+        <echo message="                 [OPTIONAL] -Dbasemem=${basemem} - Minimum memory threshold, in bytes, of unused agent sessions"/>
         <echo message="${line.separator} proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
         <echo message="${line.separator} proant flush  - [RO] Flush the available deferred log buffer to agent log file"/>
         <echo message="${line.separator} proant locks  - [RO] Display database users and their table locks related to an MSAgent-Session"/>
         <echo message="                 This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary"/>
         <echo message="                 Note: Only provides session data if using self-service DB connections for OE versions under 12.5"/>
-        <echo message="                 [OPTIONAL]  -Dcodepage=${codepage} (Codepage)"/>
-        <echo message="                 [OPTIONAL] -Dcollation=${collation} (Collation)"/>
-        <echo message="                 [OPTIONAL]   -Ddb.name=${db.name} (Database name to check)"/>
-        <echo message="                 [OPTIONAL]   -Ddb.host=${db.host} (Database host to check)"/>
-        <echo message="                 [OPTIONAL]   -Ddb.port=${db.port} (Database port to check)"/>
+        <echo message="                 [OPTIONAL]  -Dcodepage=${codepage} - Codepage"/>
+        <echo message="                 [OPTIONAL] -Dcollation=${collation} - Collation"/>
+        <echo message="                 [OPTIONAL]   -Ddb.name=${db.name} - Database name to check"/>
+        <echo message="                 [OPTIONAL]   -Ddb.host=${db.host} - Database host to check"/>
+        <echo message="                 [OPTIONAL]   -Ddb.port=${db.port} - Database port to check"/>
         <echo message="${line.separator} proant users  - [RO] Alias for 'locks' task"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Agent Management:"/>
         <echo message="${line.separator} proant add     - Add (read: start) one new MSAgent for an ABL App"/>
         <echo message="${line.separator} proant close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)"/>
-        <echo message="                  Note: For this task the 'trimhttp' will be called with the termination option 1 (forced)"/>
-        <echo message="                  [OPTIONAL] -Dsleep=${sleep} (Sleep time in minutes after stop)"/>
+        <echo message="                                   For this task the 'trimhttp' will be called with the termination option 1 (forced)"/>
+        <echo message="                  [REQUIRED] -Dwebapp=${webapp} - WebApp for Tomcat Manager to terminate active sessions"/>
+        <echo message="                              The given WebApp is expected to be associated with the provided -Dablapp name"/>
+        <echo message="                  [OPTIONAL] -Dsleep=${sleep} - Sleep time in minutes after stop"/>
         <echo message="${line.separator} proant clean   - Alias for 'close' task [Deprecated]"/>
         <if>
             <equals arg1="${oeMajor}" arg2="12"/>
@@ -72,38 +74,39 @@
         <echo message="${line.separator} proant reset   - Reset an aspect of each MSAgent for an ABL App"/>
         <echo message="                  [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
         <echo message="${line.separator} proant stop    - Gracefully stop one or all MSAgents (+stacks output) for an ABL App"/>
-        <echo message="                  [OPTIONAL] -Dwaitfinish=${waitfinish} (How long to wait in milliseconds if the MSAgent is busy serving a request)"/>
-        <echo message="                  [OPTIONAL]  -Dwaitafter=${waitafter} (Additional time to wait in milliseconds before killing [hard stop] the MSAgent)"/>
-        <echo message="                  [OPTIONAL]        -Dpid=[AGENT_PID] (Numeric process ID for a specific MSAgent to be stopped)"/>
+        <echo message="                  [OPTIONAL] -Dwaitfinish=${waitfinish} - How long to wait in milliseconds if the MSAgent is busy serving a request"/>
+        <echo message="                  [OPTIONAL]  -Dwaitafter=${waitafter}  - Additional time to wait in milliseconds before killing [hard stop] the MSAgent"/>
+        <echo message="                  [OPTIONAL]        -Dpid=[AGENT_PID] - Numeric process ID for a specific MSAgent to be stopped"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Session Management:"/>
     	<echo message="${line.separator} Note: All trim actions listed below will write application stack information to a file."/>
         <echo message="${line.separator} proant trimsingle - Trim a single ABL Session (via the Agent Manager) for a specific MSAgent"/>
-        <echo message="                     [REQUIRED]          -Dpid=[AGENT_PID] (Numeric process ID of the MSAgent for context)"/>
-        <echo message="                     [REQUIRED]       -Dsessid=[SESSION_ID] (Numeric ID for the ABL Session to be stopped)"/>
-        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} (Termination Option: 0=graceful, 1=forced, 2=finish+stop)"/>
+        <echo message="                     [REQUIRED]          -Dpid=[AGENT_PID]  - Numeric process ID of the MSAgent for context"/>
+        <echo message="                     [REQUIRED]       -Dsessid=[SESSION_ID] - Numeric ID for the ABL Session to be stopped"/>
+        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator} proant trimall    - Trim all available ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
         <echo message="                     Note: For any busy sessions considered stuck use 'trimhttp' with a specific Session ID"/>
-        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} (Termination Option: 0=graceful, 1=forced, 2=finish/stop)"/>
+        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish/stop"/>
         <echo message="${line.separator} proant trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
         <echo message="                     Allows for manually scaling down an MSAgent which may have many unused ABL Sessions"/>
-        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} (Termination Option: 0=graceful, 1=forced, 2=finish+stop)"/>
+        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator} proant trimhttp   - Trim one or all Client HTTP Sessions (via the Session Manager) for an ABLApp + WebApp"/>
         <echo message="                     Terminating a client HTTP session will also terminate its associated ABL Session"/>
-        <echo message="                     [OPTIONAL]       -Dsessid=[SESSION_ID] (Alphanumeric Client Session ID to be stopped)"/>
-        <echo message="                     Note: When no session ID provided, all available Client HTTP Sessions will be expired"/>
-        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} (Termination Option: 0=graceful, 1=forced, 2=finish+stop)"/>
+        <echo message="                     [REQUIRED]       -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active sessions"/>
+        <echo message="                                       The given WebApp is expected to be associated with the provided -Dablapp name"/>
+        <echo message="                     [OPTIONAL]       -Dsessid=[SESSION_ID]  - Alphanumeric Client Session ID to be stopped"/>
+        <echo message="                                       When no session ID provided, all available Client HTTP Sessions will be expired"/>
+        <echo message="                     [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator}"/>
-        <echo message="${line.separator}Available parameters with their defaults, override as necessary:"/>
+        <echo message="${line.separator}Available common parameters with their defaults, override as necessary:"/>
         <echo message="    -Dscheme=${scheme}"/>
         <echo message="      -Dhost=${host}"/>
         <echo message="      -Dport=${port}"/>
         <echo message="    -Duserid=${userid}"/>
         <echo message="    -Dpasswd=${passwd}"/>
-        <echo message="  -Dpas.root=${pas.root} (PAS parent directory)"/>
-        <echo message="  -Dinstance=${instance} (Physical instance name)"/>
-        <echo message="    -Dablapp=${ablapp}"/>
-        <echo message="    -Dwebapp=${webapp} (Used by trimhttp/close as context for the Tomcat manager webapp)"/>
+        <echo message="  -Dpas.root=${pas.root} - PAS parent directory"/>
+        <echo message="  -Dinstance=${instance} - Physical instance name"/>
+        <echo message="    -Dablapp=${ablapp}   - ABL Application name"/>
         <echo message="${line.separator}NOTE: The name of the ABLApp is case-sensitive!"/>
         <echo message="${line.separator}"/>
         <echo message="CATALINA_HOME: ${dlcHome}${delim}servers${delim}pasoe"/>
@@ -165,7 +168,7 @@
             <property name="passwd" value="tomcat"/>
             <property name="instance" value="oepas1"/> <!-- Typical sample instance after DLC install -->
             <property name="ablapp" value="${instance}"/> <!-- Default to the name of the instance -->
-            <property name="webapp" value="ROOT"/>
+            <property name="webapp" value=""/>
             <!-- Slightly more specific properties for tasks. -->
             <property name="codepage" value="UTF-8"/>
             <property name="collation" value="BASIC"/>
@@ -469,6 +472,17 @@
     </target>
 
     <target name="close">
+        <fail message="WebApp parameter (-Dwebapp) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${webapp}" arg2=""/>
+                    <not>
+                        <isset property="webapp"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
         <!-- Perform a 'soft restart' of an ABL Application -->
         <antcall target="status"/>
         <antcall target="flush"/>
