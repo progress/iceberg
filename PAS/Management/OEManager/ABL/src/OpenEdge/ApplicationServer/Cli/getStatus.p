@@ -546,7 +546,7 @@ procedure GetAgents:
         end. /* for each ttAgentSession */
 
         /* Output summary information about agent-sessions, such as how many are busy out of the total count. */
-        put unformatted substitute("~t  active Agent-Sessions: &1 of &2 (&3% Busy)",
+        put unformatted substitute("~t  Active Agent-Sessions: &1 of &2 (&3% Busy)",
                                    iBusySess, iTotSess, if iTotSess gt 0 then round((iBusySess / iTotSess) * 100, 1) else 0) skip.
 
         /* Establish an educated guess on how many sessions have been utilized via a baseline memory value. */
