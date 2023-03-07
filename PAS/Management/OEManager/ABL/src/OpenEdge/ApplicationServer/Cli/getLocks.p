@@ -121,7 +121,7 @@ do iLoop = 1 to num-dbs:
 
     /* Scan all locks for this DB */
     message substitute("~tGetting lock stats for &1...", cDB).
-    run getLockStats.p (input-output table ttLock by-reference).
+    run OpenEdge/ApplicationServer/Cli/getLockStats.p (input-output table ttLock by-reference).
 end.
 
 /* Display table lock information to screen. */

@@ -1,0 +1,1025 @@
+<project name="OEManager CLI Tools" basedir="." default="usage">
+
+    <!--
+        Copyright 2020-2023 Progress Software Corporation
+
+        Licensed under the Apache License, Version 2.0 (the "License");
+        you may not use this file except in compliance with the License.
+        You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    -->
+
+    <!-- NOTE: Must run from a PROENV session or with a valid DLC environment variable. -->
+
+    <!-- Utilize a local file for properties. Allows this XML to provide defaults only. -->
+    <property file="${basedir}/oemanager.properties"/>
+
+    <target name="usage" description="Usage Instructions">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <echo message="${line.separator}"/>
+        <echo message="CLI utilities for monitoring and management of a PASOE instance."/>
+        <echo message="Tasks denoted with [RO] are read-only and do not impact operation."/>
+        <echo message="${line.separator}Usage Instructions:"/>
+        <echo message="${line.separator} TCMAN Shortcuts:"/>
+        <echo message="${line.separator} ${util.name} query    - Use TCMAN to query the PAS instance"/>
+        <echo message="${line.separator} ${util.name} startup  - Use TCMAN to start the PAS instance"/>
+        <echo message="                      [OPTIONAL] -Dtimeout=${timeout} - Time (seconds) to wait for a proper startup"/>
+        <echo message="${line.separator} ${util.name} shutdown - Use TCMAN to stop the PAS instance"/>
+        <echo message="                      [OPTIONAL] -Dtimeout=${timeout} - Time (seconds) to wait for a proper shutdown"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator} Support Tools:"/>
+        <echo message="${line.separator} ${util.name} inventory - Bundle useful PAS instance files (as .zip) for support tickets"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator} Status/Info:"/>
+        <echo message="${line.separator} ${util.name} status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
+        <echo message="                    [OPTIONAL] -Dbasemem=${basemem} - Minimum memory threshold, in bytes, of unused agent sessions"/>
+        <echo message="${line.separator} ${util.name} stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
+        <echo message="${line.separator} ${util.name} flush  - [RO] Flush the available deferred log buffer to agent log file"/>
+        <echo message="${line.separator} ${util.name} locks  - [RO] Display database users and their table locks related to an MSAgent-Session"/>
+        <echo message="                    This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary"/>
+        <echo message="                    Note: Only provides session data if using self-service DB connections for OE versions under 12.5"/>
+        <echo message="                    [REQUIRED] -Dpf=[PF_NAME] - PF file to use for database connection(s)"/>
+        <echo message="${line.separator} ${util.name} users  - [RO] Alias for 'locks' task"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator} Agent Management:"/>
+        <echo message="${line.separator} ${util.name} add     - Add (read: start) one new MSAgent for an ABL App"/>
+        <echo message="${line.separator} ${util.name} close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)"/>
+        <echo message="                                      For this task the 'trimhttp' will be called with the termination option 1 (forced)"/>
+        <echo message="                     [REQUIRED] -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active sessions"/>
+        <echo message="                                 The given WebApp is expected to be associated with the provided -Dablapp name"/>
+        <echo message="                     [OPTIONAL] -Dsleep=${sleep} - Sleep time in minutes after stop, prior to final 'status' output"/>
+        <echo message="${line.separator} ${util.name} clean   - Alias for 'close' task [Deprecated]"/>
+        <if>
+            <equals arg1="${oeMajor}" arg2="12"/>
+            <then>
+                <echo message="${line.separator} ${util.name} refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)"/>
+                <echo message="                     Note: This will essentially terminate all sessions (gracefully),"/>
+                <echo message="                           and prepare the Agent to pick up any R-code changes"/>
+            </then>
+        </if>
+        <echo message="${line.separator} ${util.name} reset   - Reset an aspect of each MSAgent for an ABL App"/>
+        <echo message="                     [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
+        <echo message="${line.separator} ${util.name} stop    - Gracefully stop one or all MSAgents (+stacks output) for an ABL App"/>
+        <echo message="                     [OPTIONAL] -Dwaitfinish=${waitfinish} - How long to wait (milliseconds) if the MSAgent is busy serving a request"/>
+        <echo message="                     [OPTIONAL]  -Dwaitafter=${waitafter}  - Additional time to wait (milliseconds) before killing [hard stop] the MSAgent"/>
+        <echo message="                     [OPTIONAL]        -Dpid=[AGENT_PID] - Numeric process ID for a specific MSAgent to be stopped"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator} Session Management:"/>
+        <echo message="${line.separator} Note: All trim actions listed below will write application stack information to a file."/>
+        <echo message="${line.separator} ${util.name} trimsingle - Trim a single ABL Session (via the Agent Manager) for a specific MSAgent"/>
+        <echo message="                        [REQUIRED]          -Dpid=[AGENT_PID]  - Numeric process ID of the MSAgent for context"/>
+        <echo message="                        [REQUIRED]       -Dsessid=[SESSION_ID] - Numeric ID for the ABL Session to be stopped"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
+        <echo message="${line.separator} ${util.name} trimall    - Trim all available ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
+        <echo message="                        Note: For any busy sessions considered stuck use 'trimhttp' with a specific Session ID"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish/stop"/>
+        <echo message="${line.separator} ${util.name} trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
+        <echo message="                        Allows for manually scaling down an MSAgent which may have many unused ABL Sessions"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
+        <echo message="${line.separator} ${util.name} trimhttp   - Trim one or all Client HTTP Sessions (via the Session Manager) for an ABLApp + WebApp"/>
+        <echo message="                        Terminating a client HTTP session will also terminate its associated ABL Session"/>
+        <echo message="                        [REQUIRED]       -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active sessions"/>
+        <echo message="                                          The given WebApp is expected to be associated with the provided -Dablapp name"/>
+        <echo message="                        [OPTIONAL]       -Dsessid=[SESSION_ID]  - Alphanumeric Client Session ID to be stopped"/>
+        <echo message="                                          When no session ID provided, all available Client HTTP Sessions will be expired"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator}Available common parameters with their defaults, override as necessary:"/>
+        <echo message="    -Dscheme=${scheme}"/>
+        <echo message="      -Dhost=${host}"/>
+        <echo message="      -Dport=${port}"/>
+        <echo message="    -Duserid=${userid}"/>
+        <echo message="    -Dpasswd=${passwd}"/>
+        <echo message="  -Dpas.root=${pas.root} - PAS parent directory, above the instance"/>
+        <echo message="  -Dinstance=${instance} - Physical instance name (folder, not alias)"/>
+        <echo message="    -Dablapp=${ablapp} - ABL Application name for all tasks above"/>
+        <echo message="${line.separator}NOTE: The name of the ABLApp is case-sensitive!"/>
+        <echo message="${line.separator}"/>
+        <echo message="CATALINA_HOME: ${catalina.home}"/>
+        <echo message="CATALINA_BASE: ${catalina.base}"/>
+    </target>
+
+    <macrodef name="init_env">
+        <sequential>
+            <!-- Name of the utility to call (per the usage instructions). -->
+            <property name="util.name" value="oemanager"/>
+
+            <!-- Access environmental variables via "env.*". -->
+            <property environment="env"/>
+
+            <!-- Set a property if environment is Windows. -->
+            <condition property="isWin">
+                <os family="windows"/>
+            </condition>
+
+            <!-- Set a property if environment is Unix. -->
+            <condition property="isUnix">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set a property if environment is 32bit. -->
+            <condition property="is32bit">
+                <or>
+                    <os arch="x86"/>
+                    <os arch="i386"/>
+                </or>
+            </condition>
+
+            <!-- Set a property if environment is 64bit. -->
+            <condition property="is64bit">
+                <not>
+                    <or>
+                        <os arch="x86"/>
+                        <os arch="i386"/>
+                    </or>
+                </not>
+            </condition>
+
+            <!-- Set the script suffix for the OS. -->
+            <condition property="scriptSuffix" value=".sh" else=".bat">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set path delimiter for the OS. -->
+            <condition property="delim" value="/" else="\">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Output the last recorded code release date. -->
+            <loadfile property="release" srcFile="release.txt"/>
+            <echo message="Code Release: ${release}"/>
+
+            <!-- Determine whether we exist within a PAS instance (denoted by a webapps directory above this directory) -->
+            <available file="${basedir}/../webapps/" type="dir" property="withinInstance"/>
+            <condition property="standaloneNotice" value="${line.separator}NOTICE: Utilities are being executed outside of a PAS instance!" else="">
+                <not>
+                    <isset property="withinInstance"/>
+                </not>
+            </condition>
+            <echo message="${standaloneNotice}"/>
+
+            <!-- The parent directory to basedir should be the root path for the PAS instance. -->
+            <dirname property="parent.dir" file="${basedir}/../"/>
+            <condition property="pas.root" value="${parent.dir}" else="">
+                <isset property="withinInstance"/>
+            </condition>
+
+            <!-- The name of the parent directory should be the instance name, by default. -->
+            <basename property="parent.dir.name" file="${basedir}/../"/>
+            <condition property="instance" value="${parent.dir.name}" else="">
+                <isset property="withinInstance"/>
+            </condition>
+
+            <!-- Set general properties for the PAS instance (port will be set via init_oe macro). -->
+            <property name="scheme" value="http"/>
+            <property name="host" value="localhost"/>
+            <property name="userid" value="tomcat"/> <!-- Default for the Tomcat container -->
+            <property name="passwd" value="tomcat"/> <!-- Default for the Tomcat container -->
+            <property name="ablapp" value="${instance}"/> <!-- Default to the name of the instance -->
+            <property name="webapp" value=""/>
+
+            <!-- Slightly more specific properties for tasks. -->
+            <property name="pattern" value="2"/>
+            <property name="pid" value=""/>
+            <property name="sessid" value=""/>
+            <property name="sleep" value="1"/>
+            <property name="terminateopt" value="0"/>
+            <property name="timeout" value="300"/> <!-- Default 300sec -->
+            <property name="waitfinish" value="120000"/> <!-- Default 120000ms -->
+            <property name="waitafter" value="60000"/> <!-- Default 60000ms -->
+            <property name="basemem" value="819200"/> <!-- Defaulted to 8K -->
+            <property name="resettype" value="stats"/>
+
+            <!-- Default path for the CLI procedures, do not modify! -->
+            <property name="proc.path" value="OpenEdge${delim}ApplicationServer${delim}Cli${delim}"/>
+            <property name="proc.ext" value=".p"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="init_oe">
+        <sequential>
+            <init_env/> <!-- Initialize environmental and general properties. -->
+
+            <!-- Fail immediately if not a 64-bit OS. -->
+            <fail message="Environment is not 64-bit">
+                <condition>
+                    <not>
+                        <isset property="is64bit"/>
+                    </not>
+                </condition>
+            </fail>
+
+            <!-- Check if DLC is set as an environment variable. -->
+            <fail message="DLC Home path is not set">
+                <condition>
+                    <and>
+                        <not><isset property="dlcHome"/></not>
+                        <not><isset property="env.DLC"/></not>
+                    </and>
+                </condition>
+            </fail>
+            <property name="dlcHome" value="${env.DLC}"/>
+            <property name="catalina.home" value="${dlcHome}${delim}servers${delim}pasoe"/>
+            <echo message="DLC Home: ${dlcHome}"/>
+
+            <!-- Assume the DLC WRK directory unless overridden. -->
+            <condition property="wrk" value="/usr/wrk" else="C:\OpenEdge\WRK">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Load the current PCT library from DLC. -->
+            <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
+            <!-- Define this property to disable anonymous PCT statistics telemetry. -->
+            <property name="pct.skip.analytics" value=""/>
+
+            <!-- Access the OE version info, and read into a property. -->
+            <ProgressVersion dlcHome="${dlcHome}" majorVersion="oeMajor" minorVersion="oeMinor" revision="oeRev" fullVersion="full"/>
+            <property name="oe.version" value="${oeMajor}.${oeMinor}.${oeRev}"/>
+            <echo message="OpenEdge Version: ${oe.version}"/>
+
+            <!-- Add the ANT-Contrib library to this environment (present in 11.7.4+ and 12.0+). -->
+            <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${dlcHome}/ant/lib/ant-contrib-0.6.jar"/>
+
+            <!-- Set important path properties for the target PAS instance. -->
+            <if>
+                <equals arg1="${pas.root}" arg2=""/>
+                <then>
+                    <!-- If we have no pas.root then these should be set to blank. -->
+                    <property name="catalina.base" value=""/>
+                    <property name="catalina.base.bin" value=""/>
+                </then>
+                <else>
+                    <if>
+                        <equals arg1="${instance}" arg2=""/>
+                        <then>
+                            <!-- If we have no instance then these should be set to blank. -->
+                            <property name="catalina.base" value=""/>
+                            <property name="catalina.base.bin" value=""/>
+                        </then>
+                        <else>
+                            <!-- Otherwise we have both the pas.root and instance values needed to create the CATALINA_BASE. -->
+                            <property name="catalina.base" value="${pas.root}${delim}${instance}"/>
+                            <property name="catalina.base.bin" value="${catalina.base}${delim}bin"/>
+                        </else>
+                    </if>
+                </else>
+            </if>
+
+            <!-- Include the standard properties files for the instance which gives us our server ports. -->
+            <property file="${catalina.base}/conf/appserver.properties"/>
+            <property file="${catalina.base}/conf/catalina.properties"/>
+
+            <!-- Keep these blank, will be already set if catalina.properties is loaded above. -->
+            <property name="psc.as.http.port" value=""/>
+            <property name="psc.as.https.port" value=""/>
+
+            <!-- Set the proper port as based on the scheme (http or https) -->
+            <if>
+                <equals arg1="${scheme}" arg2="https"/>
+                <then>
+                    <condition property="port" value="${psc.as.https.port}" else="">
+                        <isset property="psc.as.https.port"/>
+                    </condition>
+                </then>
+                <else>
+                    <condition property="port" value="${psc.as.http.port}" else="">
+                        <isset property="psc.as.http.port"/>
+                    </condition>
+                </else>
+            </if>
+
+            <!-- Set the appropriate TCMAN command for managing the server as based on OpenEdge release version. -->
+            <if>
+                <equals arg1="${oeMajor}" arg2="11"/>
+                <then>
+                    <!-- Use the pasoestart command for OpenEdge 11 -->
+                    <property name="serverCmd" value="pasoestart"/>
+                    <property name="stopOpts" value="-halt -abort"/>
+                </then>
+                <else>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="0"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.0 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="1"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.1 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="2"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.2 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="3"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.3 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="4"/>
+                        <then>
+                            <!-- Use the pasoestart command for OpenEdge 12.4 -->
+                            <property name="serverCmd" value="pasoestart"/>
+                            <property name="stopOpts" value="-halt -abort"/>
+                        </then>
+                    </if>
+
+                    <!-- Use the new oeserver command for OpenEdge 12.5+ -->
+                    <property name="serverCmd" value="oeserver"/>
+                    <property name="stopOpts" value="-stop -force"/>
+                </else>
+            </if>
+            <property name="jsonOpts" value="-json -array"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="require">
+        <!-- Usage <require file="_path_to_file_"/> -->
+        <attribute name="file"/>
+        <attribute name="message" default="File @{file} not set or missing"/>
+
+        <sequential>
+            <fail message="@{message}">
+                <condition>
+                    <not>
+                        <available file="@{file}" type="file"/>
+                    </not>
+                </condition>
+            </fail>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="requireDir">
+        <!-- Usage <requireDir folder="_path_to_folder_"/> -->
+        <attribute name="folder"/>
+        <attribute name="message" default="Directory @{folder} not set or missing"/>
+
+        <sequential>
+            <fail message="@{message}">
+                <condition>
+                    <not>
+                        <available file="@{folder}" type="dir"/>
+                    </not>
+                </condition>
+            </fail>
+        </sequential>
+    </macrodef>
+
+    <!-- PAS instance management -->
+
+    <target name="shutdown">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="CATALINA_BASE has not been set. Please set parameters -Dpas.root and -Dinstance">
+            <condition>
+                <or>
+                    <equals arg1="${catalina.base}" arg2=""/>
+                    <not>
+                        <isset property="catalina.base"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <requireDir folder="${catalina.base.bin}"/>
+
+        <property name="commandLine" value="${serverCmd} -v ${stopOpts} -timeout ${timeout} ${jsonOpts}"/>
+        <echo message="${line.separator}Executing TCMAN with '${commandLine}'"/>
+        <exec executable="${catalina.base.bin}/tcman${scriptSuffix}" failonerror="true">
+            <arg line="${commandLine}"/>
+        </exec>
+    </target>
+
+    <target name="startup">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="CATALINA_BASE has not been set. Please set parameters -Dpas.root and -Dinstance">
+            <condition>
+                <or>
+                    <equals arg1="${catalina.base}" arg2=""/>
+                    <not>
+                        <isset property="catalina.base"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <requireDir folder="${catalina.base.bin}"/>
+
+        <property name="commandLine" value="${serverCmd} -v -start -archive -timeout ${timeout} ${jsonOpts}"/>
+        <echo message="${line.separator}Executing TCMAN with '${commandLine}'"/>
+        <exec executable="${catalina.base.bin}/tcman${scriptSuffix}" failonerror="false">
+            <arg line="${commandLine}"/>
+        </exec>
+    </target>
+
+    <target name="query">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="CATALINA_BASE has not been set. Please set parameters -Dpas.root and -Dinstance">
+            <condition>
+                <or>
+                    <equals arg1="${catalina.base}" arg2=""/>
+                    <not>
+                        <isset property="catalina.base"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <requireDir folder="${catalina.base.bin}"/>
+
+        <property name="commandLine" value="${serverCmd} -v -query ${jsonOpts}"/>
+        <echo message="${line.separator}Executing TCMAN with '${commandLine}'"/>
+        <exec executable="${catalina.base.bin}/tcman${scriptSuffix}" failonerror="false">
+            <arg line="${commandLine}"/>
+        </exec>
+    </target>
+
+    <!-- Support Tools -->
+
+    <target name="inventory">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="CATALINA_BASE has not been set. Please set parameters -Dpas.root and -Dinstance">
+            <condition>
+                <or>
+                    <equals arg1="${catalina.base}" arg2=""/>
+                    <not>
+                        <isset property="catalina.base"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <requireDir folder="${catalina.base}"/>
+
+        <tstamp>
+            <format property="now" pattern="yyyyMMddh_hmmss"/>
+        </tstamp>
+
+        <echo file="${basedir}/file_listing.txt">${catalina.base}${line.separator}</echo>
+        <fileset id="dir.contents" dir="${catalina.base}" includes="**/*"/>
+        <property name="prop.dir.contents" refid="dir.contents"/>
+        <echo file="${basedir}/file_listing.txt" append="true">${prop.dir.contents}</echo>
+        <replaceregexp file="${basedir}/file_listing.txt" flags="g" match="\;" byline="true">
+           <substitution expression="${line.separator}"/>
+        </replaceregexp>
+
+        <!-- Create a zip file with critical files useful for support tickets. -->
+        <zip destfile="${basedir}/inventory_${instance}_${now}.zip">
+            <zipfileset dir="${catalina.base}" includes="**/*.properties" prefix="properties"/>
+            <zipfileset dir="${catalina.base}" includes="**/protrace.*" prefix="protrace"/>
+            <zipfileset dir="${catalina.base}" includes="**/*.handlers" prefix="services"/>
+            <zipfileset dir="${catalina.base}" includes="**/*.paar" prefix="services"/>
+            <zipfileset dir="${catalina.base}" includes="**/*.wsdl" prefix="services"/>
+            <zipfileset dir="${catalina.base}/logs" includes="**/*" prefix="logs"/>
+            <zipfileset dir="${basedir}" includes="file_listing.txt"/>
+        </zip>
+
+        <delete file="${basedir}/file_listing.txt" verbose="false"/>
+    </target>
+
+    <!-- Management Tools -->
+
+    <target name="clean">
+        <antcall target="close"/>
+    </target>
+
+    <target name="close">
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <fail message="WebApp parameter (-Dwebapp) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${webapp}" arg2=""/>
+                    <not>
+                        <isset property="webapp"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <!-- Perform a 'soft restart' of an ABL Application -->
+        <antcall target="status"/>
+        <antcall target="flush"/>
+        <antcall target="trimhttp">
+            <!-- Override any given terminateopt with the forceful option. -->
+            <param name="terminateopt" value="1"/>
+        </antcall>
+        <antcall target="stop"/>
+        <echo message="${line.separator}Sleeping for ${sleep} minutes to allow time for MSAgent shutdown."/>
+        <echo message="Next step is to run 'status'; use Ctrl+C to exit if desired."/>
+        <echo message="..."/>
+        <sleep minutes="${sleep}"/>
+        <antcall target="status"/>
+    </target>
+
+    <target name="selftest">
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <!-- Runs all the targets in a particular order (least to most termination) -->
+        <antcall target="status"/>
+        <antcall target="stacks"/>
+        <antcall target="flush"/>
+        <antcall target="trimhttp"/>
+        <antcall target="trimidle"/>
+        <antcall target="trimall"/>
+        <antcall target="refresh"/>
+        <antcall target="stop"/>
+        <antcall target="add"/>
+    </target>
+
+    <target name="status">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}getStatus${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="BaseMem" value="${basemem}"/>
+        </PCTRun>
+    </target>
+
+    <target name="stacks">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}getStacks${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+        </PCTRun>
+    </target>
+
+    <target name="flush">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}flushLogs${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+        </PCTRun>
+    </target>
+
+    <target name="trimhttp">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}trimSessMgrSessions${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="WebApp" value="${webapp}"/>
+            <Parameter name="TerminateOpt" value="${terminateopt}"/>
+            <Parameter name="SessionID" value="${sessid}"/>
+        </PCTRun>
+    </target>
+
+    <target name="trimidle">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}trimABLSessions${proc.ext}"> <!-- Plural name, works on multiple sessions. -->
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="Idle" value="true"/>
+            <Parameter name="TerminateOpt" value="${terminateopt}"/>
+        </PCTRun>
+    </target>
+
+    <target name="trimsingle">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}trimABLSession${proc.ext}"> <!-- Singular name, works on just one session. -->
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="TerminateOpt" value="${terminateopt}"/>
+            <Parameter name="ProcID" value="${pid}"/>
+            <Parameter name="SessionID" value="${sessid}"/>
+        </PCTRun>
+    </target>
+
+    <target name="trimall">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}trimABLSessions${proc.ext}"> <!-- Plural name, works on multiple sessions. -->
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="Idle" value="false"/>
+            <Parameter name="TerminateOpt" value="${terminateopt}"/>
+        </PCTRun>
+    </target>
+
+    <target name="trimrand">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <!-- THIS IS AN UNLISTED TARGET! -->
+        <!-- This will psuedo-randomly terminate ABL Sessions and should NOT be used in any production environment. -->
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}trimABLSessionsTest${proc.ext}"> <!-- Special test utility to trim random/select sessions. -->
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="TerminateOpt" value="${terminateopt}"/>
+            <Parameter name="Pattern" value="${pattern}"/> <!-- Call with -Dpattern=# or -Dpattern=rand[om] -->
+        </PCTRun>
+    </target>
+
+    <target name="reset">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}reset${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="Type" value="${resettype}"/>
+        </PCTRun>
+    </target>
+
+    <target name="refresh">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}refreshAgents${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+        </PCTRun>
+    </target>
+
+    <target name="add">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}addAgent${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+        </PCTRun>
+    </target>
+
+    <target name="stop">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}stopAgents${proc.ext}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+            <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="WaitFinish" value="${waitfinish}"/>
+            <Parameter name="WaitAfter" value="${waitafter}"/>
+            <Parameter name="ProcID" value="${pid}"/> <!-- Considered optional, default "" -->
+        </PCTRun>
+    </target>
+
+    <target name="users">
+        <antcall target="locks"/>
+    </target>
+
+    <target name="locks">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <fail message="Database parameter file (-Dpf) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${pf}" arg2=""/>
+                    <not>
+                        <isset property="pf"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <PCTRun
+               dlcHome="${dlcHome}"
+               graphicalMode="false"
+               procedure="${proc.path}getLocks${proc.ext}"
+               stackSize="4096"
+               paramFile="${pf}">
+            <propath>
+                <pathelement path="${basedir}"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+            </propath>
+            <!-- End Database Connections -->
+            <Parameter name="Scheme" value="${scheme}"/>
+            <Parameter name="Host" value="${host}"/>
+            <Parameter name="Port" value="${port}"/>
+            <Parameter name="UserID" value="${userid}"/>
+            <Parameter name="PassWD" value="${passwd}"/>
+        </PCTRun>
+    </target>
+
+</project>

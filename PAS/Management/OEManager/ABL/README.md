@@ -1,128 +1,41 @@
-# ABL Management #
+# OEManager CLI Tools #
 
-Utilizing the [RESTful API's](https://docs.progress.com/bundle/pas-for-openedge-reference/page/REST-API-Reference-for-oemanager.war.html) offered by the oemanager WebApp, the included ABL code may provide either a comprehensive view of a running instance or means to manage an ABL Application. All actions can be run via a command-line interface using ANT tasks on either Windows or Unix environments.
+*Formerly referred to as the "PROANT Tools"*
+
+This suite of tools utilizes the [RESTful API's](https://docs.progress.com/bundle/pas-for-openedge-reference/page/REST-API-Reference-for-oemanager.war.html) offered by the **oemanager** WebApp to provide a comprehensive insight to a running PAS instance or to manage any ABL Application belonging to a PAS instance. All operations are executed via a command-line interface (using ANT and PCT internally) on either Windows or Linux environments.
 
 ## Requirements ##
 
-Use of **proant** is required to execute the **build.xml** included. This can be accessed via the `DLC/bin` directory, typically via a **PROENV** session. If necessary, ABL code may be compiled before deployment in an environment where a 4GL compiler is not available.
-
-**Note:** Some data may only be displayed in an OpenEdge 12 environment, such as the Dynamic Session Limit which was added as part of the Agent self-management feature. Other values such as **RequestID** (where applicable) will only be displayed if the **Enhanced MDC Logging** is enabled--this is on by default in OpenEdge 12 though it must be manually enabled in OpenEdge 11.7.x (via **openedge_setenv.[bat|sh]**). And lastly, some runtime metrics such as counts and time values will only be present if **collectMetrics** has been set to 3 for the AppServer and each WebApp (via openedge.properties).
+1. Run a **PROENV** session which will set the necessary environment variables to execute the tools. This will provide access to the DLC and JAVA_HOME environment variables and any OpenEdge binaries such as "PROANT" which is useful for deployment.
+	- You should ideally the latest OpenEdge release version available to you, or at a minimum the same release version as used by the PAS for OpenEdge instances you wish to manage.
+1. The OpenEdge Manager (oemanager.war) and Tomcat Manager (manager.war) webapps must be deployed to the PAS instance in order to make use of these tools. For ease of deployment, run the `proant deploy_oemanager` or `proant deploy_manager` as necessary to install the webapps into a PAS instance specified via the parameter `-Dinstance=[PATH_TO_INSTANCE]`.
+	- **WARNING:** It is strongly recommended to [secure the oemanager and manager WebApps](https://docs.progress.com/bundle/openedge-security-and-auditing/page/Secure-the-Tomcat-Manager-and-OpenEdge-Manager-web-applications.html) when deployed in a production environment. You will need to update the `oemanager.properties` after deployment with any updated credentials.
 
 ## Deployment ##
 
-Simply run **proant** from this directory to obtain usage information as shown below. Parameters may be specified via command-line or by editing the `build.properties` file in advance. For actions which will alter a running PAS instance (read: those without the RO indicator), individual OEM-API commands will be logged to a `commands.log` file.
+The deployment method has changed since previous versions with use of a new **utils.zip** file now being preferred. The tools may be deployed either automatically or manually via the following processes:
 
-     [echo] Usage Instructions:
-     [echo]
-     [echo]  TCMAN Shortcuts:
-     [echo]
-     [echo]  proant query    - Use TCMAN to query the oepas1 PAS instance
-     [echo]
-     [echo]  proant startup  - Use TCMAN to start the oepas1 PAS instance
-     [echo]                    [OPTIONAL] -Dtimeout=300 - Time to wait for a proper startup
-     [echo]
-     [echo]  proant shutdown - Use TCMAN to stop the oepas1 PAS instance
-     [echo]                    [OPTIONAL] -Dtimeout=300 - Time to wait for a proper shutdown
-     [echo]
-     [echo]
-     [echo]  Internal Tools:
-     [echo]
-     [echo]  proant inventory - Bundle useful PAS instance files (as .zip) for support tickets
-     [echo]
-     [echo]  proant compile   - Compile all utility procedures to r-code (for production use)
-     [echo]
-     [echo]
-     [echo]  Status/Info:
-     [echo]
-     [echo]  proant status - [RO] Obtain MSAgent/connection status information for an ABL App
-     [echo]                  [OPTIONAL] -Dbasemem=819200 - Minimum memory threshold, in bytes, of unused agent sessions
-     [echo]
-     [echo]  proant stacks - [RO] Obtain stack information for all MSAgents for an ABL App
-     [echo]
-     [echo]  proant flush  - [RO] Flush the available deferred log buffer to agent log file
-     [echo]
-     [echo]  proant locks  - [RO] Display database users and their table locks related to an MSAgent-Session
-     [echo]                  This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary
-     [echo]                  Note: Only provides session data if using self-service DB connections for OE versions under 12.5
-     [echo]                  [OPTIONAL]  -Dcodepage=UTF-8 - Codepage
-     [echo]                  [OPTIONAL] -Dcollation=BASIC - Collation
-     [echo]                  [OPTIONAL]   -Ddb.name=Sports2020 - Database name to check
-     [echo]                  [OPTIONAL]   -Ddb.host=localhost - Database host to check
-     [echo]                  [OPTIONAL]   -Ddb.port=8600 - Database port to check
-     [echo]
-     [echo]  proant users  - [RO] Alias for 'locks' task
-     [echo]
-     [echo]
-     [echo]  Agent Management:
-     [echo]
-     [echo]  proant add     - Add (read: start) one new MSAgent for an ABL App
-     [echo]
-     [echo]  proant close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)
-     [echo]                                    For this task the 'trimhttp' will be called with the termination option 1 (forced)
-     [echo]                   [REQUIRED] -Dwebapp= - WebApp for Tomcat Manager to terminate active sessions
-     [echo]                               The given WebApp is expected to be associated with the provided -Dablapp name
-     [echo]                   [OPTIONAL] -Dsleep=1 - Sleep time in minutes after stop
-     [echo]
-     [echo]  proant clean   - Alias for 'close' task [Deprecated]
-     [echo]
-     [echo]  proant refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)
-     [echo]                   Note: This will essentially terminate all sessions (gracefully),
-     [echo]                         and prepare the Agent to pick up any R-code changes
-     [echo]
-     [echo]  proant reset   - Reset an aspect of each MSAgent for an ABL App
-     [echo]                   [REQUIRED] -Dresettype=stats [stats|logs]
-     [echo]
-     [echo]  proant stop    - Gracefully stop one or all MSAgents (+stacks output) for an ABL App
-     [echo]                   [OPTIONAL] -Dwaitfinish=120000 - How long to wait in milliseconds if the MSAgent is busy serving a request
-     [echo]                   [OPTIONAL]  -Dwaitafter=60000  - Additional time to wait in milliseconds before killing [hard stop] the MSAgent
-     [echo]                   [OPTIONAL]        -Dpid=[AGENT_PID] - Numeric process ID for a specific MSAgent to be stopped
-     [echo]
-     [echo]
-     [echo]  Session Management:
-     [echo]
-     [echo]  Note: All trim actions listed below will write application stack information to a file.
-     [echo]
-     [echo]  proant trimsingle - Trim a single ABL Session (via the Agent Manager) for a specific MSAgent
-     [echo]                      [REQUIRED]          -Dpid=[AGENT_PID]  - Numeric process ID of the MSAgent for context
-     [echo]                      [REQUIRED]       -Dsessid=[SESSION_ID] - Numeric ID for the ABL Session to be stopped
-     [echo]                      [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish+stop
-     [echo]
-     [echo]  proant trimall    - Trim all available ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
-     [echo]                      Note: For any busy sessions considered stuck use 'trimhttp' with a specific Session ID
-     [echo]                      [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish/stop
-     [echo]
-     [echo]  proant trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
-     [echo]                      Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
-     [echo]                      [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish+stop
-     [echo]
-     [echo]  proant trimhttp   - Trim one or all Client HTTP Sessions (via the Session Manager) for an ABLApp + WebApp
-     [echo]                      Terminating a client HTTP session will also terminate its associated ABL Session
-     [echo]                      [REQUIRED]       -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active sessions
-     [echo]                                        The given WebApp is expected to be associated with the provided -Dablapp name
-     [echo]                      [OPTIONAL]       -Dsessid=[SESSION_ID]  - Alphanumeric Client Session ID to be stopped
-     [echo]                                        When no session ID provided, all available Client HTTP Sessions will be expired
-     [echo]                      [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish+stop
-     [echo]
-     [echo]
-     [echo] Available common parameters with their defaults, override as necessary:
-     [echo]     -Dscheme=http
-     [echo]       -Dhost=localhost
-     [echo]       -Dport=8810
-     [echo]     -Duserid=tomcat
-     [echo]     -Dpasswd=tomcat
-     [echo]   -Dpas.root=C:\OpenEdge\WRK - PAS parent directory
-     [echo]   -Dinstance=oepas1 - Physical instance name
-     [echo]     -Dablapp=oepas1   - ABL Application name
-     [echo]
-     [echo] NOTE: The name of the ABLApp is case-sensitive!
-     [echo]
-     [echo] CATALINA_HOME: C:\Progress\OpenEdge\servers\pasoe
-     [echo] CATALINA_BASE: C:\OpenEdge\WRK\oepas1
+**Automated Deployment**
+
+Run the command `proant deploy -Dpath=[PATH_TO_INSTANCE]` to expand/unzip the **utils.zip** into your PAS instance's **CATALINA_BASE/utils/** folder. A new folder will be created if necessary, and any existing files will be overwritten if deploying on top of a prior deployment. This will overwrite any customization to an `oemanager.properties` file.
+
+**Manual Deployment**
+
+Unzip the **utils.zip** file into a new "utils" folder on the target OS image (physical or virtual machine, or container). This may be placed in either a PAS instance you have direct access to (via the OS filesystem) or a central location if desiring to manage multiple remote PAS instances.
+
+- If placed within a PAS instance in a "utils" folder the tools will automatically tailor themselves to use properties from the PAS instance, such as the HTTP or HTTPS port.
+- If **not** placed directly within a PAS instance then you must either pass command-line parameters or edit the `oemanager.properties` file to supply the necessary defaults for either or both of the following groups of properties:
+	- To control remote PAS instances: set the `scheme`, `hostname`, and `port` properties for the intended instance.
+		- eg. "-Dscheme=http -Dhostname=localhost -Dport=8810"
+	- To control local PAS instances: the `pas.root` and `instance` properties (these will form the CATALINA_BASE path).
+		- eg. "-Dpas.root=C:/OpenEdge/WRK -Dinstance=oepas1" for an instance at C:/OpenEdge/WRK/oepas1
+
+## Usage ##
+
+# For a full explanation of available tasks and use-cases please see the [expanded usage guide in USAGE.md](USAGE.md). #
 
 ## Output ##
 
-Output for all commands should be displayed via standard out and appear within the same terminal/command window where executed. There are some log files generated for sanity checks as part of the normal operation. All commands will be logged to a `commands.log` file and cannot be disabled as this ensures an audit trail of management actions taken for a PAS instance. The included `logging.config` enabled logging via the ABL Logger framework for additional insight into the operations made against a PAS instance and can be configured with varying logging levels and output. By default the logging level is set to DEBUG and will output messages to a `OEMgrConn.log` file. This will produce output similar to the `commands.log` file though it can be made more silent by changing the logging level to ERROR or lower.
+Output for all commands should be displayed via standard out and appear within the same terminal/command window where executed. Log files may be generated for sanity checks as part of the normal operation. All commands will be logged to a `commands.log` file and cannot be disabled as this ensures an audit trail of management actions taken for a PAS instance. The included `logging.config` enables logging via the ABL Logger framework for additional insight into the operations made against a PAS instance and can be configured with alternate logging levels and output options. By default, the logging level is set to DEBUG and will output messages to a `OEMgrConn.log` file. This will produce output similar to the `commands.log` file though it can be silenced by changing the logging level to ERROR or lower.
 
-## Security Notes ##
-
-It is strongly recommended to [secure the oemanager and manager WebApps](https://docs.progress.com/bundle/openedge-security-and-auditing/page/Secure-the-Tomcat-Manager-and-OpenEdge-Manager-web-applications.html) when deployed in a production environment.
+**Note:** Some data may only be displayed in an OpenEdge 12 environment, such as the Dynamic Session Limit which was added as part of the Agent self-management feature. Other values such as **RequestID** (where applicable) will only be displayed if the **Enhanced MDC Logging** is enabled--this is enabled by default in OpenEdge 12 releases though it must be manually enabled in OpenEdge 11.7.x (via **openedge_setenv.[bat|sh]**). Lastly, some runtime metrics such as counts and time values will only be present if **collectMetrics** has been set to 3 for the AppServer and each WebApp (via openedge.properties).

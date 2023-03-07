@@ -1,0 +1,5 @@
+-cpinternal UTF-8
+-cpstream UTF-8
+-cpcase BASIC
+-cpcoll BASIC
+-db Sports2020 -H localhost -S 8600 -ro -cpinternal UTF-8 -cpcoll BASIC
