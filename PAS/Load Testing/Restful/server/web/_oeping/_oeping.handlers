@@ -1,0 +1,9 @@
+{
+    "version": "2.0",
+    "serviceName": "_oeping",
+    "handlers": [{
+        "uri": "/",
+        "class": "OpenEdge.Web.PingWebHandler",
+        "enabled": true
+    }]
+}

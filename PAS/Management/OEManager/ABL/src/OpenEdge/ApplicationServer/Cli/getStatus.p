@@ -79,15 +79,19 @@ define temp-table ttAgent no-undo
     .
 
 define temp-table ttAgentSession no-undo
-    field agentID      as character
-    field agentPID     as integer
-    field sessionID    as integer
-    field sessionState as character
-    field startTime    as datetime-tz
-    field runningTime  as int64
-    field memoryBytes  as int64
-    field boundSession as character
-    field boundReqID   as character
+    field agentID        as character
+    field agentPID       as integer
+    field sessionID      as integer
+    field sessionState   as character
+    field startTime      as datetime-tz
+    field runningTime    as int64
+    field memoryBytes    as int64
+    field memAtRestBytes as int64
+    field memActiveBytes as int64
+    field reqCompleted   as int64
+    field reqFailed      as int64
+    field boundSession   as character
+    field boundReqID     as character
     .
 
 define dataset dsAgentSession for ttAgent, ttAgentSession
@@ -461,13 +465,31 @@ procedure GetAgents:
             do iLoop2 = 1 to iTotSess:
                 create ttAgentSession.
                 assign
-                    ttAgentSession.agentID      = ttAgent.agentID
-                    ttAgentSession.agentPID     = ttAgent.agentPID
-                    ttAgentSession.sessionID    = oSessions:GetJsonObject(iLoop2):GetInteger("SessionId")
-                    ttAgentSession.sessionState = oSessions:GetJsonObject(iLoop2):GetCharacter("SessionState")
-                    ttAgentSession.startTime    = oSessions:GetJsonObject(iLoop2):GetDatetimeTZ("StartTime")
-                    ttAgentSession.memoryBytes  = oSessions:GetJsonObject(iLoop2):GetInt64("SessionMemory")
+                    ttAgentSession.agentID        = ttAgent.agentID
+                    ttAgentSession.agentPID       = ttAgent.agentPID
+                    ttAgentSession.sessionID      = oSessions:GetJsonObject(iLoop2):GetInteger("SessionId")
+                    ttAgentSession.sessionState   = oSessions:GetJsonObject(iLoop2):GetCharacter("SessionState")
+                    ttAgentSession.startTime      = oSessions:GetJsonObject(iLoop2):GetDatetimeTZ("StartTime")
+                    ttAgentSession.memoryBytes    = oSessions:GetJsonObject(iLoop2):GetInt64("SessionMemory")
+                    ttAgentSession.memAtRestBytes = ttAgentSession.memoryBytes
+                    ttAgentSession.memActiveBytes = ttAgentSession.memoryBytes
                     .
+
+                if lIsMin127 then do:
+                    /* Only expend the energy to extract these values when the instance is running version 12.7+ */
+
+                    if JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(iLoop2), "MemAtRestHighWater", JsonDataType:Number) then
+                        ttAgentSession.memAtRestBytes = max(ttAgentSession.memoryBytes, oSessions:GetJsonObject(iLoop2):GetInt64("MemAtRestHighWater")).
+
+                    if JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(iLoop2), "MemActiveHighWater", JsonDataType:Number) then
+                        ttAgentSession.memActiveBytes = max(ttAgentSession.memAtRestBytes, oSessions:GetJsonObject(iLoop2):GetInt64("MemActiveHighWater")).
+
+                    if JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(iLoop2), "RequestsCompleted", JsonDataType:Number) then
+                        ttAgentSession.reqCompleted = oSessions:GetJsonObject(iLoop2):GetInt64("RequestsCompleted").
+
+                    if JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(iLoop2), "RequestsFailed", JsonDataType:Number) then
+                        ttAgentSession.reqFailed = oSessions:GetJsonObject(iLoop2):GetInt64("RequestsFailed").
+                end.
 
                 /* Attempt to determine the most minimal memory value for all sessions of all agents available. */
                 if iMinMem eq 0 then
@@ -520,7 +542,11 @@ procedure GetAgents:
         if ttAgent.memoryBytes ne ? then
             put unformatted substitute("~t    Overhead Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
 
-        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tBOUND/ACTIVE CLIENT session" skip.
+        if lIsMin127 then
+            /* This version adds additional session metrics for active memory high-water mark and count of completed/failed requests. */
+            put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tACTIVE MEM.   REQUESTS~tBOUND/ACTIVE CLIENT SESSION" skip.
+        else
+            put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tBOUND/ACTIVE CLIENT SESSION" skip.
 
         assign iBaseMem = max(iBaseMem, iMinMem) + 1024. /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory, plus 1K. */
 
@@ -533,18 +559,32 @@ procedure GetAgents:
 
         for each ttAgentSession no-lock
            where ttAgentSession.agentID eq ttAgent.agentID:
-            put unformatted substitute("~t~t&1~t&2~t&3~t&4 &5 KB~t&6 &7",
-                                        string(ttAgentSession.sessionID, ">>>9"),
-                                        string(ttAgentSession.sessionState, "x(10)"),
-                                        ttAgentSession.startTime,
-                                        FormatMsTime(ttAgentSession.runningTime),
-                                        FormatMemory(ttAgentSession.memoryBytes, false),
-                                        (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
-                                        (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
+            if lIsMin127 then do:
+                put unformatted substitute("~t~t&1~t&2~t&3~t&4 &5 KB &6 KB &7~t&8 &9",
+                                            string(ttAgentSession.sessionID, ">>>9"),
+                                            string(ttAgentSession.sessionState, "x(10)"),
+                                            ttAgentSession.startTime,
+                                            FormatMsTime(ttAgentSession.runningTime),
+                                            FormatMemory(ttAgentSession.memAtRestBytes, false),
+                                            FormatMemory(ttAgentSession.memActiveBytes, false),
+                                            FormatLongNumber(string(ttAgentSession.reqCompleted), false),
+                                            (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
+                                            (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
+            end.
+            else do:
+                put unformatted substitute("~t~t&1~t&2~t&3~t&4 &5 KB~t&6 &7",
+                                            string(ttAgentSession.sessionID, ">>>9"),
+                                            string(ttAgentSession.sessionState, "x(10)"),
+                                            ttAgentSession.startTime,
+                                            FormatMsTime(ttAgentSession.runningTime),
+                                            FormatMemory(ttAgentSession.memAtRestBytes, false),
+                                            (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
+                                            (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
+            end.
 
             assign
                 iTotSess  = iTotSess + 1
-                iTotalMem = iTotalMem + ttAgentSession.memoryBytes
+                iTotalMem = iTotalMem + ttAgentSession.memActiveBytes
                 .
 
             /* Busy sessions are those actively serving requests (non-IDLE). */

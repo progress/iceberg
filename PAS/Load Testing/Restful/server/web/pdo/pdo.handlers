@@ -1,0 +1,9 @@
+{
+    "version": "2.0",
+    "serviceName": "pdo",
+    "handlers": [{
+        "uri": "/{service}",
+        "class": "OpenEdge.Web.DataObject.DataObjectHandler",
+        "enabled": true
+    }]
+}
