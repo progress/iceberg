@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="7b04c492-648d-4be7-9876-a03636d9e7b7" activeEnvironment="Default" name="RunTests" resourceRoot="" soapui-version="5.7.0" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.actions.iface.tools.soapui.TestRunnerAction@values-local"><![CDATA[<xml-fragment xmlns:con="http://eviware.com/soapui/config">
+  <con:entry key="Report Format(s)" value=""/>
+  <con:entry key="Host:Port" value=""/>
+  <con:entry key="Export JUnit Results" value="false"/>
+  <con:entry key="Export All" value="false"/>
+  <con:entry key="Save After" value="false"/>
+  <con:entry key="Add Settings" value="false"/>
+  <con:entry key="WSS Password Type" value=""/>
+  <con:entry key="TestSuite" value="&lt;all>"/>
+  <con:entry key="Endpoint" value=""/>
+  <con:entry key="Select Report Type" value=""/>
+  <con:entry key="System Properties" value=""/>
+  <con:entry key="Password" value=""/>
+  <con:entry key="Print Report" value="false"/>
+  <con:entry key="Open Report" value="false"/>
+  <con:entry key="Export JUnit Results with test properties" value="false"/>
+  <con:entry key="Global Properties" value=""/>
+  <con:entry key="Project Properties" value=""/>
+  <con:entry key="Project Password" value=""/>
+  <con:entry key="TestCase" value="&lt;all>"/>
+  <con:entry key="Username" value=""/>
+  <con:entry key="user-settings.xml Password" value=""/>
+  <con:entry key="TestRunner Path" value=""/>
+  <con:entry key="Environment" value="Default"/>
+  <con:entry key="Coverage Report" value="false"/>
+  <con:entry key="Enable UI" value="false"/>
+  <con:entry key="Root Folder" value=""/>
+  <con:entry key="Ignore Errors" value="false"/>
+  <con:entry key="Domain" value=""/>
+  <con:entry key="Tool Args" value=""/>
+  <con:entry key="Save Project" value="false"/>
+</xml-fragment>]]></con:setting><con:setting id="com.eviware.soapui.impl.wsdl.actions.iface.tools.soapui.LoadTestRunnerAction@values-local"><![CDATA[<xml-fragment xmlns:con="http://eviware.com/soapui/config">
+  <con:entry key="Print Report Statistics" value="false"/>
+  <con:entry key="Report Format(s)" value=""/>
+  <con:entry key="Host:Port" value=""/>
+  <con:entry key="Save After" value="false"/>
+  <con:entry key="Add Settings" value="false"/>
+  <con:entry key="WSS Password Type" value=""/>
+  <con:entry key="TestSuite" value="&lt;all>"/>
+  <con:entry key="Endpoint" value=""/>
+  <con:entry key="System Properties" value=""/>
+  <con:entry key="Report to Generate" value=""/>
+  <con:entry key="Password" value=""/>
+  <con:entry key="LoadTest" value="&lt;all>"/>
+  <con:entry key="Open Report" value="false"/>
+  <con:entry key="Global Properties" value=""/>
+  <con:entry key="Project Properties" value=""/>
+  <con:entry key="ThreadCount" value=""/>
+  <con:entry key="Project Password" value=""/>
+  <con:entry key="TestCase" value="&lt;all>"/>
+  <con:entry key="Username" value=""/>
+  <con:entry key="user-settings.xml Password" value=""/>
+  <con:entry key="TestRunner Path" value="C:\Program Files\SmartBear\SoapUI-5.6.0/bin"/>
+  <con:entry key="Environment" value="Default"/>
+  <con:entry key="Limit" value=""/>
+  <con:entry key="Root Folder" value=""/>
+  <con:entry key="Domain" value=""/>
+  <con:entry key="Tool Args" value=""/>
+  <con:entry key="Save Project" value="false"/>
+</xml-fragment>]]></con:setting></con:settings><con:interface xsi:type="con:RestService" id="a269378f-93ee-4367-9e88-af6ee44f4872" wadlVersion="http://wadl.dev.java.net/2009/02" name="http://localhost:8810" type="rest" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:settings/><con:definitionCache type="TEXT" rootPart=""/><con:endpoints><con:endpoint>http://localhost:8810</con:endpoint></con:endpoints><con:resource name="" path="/web/_oeping" id="fbc1049f-9be4-448b-94ec-7842470b08e6"><con:settings/><con:parameters/><con:method name="Ping" id="823604ac-6f80-4577-a12b-477cc36a50f4" method="GET"><con:settings/><con:parameters/><con:representation type="REQUEST"><con:mediaType>application/json</con:mediaType><con:params/></con:representation><con:representation type="FAULT"><con:mediaType>application/json</con:mediaType><con:status>404</con:status><con:params/><con:element xmlns:busy="http://localhost/web/pdo/tests/runcode/busy">busy:Fault</con:element></con:representation><con:representation type="RESPONSE"><con:mediaType>application/json</con:mediaType><con:status>200</con:status><con:params/><con:element xmlns:busy="http://localhost/web/pdo/tests/runcode/busy">busy:Response</con:element></con:representation><con:representation type="FAULT"><con:mediaType>text/html;charset=UTF-8</con:mediaType><con:status>415</con:status><con:params/><con:element>html</con:element></con:representation><con:request name="GET" id="fda19645-dd9f-4771-b254-44bc87ebe8b9" mediaType="application/json"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment xmlns:con="http://eviware.com/soapui/config">&#13;
+  &lt;con:entry key="Accept-Encoding" value="gzip, deflate"/>&#13;
+  &lt;con:entry key="Accept" value="application/json"/>&#13;
+  &lt;con:entry key="Content-Type" value="application/json"/>&#13;
+&lt;/xml-fragment></con:setting></con:settings><con:endpoint>http://localhost:8810</con:endpoint><con:request/><con:originalUri>http://localhost/web/pdo/tests/runcode/busy</con:originalUri><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters/><con:parameterOrder/></con:request></con:method></con:resource><con:resource name="" path="/web/pdo/tests/runcode/busy" id="06c157e5-e94a-4497-a551-01ada37db056"><con:settings/><con:parameters/><con:method name="Look Busy" id="5479cc31-cd7a-4fb5-82ef-a1f2987e3901" method="PUT"><con:settings/><con:parameters/><con:representation type="RESPONSE"><con:mediaType>application/json</con:mediaType><con:status>200</con:status><con:params/><con:element xmlns:busy="http://localhost/web/pdo/tests/runcode/busy">busy:Response</con:element></con:representation><con:representation type="FAULT"><con:mediaType>application/json</con:mediaType><con:status>500</con:status><con:params/><con:element xmlns:busy="http://localhost/web/pdo/tests/runcode/busy">busy:Fault</con:element></con:representation><con:request name="PUT" id="edb1efa1-6126-4796-a35c-b49cc380770e" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment xmlns:con="http://eviware.com/soapui/config">&#13;
+  &lt;con:entry key="Accept-encoding" value="gzip, deflate"/>&#13;
+  &lt;con:entry key="Content-type" value="application/json"/>&#13;
+  &lt;con:entry key="Accept" value="application/json"/>&#13;
+&lt;/xml-fragment></con:setting></con:settings><con:endpoint>http://localhost:8810</con:endpoint><con:request>{
+    "busyTime": 500
+}</con:request><con:originalUri>http://localhost/web/pdo/tests/runcode/busy</con:originalUri><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters/><con:parameterOrder/></con:request></con:method></con:resource><con:resource name="leakycode" path="/web/pdo/tests/leakycode/handle" id="80b88e0a-2653-4654-8dc0-0ec9d04a1e5a"><con:settings/><con:parameters/><con:method name="Leaky Handle" id="f4c03fdc-6038-40ef-b002-511f71875a81" method="PUT"><con:settings/><con:parameters/><con:representation type="RESPONSE"><con:mediaType xsi:nil="true"/><con:status>0</con:status><con:params/><con:element>data</con:element></con:representation><con:representation type="RESPONSE"><con:mediaType xsi:nil="true"/><con:status>0</con:status><con:params/><con:element>data</con:element></con:representation><con:representation type="FAULT"><con:mediaType>application/json</con:mediaType><con:status>500 404</con:status><con:params/><con:element xmlns:buf="http://localhost/web/pdo/tests/leakycode/buffer">buf:Fault</con:element></con:representation><con:representation type="RESPONSE"><con:mediaType>application/json</con:mediaType><con:status>200</con:status><con:params/><con:element xmlns:buf="http://localhost/web/pdo/tests/leakycode/buffer">buf:Response</con:element></con:representation><con:request name="PUT" id="086de3fe-d8f1-486f-95e1-cc95a208fb21" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment xmlns:con="http://eviware.com/soapui/config">&#13;
+  &lt;con:entry key="Accept-encoding" value="gzip, deflate"/>&#13;
+  &lt;con:entry key="Content-type" value="application/json"/>&#13;
+  &lt;con:entry key="Accept" value="application/json"/>&#13;
+&lt;/xml-fragment></con:setting></con:settings><con:endpoint>http://localhost:8810</con:endpoint><con:request/><con:originalUri>http://localhost/web/pdo/tests/leakycode/buffer</con:originalUri><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters/></con:request></con:method></con:resource></con:interface><con:testSuite id="e8abd68f-6b2c-4b69-9e35-7bdbd78b9465" name="Test Suite"><con:settings/><con:runType>SEQUENTIAL</con:runType><con:testCase id="fbce0f81-6bcd-4ef3-864e-1c4f673cd310" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="Sequential Tests" searchProperties="true"><con:settings/><con:testStep type="restrequest" name="Ping" id="f94c06dc-8a44-4fcc-babb-00a9952db4dd"><con:settings/><con:config service="http://localhost:8810" resourcePath="/web/_oeping" methodName="Ping" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="Ping" id="fda19645-dd9f-4771-b254-44bc87ebe8b9" mediaType="application/json"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment xmlns:con="http://eviware.com/soapui/config">&#13;
+  &lt;con:entry key="Accept-Encoding" value="gzip, deflate"/>&#13;
+  &lt;con:entry key="Accept" value="application/json"/>&#13;
+  &lt;con:entry key="Content-Type" value="application/json"/>&#13;
+&lt;/xml-fragment></con:setting></con:settings><con:endpoint>http://localhost:8810</con:endpoint><con:request/><con:originalUri>http://localhost/web/pdo/tests/runcode/busy</con:originalUri><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters/><con:parameterOrder/></con:restRequest></con:config></con:testStep><con:testStep type="restrequest" name="Look Busy" id="44b96bef-b9a4-4bf2-bfc6-8051dbbc0445"><con:settings/><con:config service="http://localhost:8810" resourcePath="/web/pdo/tests/runcode/busy" methodName="Look Busy" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="Look Busy" id="edb1efa1-6126-4796-a35c-b49cc380770e" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment xmlns:con="http://eviware.com/soapui/config">&#13;
+  &lt;con:entry key="Accept-encoding" value="gzip, deflate"/>&#13;
+  &lt;con:entry key="Content-type" value="application/json"/>&#13;
+  &lt;con:entry key="Accept" value="application/json"/>&#13;
+&lt;/xml-fragment></con:setting></con:settings><con:endpoint>http://localhost:8810</con:endpoint><con:request>{
+    "busyTime": 500
+}</con:request><con:originalUri>http://localhost/web/pdo/tests/runcode/busy</con:originalUri><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters/><con:parameterOrder/></con:restRequest></con:config></con:testStep><con:testStep type="restrequest" name="Leaky Handle" id="54376661-23b1-4bc2-8f4b-5ab413fba581"><con:settings/><con:config service="http://localhost:8810" resourcePath="/web/pdo/tests/leakycode/handle" methodName="Leaky Handle" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="Leaky Handle" id="086de3fe-d8f1-486f-95e1-cc95a208fb21" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment xmlns:con="http://eviware.com/soapui/config">&#13;
+  &lt;con:entry key="Accept-encoding" value="gzip, deflate"/>&#13;
+  &lt;con:entry key="Content-type" value="application/json"/>&#13;
+  &lt;con:entry key="Accept" value="application/json"/>&#13;
+&lt;/xml-fragment></con:setting></con:settings><con:endpoint>http://localhost:8810</con:endpoint><con:request/><con:originalUri>http://localhost/web/pdo/tests/leakycode/buffer</con:originalUri><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters/></con:restRequest></con:config></con:testStep><con:properties/></con:testCase><con:properties/></con:testSuite><con:properties/><con:wssContainer/><con:oAuth2ProfileContainer/><con:oAuth1ProfileContainer/><con:sensitiveInformation/></con:soapui-project>

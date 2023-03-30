@@ -1,0 +1,259 @@
+<project name="TestingTools" basedir="." default="usage">
+
+    <!-- Utilize a local file for properties. Allows build.xml to provide defaults only. -->
+    <property file="${basedir}/build.properties"/>
+
+    <target name="usage" description="Usage Instructions">
+        <init_oe/> <!-- Set standard environment variables. -->
+
+        <echo message="${line.separator}"/>
+        <echo message="Run from a PROENV session or with DLC and DLC/bin in your PATH."/>
+        <echo message="${line.separator}Usage Instructions:"/>
+        <echo message="${line.separator} proant runtest - Run concurrent tests against the APSV transport of a PAS instance"/>
+        <echo message="  -Dproc.name=${proc.name} - Client procedure to execute as the concurrent test"/>
+        <echo message="   -Dproc.ext=${proc.ext}       - Client procedure file extention"/>
+        <echo message="        -Dbad=${bad}    - Run without cleaning up persistent procedure handles [true|false]"/>
+        <echo message="       -Dtype=${type}    - Type of test for '${proc.name}${proc.ext}' to run on the PAS instance [hello|looper]"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator}Standard parameters with their defaults:"/>
+        <echo message="  -Dscheme=${scheme}"/>
+        <echo message="    -Dhost=${host}"/>
+        <echo message="    -Dport=${port}"/>
+        <echo message="  -Dwebapp=${webapp}"/>
+    </target>
+
+    <macrodef name="init_env">
+        <sequential>
+            <!-- Access environmental variables via "env.*". -->
+            <property environment="env"/>
+
+            <!-- Set a property if environment is Windows. -->
+            <condition property="isWin">
+                <os family="windows"/>
+            </condition>
+
+            <!-- Set a property if environment is Unix. -->
+            <condition property="isUnix">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set a property if environment is 32bit. -->
+            <condition property="is32bit">
+                <or>
+                    <os arch="x86"/>
+                    <os arch="i386"/>
+                </or>
+            </condition>
+
+            <!-- Set a property if environment is 64bit. -->
+            <condition property="is64bit">
+                <not>
+                    <or>
+                        <os arch="x86"/>
+                        <os arch="i386"/>
+                    </or>
+                </not>
+            </condition>
+
+            <!-- Set the script suffix for the OS. -->
+            <condition property="scriptSuffix" value=".sh" else=".bat">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set path delimiter for the OS. -->
+            <condition property="delim" value="/" else="\">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Set general properties for this build file. -->
+            <property name="scheme" value="http"/>
+            <property name="host" value="localhost"/>
+            <property name="port" value="8810"/>
+            <property name="webapp" value="ROOT"/>
+            <property name="proc.name" value="testApsv"/>
+            <property name="proc.ext" value=".p"/>
+            <!-- Set specialized properties for the default test. -->
+            <property name="bad" value="false"/> <!-- Run with inefficient code cleanup practices. -->
+            <property name="verbose" value="true"/> <!-- Default to true, set false to suppress messages. -->
+            <property name="type" value="hello"/> <!-- Allows easy switching of test pre-configured cases. -->
+        </sequential>
+    </macrodef>
+
+    <macrodef name="init_oe">
+        <sequential>
+            <init_env/> <!-- Initialize environmental and general properties. -->
+
+            <!-- Fail immediately if not a 64-bit OS. -->
+            <fail message="Environment is not 64-bit">
+                <condition>
+                    <not>
+                        <isset property="is64bit"/>
+                    </not>
+                </condition>
+            </fail>
+
+            <!-- Check if DLC is set as an environment variable. -->
+            <fail message="DLC Home path is not set">
+                <condition>
+                    <and>
+                        <not><isset property="dlcHome"/></not>
+                        <not><isset property="env.DLC"/></not>
+                    </and>
+                </condition>
+            </fail>
+            <property name="dlcHome" value="${env.DLC}"/>
+            <echo message="DLC Home: ${dlcHome}"/>
+
+            <!-- Assume the DLC WRK directory unless overridden. -->
+            <condition property="wrk" value="/usr/wrk" else="C:\OpenEdge\WRK">
+                <os family="unix"/>
+            </condition>
+
+            <!-- Load the current PCT library from DLC. -->
+            <taskdef resource="PCT.properties" classpath="${dlcHome}/pct/PCT.jar"/>
+            <!-- Define this property to disable anonymous PCT statistics telemetry. -->
+            <property name="pct.skip.analytics" value=""/>
+
+            <!-- Access the OE version info, and read into a property. -->
+            <ProgressVersion dlcHome="${dlcHome}" majorVersion="oeMajor" minorVersion="oeMinor" revision="oeRev" fullVersion="full"/>
+            <property name="oe.version" value="${oeMajor}.${oeMinor}.${oeRev}"/>
+            <echo message="OpenEdge Version: ${oe.version}"/>
+
+            <!-- Add the ANT-Contrib library to this environment (present in 11.7.4+ and 12.0+). -->
+            <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${dlcHome}/ant/lib/ant-contrib-0.6.jar"/>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="require">
+        <!-- Usage <require file="_path_to_file_"/> -->
+        <attribute name="file"/>
+        <attribute name="message" default="File @{file} not set or missing"/>
+
+        <sequential>
+            <fail message="@{message}">
+                <condition>
+                    <not>
+                        <available file="@{file}" type="file"/>
+                    </not>
+                </condition>
+            </fail>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="requireDir">
+        <!-- Usage <requireDir folder="_path_to_folder_"/> -->
+        <attribute name="folder"/>
+        <attribute name="message" default="Directory @{folder} not set or missing"/>
+
+        <sequential>
+            <fail message="@{message}">
+                <condition>
+                    <not>
+                        <available file="@{folder}" type="dir"/>
+                    </not>
+                </condition>
+            </fail>
+        </sequential>
+    </macrodef>
+
+    <macrodef name="tester">
+        <attribute name="batch"/>
+        <attribute name="run"/>
+
+        <sequential>
+            <echo message="Initiating test @{batch}.@{run} of ${num.batches}..."/>
+            <!-- Execute the client test procedure with options (eg. logging) and parameters. -->
+            <PCTRun
+                   dlcHome="${dlcHome}"
+                   graphicalMode="false"
+                   procedure="client/${proc.name}${proc.ext}">
+                <Option name="-clientlog" value="${log.dir}/client-@{batch}.@{run}.log"/>
+                <Option name="-logginglevel" value="${log.level}"/>
+                <Option name="-logentrytypes" value="${log.types}"/>
+
+                <!-- Provide connection information to the client test procedure. -->
+                <Parameter name="scheme" value="${scheme}"/>
+                <Parameter name="host" value="${host}"/>
+                <Parameter name="port" value="${port}"/>
+                <Parameter name="webapp" value="${webapp}"/>
+
+                <!-- These are informational and optional for use. -->
+                <Parameter name="tests" value="${num.batches}"/> <!-- Total number of batched tests. -->
+                <Parameter name="test" value="@{batch}.@{run}"/> <!-- Will show as 1.0, 1.1, etc. -->
+
+                <!-- The following are specific parameters to the client test procedure. -->
+                <Parameter name="pause" value="${pause.time}"/>
+                <Parameter name="duration" value="${test.time}"/>
+                <Parameter name="waitAfter" value="${wait.time}"/>
+                <Parameter name="badCode" value="${bad}"/>
+                <Parameter name="verbose" value="${verbose}"/>
+                <Parameter name="type" value="${type}"/>
+            </PCTRun>
+        </sequential>
+    </macrodef>
+
+    <target name="_runbatch">
+        <echo message="Running batch ${batch} of ${num.batches}..."/>
+
+        <!-- Run a batch of 10 tests. -->
+        <parallel failonany="false">
+            <tester batch="${batch}" run="0"/>
+            <tester batch="${batch}" run="1"/>
+            <tester batch="${batch}" run="2"/>
+            <tester batch="${batch}" run="3"/>
+            <tester batch="${batch}" run="4"/>
+            <tester batch="${batch}" run="5"/>
+            <tester batch="${batch}" run="6"/>
+            <tester batch="${batch}" run="7"/>
+            <tester batch="${batch}" run="8"/>
+            <tester batch="${batch}" run="9"/>
+        </parallel>
+    </target>
+
+    <target name="runtest">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <!-- Should match the number of batches defined below. -->
+        <property name="num.batches" value="5"/>
+
+        <!-- Set variables for the test behavior. -->
+        <property name="pause.time" value="5"/> <!-- How long to wait between iterations of internal tests. -->
+        <property name="test.time" value="60"/> <!-- Overall testing time (main loop execution). -->
+        <property name="wait.time" value="2"/> <!-- How long to wait after main loop completes. -->
+        <property name="log.level" value="2"/>
+        <property name="log.types" value="DB.Connects"/>
+        <property name="log.dir" value="${basedir}/logs"/>
+
+        <!--
+           Override properties above like normal, eg.:
+             -Dlog.level=5 -Dlog.types=4GLTrace:4
+        -->
+
+        <!-- Create an output directory for log files. -->
+        <mkdir dir="${log.dir}"/>
+
+        <!-- Run a set of batches in parallel (10 tests per batch). -->
+        <parallel failonany="false">
+            <antcall target="_runbatch">
+                <param name="batch" value="1"/>
+            </antcall>
+
+            <antcall target="_runbatch">
+                <param name="batch" value="2"/>
+            </antcall>
+
+            <antcall target="_runbatch">
+                <param name="batch" value="3"/>
+            </antcall>
+
+            <antcall target="_runbatch">
+                <param name="batch" value="4"/>
+            </antcall>
+
+            <antcall target="_runbatch">
+                <param name="batch" value="5"/>
+            </antcall>
+        </parallel>
+    </target>
+
+</project>

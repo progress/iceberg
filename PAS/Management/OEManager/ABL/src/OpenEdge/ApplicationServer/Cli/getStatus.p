@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2022 Progress Software Corporation
+    Copyright 2020-2023 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -29,13 +29,12 @@
  * Reference: https://knowledgebase.progress.com/articles/Article/P89737
  */
 
-&GLOBAL-DEFINE MIN_VERSION_12_2 (integer(entry(1, proversion(1), ".")) eq 12 and integer(entry(2, proversion(1), ".")) ge 2)
-
 using OpenEdge.ApplicationServer.Util.OEManagerConnection.
 using OpenEdge.ApplicationServer.Util.OEManagerEndpoint.
 using OpenEdge.Core.Json.JsonPropertyHelper.
 using OpenEdge.Core.JsonDataTypeEnum.
 using OpenEdge.Core.Collections.StringStringMap.
+using OpenEdge.Core.SemanticVersion.
 using Progress.Json.ObjectModel.ObjectModelParser.
 using Progress.Json.ObjectModel.JsonObject.
 using Progress.Json.ObjectModel.JsonArray.
@@ -53,6 +52,9 @@ define variable iBaseMem   as int64           no-undo.
 define variable iTotClSess as integer         no-undo.
 define variable dInstTime  as datetime        no-undo.
 define variable cBound     as character       no-undo.
+define variable oVersion   as SemanticVersion no-undo.
+define variable lIsMin122  as logical         no-undo.
+define variable lIsMin127  as logical         no-undo.
 
 /* Manage the server connection to the OEManager webapp */
 define variable oMgrConn  as OEManagerConnection no-undo.
@@ -77,15 +79,19 @@ define temp-table ttAgent no-undo
     .
 
 define temp-table ttAgentSession no-undo
-    field agentID      as character
-    field agentPID     as integer
-    field sessionID    as integer
-    field sessionState as character
-    field startTime    as datetime-tz
-    field runningTime  as int64
-    field memoryBytes  as int64
-    field boundSession as character
-    field boundReqID   as character
+    field agentID        as character
+    field agentPID       as integer
+    field sessionID      as integer
+    field sessionState   as character
+    field startTime      as datetime-tz
+    field runningTime    as int64
+    field memoryBytes    as int64
+    field memAtRestBytes as int64
+    field memActiveBytes as int64
+    field reqCompleted   as int64
+    field reqFailed      as int64
+    field boundSession   as character
+    field boundReqID     as character
     .
 
 define dataset dsAgentSession for ttAgent, ttAgentSession
@@ -210,6 +216,7 @@ procedure GetApplications:
     define variable oTemp     as JsonObject no-undo.
     define variable oWebApps  as JsonArray  no-undo.
     define variable oWebTrans as JsonArray  no-undo.
+    define variable cVersion  as character  no-undo.
 
     assign oABLApps = oMgrConn:GetApplications().
     if oABLApps:Length gt 0 then
@@ -219,8 +226,16 @@ procedure GetApplications:
             /* This should be the proper and case-sensitive name of the ABLApp, so let's make sure we use that going forward. */
             assign cAblApp = oTemp:GetCharacter("name").
 
+            /* Remember the OpenEdge version for this PAS instance, sent in the format "v#.#.# ( YYYY-MM-DD )". */
+            if JsonPropertyHelper:HasTypedProperty(oTemp, "version", JsonDataType:String) then do:
+                cVersion = oTemp:GetCharacter("version").
+                assign oVersion = SemanticVersion:Parse(entry(1, replace(cVersion, "v", ""), " ")).
+            end.
+            else
+                assign oVersion = new SemanticVersion(0, 0 ,0).
+
             /* Reports the full ABL Application name and OpenEdge version as reported by the monitored PAS instance itself. */
-            put unformatted substitute("~nABL Application Information [&1 - &2]", cAblApp, oTemp:GetCharacter("version")) skip.
+            put unformatted substitute("~nABL Application Information [&1 - &2]", cAblApp, cVersion) skip.
 
             if JsonPropertyHelper:HasTypedProperty(oTemp, "webapps", JsonDataType:Array) then do:
                 assign oWebApps = oTemp:GetJsonArray("webapps").
@@ -239,6 +254,10 @@ procedure GetApplications:
             end. /* has webapps */
         end. /* matching ABLApp */
     end. /* Application */
+
+    /* Set some simple indicators for minimum OE versions which affects other API calls. */
+    assign lIsMin122 = (oVersion:Major eq 12 and oVersion:Minor ge 2) or oVersion:Major gt 12.
+    assign lIsMin127 = (oVersion:Major eq 12 and oVersion:Minor ge 7) or oVersion:Major gt 12.
 end procedure.
 
 /* Get the configured max for ABLSessions/Connections per MSAgent, along with min/max/initial MSAgents. */
@@ -388,25 +407,25 @@ procedure GetAgents:
 
         /* We should only obtain additional status and metrics if the MSAgent is available. */
         if ttAgent.agentState eq "available" then do:
-        &IF {&MIN_VERSION_12_2} &THEN
-            /* Get the dynamic value for the available sessions of this MSAgent (available only in 12.2.0 and later). */
-            oSessions = oMgrConn:GetDynamicSessionLimit(cAblApp, ttAgent.agentPID).
-            if oSessions:Length ge 1 and JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(1), "ABLOutput", JsonDataType:object) then do:
-                oSessInfo = oSessions:GetJsonObject(1):GetJsonObject("ABLOutput"). /* Expects an array with at least 1 element (object). */
+            if lIsMin122 then do:
+                /* Get the dynamic value for the available sessions of this MSAgent (available only to an instance running 12.2+). */
+                oSessions = oMgrConn:GetDynamicSessionLimit(cAblApp, ttAgent.agentPID).
+                if oSessions:Length ge 1 and JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(1), "ABLOutput", JsonDataType:object) then do:
+                    oSessInfo = oSessions:GetJsonObject(1):GetJsonObject("ABLOutput"). /* Expects an array with at least 1 element (object). */
 
-                /* Should be the current calculated maximum # of ABL Sessions which can be started/utilized. */
-                if JsonPropertyHelper:HasTypedProperty(oSessInfo, "dynmaxablsessions", JsonDataType:Number) then
-                    assign ttAgent.maxSessions = oSessInfo:GetInteger("dynmaxablsessions").
+                    /* Should be the current calculated maximum # of ABL Sessions which can be started/utilized. */
+                    if JsonPropertyHelper:HasTypedProperty(oSessInfo, "dynmaxablsessions", JsonDataType:Number) then
+                        assign ttAgent.maxSessions = oSessInfo:GetInteger("dynmaxablsessions").
 
-                /* This should represent the total number of ABL Sessions started, not to exceed the Dynamic Max. */
-                if JsonPropertyHelper:HasTypedProperty(oSessInfo, "numABLSessions", JsonDataType:Number) then
-                    assign ttAgent.ablSessions = oSessInfo:GetInteger("numABLSessions").
+                    /* This should represent the total number of ABL Sessions started, not to exceed the Dynamic Max. */
+                    if JsonPropertyHelper:HasTypedProperty(oSessInfo, "numABLSessions", JsonDataType:Number) then
+                        assign ttAgent.ablSessions = oSessInfo:GetInteger("numABLSessions").
 
-                /* This should be the number of ABL Sessions available to execute ABL code for this MSAgent. */
-                if JsonPropertyHelper:HasTypedProperty(oSessInfo, "numAvailableSessions", JsonDataType:Number) then
-                    assign ttAgent.availSess = oSessInfo:GetInteger("numAvailableSessions").
-            end. /* session info array length ge 1 */
-        &ENDIF
+                    /* This should be the number of ABL Sessions available to execute ABL code for this MSAgent. */
+                    if JsonPropertyHelper:HasTypedProperty(oSessInfo, "numAvailableSessions", JsonDataType:Number) then
+                        assign ttAgent.availSess = oSessInfo:GetInteger("numAvailableSessions").
+                end. /* session info array length ge 1 */
+            end.
 
             /* Get threads for this particular MSAgent. */
             assign dStart = ?. /* Clear before use. */
@@ -446,13 +465,31 @@ procedure GetAgents:
             do iLoop2 = 1 to iTotSess:
                 create ttAgentSession.
                 assign
-                    ttAgentSession.agentID      = ttAgent.agentID
-                    ttAgentSession.agentPID     = ttAgent.agentPID
-                    ttAgentSession.sessionID    = oSessions:GetJsonObject(iLoop2):GetInteger("SessionId")
-                    ttAgentSession.sessionState = oSessions:GetJsonObject(iLoop2):GetCharacter("SessionState")
-                    ttAgentSession.startTime    = oSessions:GetJsonObject(iLoop2):GetDatetimeTZ("StartTime")
-                    ttAgentSession.memoryBytes  = oSessions:GetJsonObject(iLoop2):GetInt64("SessionMemory")
+                    ttAgentSession.agentID        = ttAgent.agentID
+                    ttAgentSession.agentPID       = ttAgent.agentPID
+                    ttAgentSession.sessionID      = oSessions:GetJsonObject(iLoop2):GetInteger("SessionId")
+                    ttAgentSession.sessionState   = oSessions:GetJsonObject(iLoop2):GetCharacter("SessionState")
+                    ttAgentSession.startTime      = oSessions:GetJsonObject(iLoop2):GetDatetimeTZ("StartTime")
+                    ttAgentSession.memoryBytes    = oSessions:GetJsonObject(iLoop2):GetInt64("SessionMemory")
+                    ttAgentSession.memAtRestBytes = ttAgentSession.memoryBytes
+                    ttAgentSession.memActiveBytes = ttAgentSession.memoryBytes
                     .
+
+                if lIsMin127 then do:
+                    /* Only expend the energy to extract these values when the instance is running version 12.7+ */
+
+                    if JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(iLoop2), "MemAtRestHighWater", JsonDataType:Number) then
+                        ttAgentSession.memAtRestBytes = max(ttAgentSession.memoryBytes, oSessions:GetJsonObject(iLoop2):GetInt64("MemAtRestHighWater")).
+
+                    if JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(iLoop2), "MemActiveHighWater", JsonDataType:Number) then
+                        ttAgentSession.memActiveBytes = max(ttAgentSession.memAtRestBytes, oSessions:GetJsonObject(iLoop2):GetInt64("MemActiveHighWater")).
+
+                    if JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(iLoop2), "RequestsCompleted", JsonDataType:Number) then
+                        ttAgentSession.reqCompleted = oSessions:GetJsonObject(iLoop2):GetInt64("RequestsCompleted").
+
+                    if JsonPropertyHelper:HasTypedProperty(oSessions:GetJsonObject(iLoop2), "RequestsFailed", JsonDataType:Number) then
+                        ttAgentSession.reqFailed = oSessions:GetJsonObject(iLoop2):GetInt64("RequestsFailed").
+                end.
 
                 /* Attempt to determine the most minimal memory value for all sessions of all agents available. */
                 if iMinMem eq 0 then
@@ -505,7 +542,11 @@ procedure GetAgents:
         if ttAgent.memoryBytes ne ? then
             put unformatted substitute("~t    Overhead Memory: &1 KB", FormatMemory(ttAgent.memoryBytes, true)) skip.
 
-        put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tBOUND/ACTIVE CLIENT session" skip.
+        if lIsMin127 then
+            /* This version adds additional session metrics for active memory high-water mark and count of completed/failed requests. */
+            put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tACTIVE MEM.   REQUESTS~tBOUND/ACTIVE CLIENT SESSION" skip.
+        else
+            put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tBOUND/ACTIVE CLIENT SESSION" skip.
 
         assign iBaseMem = max(iBaseMem, iMinMem) + 1024. /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory, plus 1K. */
 
@@ -518,18 +559,32 @@ procedure GetAgents:
 
         for each ttAgentSession no-lock
            where ttAgentSession.agentID eq ttAgent.agentID:
-            put unformatted substitute("~t~t&1~t&2~t&3~t&4 &5 KB~t&6 &7",
-                                        string(ttAgentSession.sessionID, ">>>9"),
-                                        string(ttAgentSession.sessionState, "x(10)"),
-                                        ttAgentSession.startTime,
-                                        FormatMsTime(ttAgentSession.runningTime),
-                                        FormatMemory(ttAgentSession.memoryBytes, false),
-                                        (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
-                                        (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
+            if lIsMin127 then do:
+                put unformatted substitute("~t~t&1~t&2~t&3~t&4 &5 KB &6 KB &7~t&8 &9",
+                                            string(ttAgentSession.sessionID, ">>>9"),
+                                            string(ttAgentSession.sessionState, "x(10)"),
+                                            ttAgentSession.startTime,
+                                            FormatMsTime(ttAgentSession.runningTime),
+                                            FormatMemory(ttAgentSession.memAtRestBytes, false),
+                                            FormatMemory(ttAgentSession.memActiveBytes, false),
+                                            FormatLongNumber(string(ttAgentSession.reqCompleted), false),
+                                            (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
+                                            (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
+            end.
+            else do:
+                put unformatted substitute("~t~t&1~t&2~t&3~t&4 &5 KB~t&6 &7",
+                                            string(ttAgentSession.sessionID, ">>>9"),
+                                            string(ttAgentSession.sessionState, "x(10)"),
+                                            ttAgentSession.startTime,
+                                            FormatMsTime(ttAgentSession.runningTime),
+                                            FormatMemory(ttAgentSession.memAtRestBytes, false),
+                                            (if ttAgentSession.boundSession gt "" then ttAgentSession.boundSession else ""),
+                                            (if ttAgentSession.boundReqID gt "" then "[" + ttAgentSession.boundReqID + "]" else "-")) skip.
+            end.
 
             assign
                 iTotSess  = iTotSess + 1
-                iTotalMem = iTotalMem + ttAgentSession.memoryBytes
+                iTotalMem = iTotalMem + ttAgentSession.memActiveBytes
                 .
 
             /* Busy sessions are those actively serving requests (non-IDLE). */
@@ -570,7 +625,7 @@ procedure GetSessions:
         when 0 then put unformatted "(Not Enabled)" skip.
         when 1 then put unformatted "(Count-Based)" skip.
         when 2 then put unformatted "(Time-Based)" skip.
-        when 3 then put unformatted "(Count+time)" skip.
+        when 3 then put unformatted "(Count+Time)" skip.
     end case.
 
     if valid-object(oMetrics) then do:
@@ -637,7 +692,7 @@ procedure GetSessions:
     put unformatted substitute("~nClient HTTP Sessions: &1", iTotClSess) skip.
 
     if iTotClSess gt 0 then do:
-        put unformatted "~tSTATE     SESS STATE  BOUND~tLAST ACCESS / STARTED~t~tELAPSED time  session MODEL    ADAPTER   session ID~t~t~t~t~t~t~tREQUEST ID" skip.
+        put unformatted "~tSTATE     SESS STATE  BOUND~tLAST ACCESS / STARTED~t~tELAPSED TIME  SESSION MODEL    ADAPTER   SESSION ID~t~t~t~t~t~t~tREQUEST ID" skip.
 
         if iTotClSess gt 0 then
         SESSIONBLK:
@@ -706,7 +761,7 @@ procedure GetSessions:
             end. /* agentConnInfo */
 
             catch err as Progress.Lang.Error:
-                message substitute("Encountered error displaying session &1 of &2: &3", iLoop, iTotClSess, err:GetMessage(1)).
+                message substitute("Encountered error displaying Client Session &1 of &2: &3", iLoop, iTotClSess, err:GetMessage(1)).
                 if valid-object(oConnInfo) then /* Output JSON data for investigation. */
                     oClSess:WriteFile(substitute("ClientSession_&1.json", cOutDate), true).
                 next SESSIONBLK.
