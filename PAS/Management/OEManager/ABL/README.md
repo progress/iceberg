@@ -17,14 +17,30 @@ The deployment method has changed since previous versions with use of a new **ut
 
 **Automated Deployment**
 
-Run the command `proant deploy -Dpath=[PATH_TO_INSTANCE]` to expand/unzip the **utils.zip** into your PAS instance's **CATALINA_BASE/utils/** folder. A new folder will be created if necessary, and any existing files will be overwritten if deploying on top of a prior deployment. This will overwrite any customization to an `oemanager.properties` file.
+Run the command `proant deploy -Dpath=[PATH_TO_INSTANCE]` to expand/unzip the **utils.zip** into your PAS instance's **CATALINA_BASE/utils/** folder. A new folder will be created if necessary, and any existing files will be overwritten if deploying on top of a prior deployment. This will overwrite any customization to an `oemanager.properties` file (when present).
 
 **Manual Deployment**
 
-Unzip the **utils.zip** file into a new "utils" folder on the target OS image (physical or virtual machine, or container). This may be placed in either a PAS instance you have direct access to (via the OS filesystem) or a central location if desiring to manage multiple remote PAS instances.
+Unzip the **utils.zip** file into a new "utils" folder anywhere on the target OS image (physical or virtual machine, or container). This may be placed in either a PAS instance you have direct access to (via the OS filesystem) or an arbitrary location if desiring to manage multiple remote PAS instances from a standalone instance of the utilities.
+
+## Post-Deployment ##
+
+Once the **utils.zip** has been deployed there will be minor tailoring required. How the utilities were deployed and whether you are managing a local or remote PAS instance will affect which properties must be modified. But first, the following should be kept in mind regardless of these factors:
+
+- The `userid` and `passwd` for the OEManager webapp must always be specified in one of these two ways:
+	1. Supply the properties on the command line via `-Duserid=<username>` and `-Dpasswd=<password>`.
+	1. Or, modify the `oemanager.properties` file in the deployed location to use default values.
+- The `ablapp` (and `webapp` when necessary) should be checked and modified appropriately through either command line parameters (`-Dablapp` and `-Dwebapp`) or set with defaults in the `oemanager.properties` file as it is not possible to assume which app names are intended for tasks.
+
+**Deployed to a PAS Instance**
 
 - If placed within a PAS instance in a "utils" folder the tools will automatically tailor themselves to use properties from the PAS instance, such as the HTTP or HTTPS port.
-- If **not** placed directly within a PAS instance then you must either pass command-line parameters or edit the `oemanager.properties` file to supply the necessary defaults for either or both of the following groups of properties:
+- The `port` property may still be overridden by use of the `-Dscheme` command line parameters to prefer either "http" or "https" while passing a parameter of `-Dport` will be the default used if either an HTTP or HTTPS port cannot be inferred from the local PAS instance.
+- Note: When deployed into a PAS instance as a "utils" folder, the properties `-Dpas.root` and `-Dinstance` should be automatically inferred from the directory structure.
+
+**Deployed Externally Usage**
+
+- If **not** placed directly within a PAS instance then you must either pass command-line parameters or edit the `oemanager.properties` file to supply the necessary defaults for the following properties:
 	- To control remote PAS instances: set the `scheme`, `hostname`, and `port` properties for the intended instance.
 		- eg. "-Dscheme=http -Dhostname=localhost -Dport=8810"
 	- To control local PAS instances: the `pas.root` and `instance` properties (these will form the CATALINA_BASE path).
