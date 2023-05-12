@@ -591,7 +591,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -624,7 +624,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -656,7 +656,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -688,7 +688,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -723,7 +723,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -757,7 +757,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -792,7 +792,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -828,7 +828,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -862,7 +862,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -895,7 +895,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -927,7 +927,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -959,7 +959,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -1011,7 +1011,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <!-- End Database Connections -->
             <Parameter name="Scheme" value="${scheme}"/>
