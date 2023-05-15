@@ -43,6 +43,7 @@ using Progress.Json.ObjectModel.JsonDataType.
 define variable cOutFile   as character       no-undo.
 define variable cOutDate   as character       no-undo.
 define variable oClSess    as JsonArray       no-undo.
+define variable oMetrics   as JsonObject      no-undo.
 define variable oAgentMap  as StringStringMap no-undo.
 define variable iLoop      as integer         no-undo.
 define variable iLoop2     as integer         no-undo.
@@ -355,7 +356,6 @@ procedure GetAgents:
     define variable dTemp     as datetime-tz no-undo.
     define variable oAgents   as JsonArray   no-undo.
     define variable oAgent    as JsonObject  no-undo.
-    define variable oMetrics  as JsonObject  no-undo.
     define variable oSessions as JsonArray   no-undo.
     define variable oSessInfo as JsonObject  no-undo.
     define variable oStatHist as JsonArray   no-undo.
@@ -625,7 +625,6 @@ end procedure.
 procedure GetSessions:
     define variable lIsBound  as logical    no-undo.
     define variable oConnInfo as JsonObject no-undo.
-    define variable oMetrics  as JsonObject no-undo.
     define variable oTemp     as JsonObject no-undo.
 
     /* https://docs.progress.com/bundle/pas-for-openedge-management/page/Collect-runtime-metrics.html */
