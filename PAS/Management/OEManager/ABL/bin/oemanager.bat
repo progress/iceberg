@@ -28,18 +28,14 @@ if exist "%ANTSCRIPT%" goto START
    goto END
 
 :START
-REM Remember the original ANT_HOME
-set _ANT_HOME=%ANT_HOME%
-set ANT_HOME="%DLC%"\ant
-
 REM Set JAVA_HOME by calling java_env
 if exist "%DLC%\bin\java_env.bat" (
     call "%DLC%\bin\java_env.bat"
 )
 
-REM Use the oemanager.xml as task instructions to Ant, passing all other parameters
-call "%ANTSCRIPT%" -f oemanager.xml %*
-set ANT_HOME=%_ANT_HOME%
+REM Use the PowerShell utility to execute the Ant utility with all given parameters
+PowerShell.exe -executionpolicy bypass -File "oemanager.ps1" %*
+
 goto END
 
 :END
