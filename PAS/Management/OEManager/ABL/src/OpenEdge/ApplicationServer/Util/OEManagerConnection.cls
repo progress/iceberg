@@ -1,5 +1,5 @@
 /*
-    Copyright 2022 Progress Software Corporation
+    Copyright 2022-2023 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -335,13 +335,13 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return "".
     end method. /* GetOpOutcome */
 
-    /* Write a server command (Verb+URL) to the commands.log file
+    /* Write a server command (Verb+URL) to the oemanager.log file
 
        @param character Action or HTTP Verb
        @param character Command bound for the OEManager webapp */
     method public void LogCommand ( input pcVerb as character, input pcCommand as character ):
         /* Output to a special log file any commands executed via a connection. */
-        output to value("commands.log") append.
+        output to value("oemanager.log") append.
         put unformatted substitute("&1 - &2 &3", iso-date(now), pcVerb, pcCommand) skip.
         output close.
     end method. /* LogCommand */
