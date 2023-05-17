@@ -1,5 +1,6 @@
 #!/bin/sh
 # OpenEdge - OEManager CLI Utility
+
 PROG=`basename $0`
 
 # Utility must be run with DLC environment variable set
