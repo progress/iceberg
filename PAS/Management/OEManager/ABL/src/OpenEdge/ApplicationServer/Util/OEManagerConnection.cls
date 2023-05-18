@@ -28,6 +28,11 @@
 
 block-level on error undo, throw.
 
+using OpenEdge.Logging.LogLevelEnum.
+using OpenEdge.Logging.LoggerFilterRegistry.
+using OpenEdge.Logging.TokenResolver.
+using OpenEdge.Logging.VoidLogger.
+using OpenEdge.Logging.Writer.NamedFileWriter.
 using OpenEdge.ApplicationServer.Util.OEManagerConnection.
 using OpenEdge.ApplicationServer.Util.OEManagerEndpoint.
 using OpenEdge.Core.Assert.
@@ -35,7 +40,6 @@ using OpenEdge.Core.Json.JsonPropertyHelper.
 using OpenEdge.Logging.ILogWriter.
 using OpenEdge.Logging.ISupportLogging.
 using OpenEdge.Logging.LoggerBuilder.
-using OpenEdge.Net.URI.
 using OpenEdge.Net.HTTP.ClientBuilder.
 using OpenEdge.Net.HTTP.Credentials.
 using OpenEdge.Net.HTTP.IHttpClient.
@@ -43,9 +47,10 @@ using OpenEdge.Net.HTTP.IHttpRequest.
 using OpenEdge.Net.HTTP.IHttpResponse.
 using OpenEdge.Net.HTTP.MethodEnum.
 using OpenEdge.Net.HTTP.RequestBuilder.
+using OpenEdge.Net.URI.
 using Progress.Json.ObjectModel.JsonArray.
-using Progress.Json.ObjectModel.JsonObject.
 using Progress.Json.ObjectModel.JsonDataType.
+using Progress.Json.ObjectModel.JsonObject.
 
 class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLogging:
 
@@ -72,6 +77,18 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         get():
             if not valid-object(this-object:Logger) then
                 assign this-object:Logger = LoggerBuilder:GetLogger(get-class(OpenEdge.ApplicationServer.Util.OEManagerConnection)).
+
+            /**
+             * A logger is always returned via GetLogger(), but if no configuration file exists it will be a VoidLogger instance.
+             * Therefore, we should at least create a logger instance that can handle any message output in a consistent manner.
+             * If the end-user wishes to alter this behavior then they can create a logging.config file for better control.
+             */
+            if type-of(this-object:Logger, VoidLogger) then
+                assign this-object:Logger = LoggerBuilder:Build("OpenEdge.ApplicationServer.Util.OEManagerConnection")
+                                                         :LogAt(LogLevelEnum:INFO) // Log every little thing.
+                                                         :AddFilter(LoggerFilterRegistry:FULL_TEXT_FORMAT)
+                                                         :AddFilter(new NamedFileWriter(session:temp-directory + "oemanager.log", true))
+                                                         :Logger.
 
             return this-object:Logger.
         end get.
@@ -335,15 +352,13 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return "".
     end method. /* GetOpOutcome */
 
-    /* Write a server command (Verb+URL) to the oemanager.log file
+    /* Write a server command (Verb+URL) to the configured log file
 
        @param character Action or HTTP Verb
        @param character Command bound for the OEManager webapp */
     method public void LogCommand ( input pcVerb as character, input pcCommand as character ):
-        /* Output to a special log file any commands executed via a connection. */
-        output to value("oemanager.log") append.
-        put unformatted substitute("&1 - &2 &3", iso-date(now), pcVerb, pcCommand) skip.
-        output close.
+        /* Output to the standard log file any commands executed via a connection. */
+        this-object:Logger:Info(substitute("&1 &2", pcVerb, pcCommand)).
     end method. /* LogCommand */
 
     /** Specific methods for OEManager requests **/
