@@ -43,6 +43,7 @@ using Progress.Json.ObjectModel.JsonDataType.
 define variable cOutFile   as character       no-undo.
 define variable cOutDate   as character       no-undo.
 define variable oClSess    as JsonArray       no-undo.
+define variable oMetrics   as JsonObject      no-undo.
 define variable oAgentMap  as StringStringMap no-undo.
 define variable iLoop      as integer         no-undo.
 define variable iLoop2     as integer         no-undo.
@@ -53,6 +54,7 @@ define variable iTotClSess as integer         no-undo.
 define variable dInstTime  as datetime        no-undo.
 define variable cBound     as character       no-undo.
 define variable oVersion   as SemanticVersion no-undo.
+define variable lHasApps   as logical         no-undo.
 define variable lIsMin122  as logical         no-undo.
 define variable lIsMin127  as logical         no-undo.
 
@@ -145,9 +147,12 @@ put unformatted substitute(" PASOE Instance: &1", oMgrConn:Instance) skip. /* Re
 
 /* Gather all necessary metrics. */
 run GetApplications.
-run GetProperties.
-run GetAgents.
-run GetSessions.
+if lHasApps then do:
+    /* Cannot continue if no applications exist. */
+    run GetProperties.
+    run GetAgents.
+    run GetSessions.
+end.
 
 finally:
     output close.
@@ -218,9 +223,14 @@ procedure GetApplications:
     define variable oWebTrans as JsonArray  no-undo.
     define variable cVersion  as character  no-undo.
 
+    /* Set a default object in case we have no applications or cannot determine the version. */
+    assign oVersion = new SemanticVersion(0, 0 ,0).
+
     assign oABLApps = oMgrConn:GetApplications().
     if oABLApps:Length gt 0 then
     do iLoop = 1 to oABLApps:Length:
+        assign lHasApps = true. /* Important: Set this to indicate the server is alive and returned with ABL Apps. */
+
         assign oTemp = oABLApps:GetJsonObject(iLoop).
         if oTemp:Has("name") and oTemp:GetCharacter("name") eq cAblApp then do:
             /* This should be the proper and case-sensitive name of the ABLApp, so let's make sure we use that going forward. */
@@ -231,8 +241,6 @@ procedure GetApplications:
                 cVersion = oTemp:GetCharacter("version").
                 assign oVersion = SemanticVersion:Parse(entry(1, replace(cVersion, "v", ""), " ")).
             end.
-            else
-                assign oVersion = new SemanticVersion(0, 0 ,0).
 
             /* Reports the full ABL Application name and OpenEdge version as reported by the monitored PAS instance itself. */
             put unformatted substitute("~nABL Application Information [&1 - &2]", cAblApp, cVersion) skip.
@@ -254,6 +262,8 @@ procedure GetApplications:
             end. /* has webapps */
         end. /* matching ABLApp */
     end. /* Application */
+    else
+        put unformatted "~nNo applications available. Is the PASOE instance correctly configured and running?" skip.
 
     /* Set some simple indicators for minimum OE versions which affects other API calls. */
     assign lIsMin122 = (oVersion:Major eq 12 and oVersion:Minor ge 2) or oVersion:Major gt 12.
@@ -346,7 +356,6 @@ procedure GetAgents:
     define variable dTemp     as datetime-tz no-undo.
     define variable oAgents   as JsonArray   no-undo.
     define variable oAgent    as JsonObject  no-undo.
-    define variable oMetrics  as JsonObject  no-undo.
     define variable oSessions as JsonArray   no-undo.
     define variable oSessInfo as JsonObject  no-undo.
     define variable oStatHist as JsonArray   no-undo.
@@ -616,7 +625,6 @@ end procedure.
 procedure GetSessions:
     define variable lIsBound  as logical    no-undo.
     define variable oConnInfo as JsonObject no-undo.
-    define variable oMetrics  as JsonObject no-undo.
     define variable oTemp     as JsonObject no-undo.
 
     /* https://docs.progress.com/bundle/pas-for-openedge-management/page/Collect-runtime-metrics.html */

@@ -106,7 +106,7 @@ assign
     .
 
 oAblApps:AutoExpand = true.
-oAgentList:AutoExpand = true. 
+oAgentList:AutoExpand = true.
 
 function HasAgent returns logical ( input poInt as integer ) forward.
 

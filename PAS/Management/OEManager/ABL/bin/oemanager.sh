@@ -1,5 +1,6 @@
 #!/bin/sh
 # OpenEdge - OEManager CLI Utility
+
 PROG=`basename $0`
 
 # Utility must be run with DLC environment variable set
@@ -48,6 +49,20 @@ then
     exit 1
 fi
 
-# use the oemanager.xml as task instructions to Ant, passing all other parameters
+# Ensure arguments (with exception of the task name) are prefixed with -D for Ant
+taskArgs=()
+
+for arg in "$@"; do
+  if [[ "$arg" == *"="* ]] && [[ "$arg" != "-D"* ]]; then
+    taskArg="-D$arg"
+  else
+    taskArg="$arg"
+  fi
+
+  taskArgs+=("$taskArg")
+done
+
+# Uses the oemanager.xml as task instructions to Ant, passing all task arguments
 ANT_HOME=$DLC/ant ; export ANT_HOME
-exec $ANTSCRIPT -f oemanager.xml $@
+exec $ANTSCRIPT -f oemanager.xml $taskArgs
+

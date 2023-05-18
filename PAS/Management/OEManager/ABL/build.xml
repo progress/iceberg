@@ -256,6 +256,9 @@
         <!-- Unzip the contents to a like-named folder in the target instance. -->
         <mkdir dir="${path}/utils"/>
         <unzip src="${basedir}/utils.zip" dest="${path}/utils" overwrite="true"/>
+
+		<!-- Set execution privilege on shell scripts. -->
+		<chmod dir="${path}/utils" perm="ug+x" includes="*.sh"/>
     </target>
 
     <target name="deploy_manager">

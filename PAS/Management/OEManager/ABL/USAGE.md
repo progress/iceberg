@@ -1,12 +1,12 @@
 # OEManager CLI Tools - Usage Guide #
 
-Execute the `oemanager[.bat]` command from within the utils folder to run the desired tasks from the command line. Where possible, default values will be determined automatically for HTTP/S ports, server paths, the instance's name, and the default ABL Application name. Any required or optional parameters may be overridden via the command line or by editing the `oemanager.properties` file in advance.
+Execute the `oemanager.[bat|sh]` command from within the utils folder to run the desired tasks from the command line. Where possible, default values will be determined automatically for HTTP/S ports, server paths, the instance's name, and the default ABL Application name. Any required or optional parameters may be overridden via the command line or by editing the `oemanager.properties` file in advance.
 
 Note that each request to an OEM-API endpoint will be automatically logged to a `commands.log` file. No sensitive data will be included in these logged messages, only PID's and operationally-relevant information will be included in the URL or as query parameters to the API endpoint.
 
 ## Basic Usage ##
 
-The following represents the default usage for all tasks which can be executed using the CLI tools and is the standard output when the `oemanager[.bat]` command is run without a task name.
+The following represents the default usage for all tasks which can be executed using the CLI tools and is the standard output when the `oemanager.[bat|sh]` command is run without a task name.
 
      [echo] Usage Instructions:
      [echo]

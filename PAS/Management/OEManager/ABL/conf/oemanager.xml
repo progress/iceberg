@@ -1,8 +1,8 @@
 <project name="OEManager CLI Tools" basedir="." default="usage">
 
-    <!--
-        Copyright 2020-2023 Progress Software Corporation
+    <!-- Copyright 2020-2023 Progress Software Corporation -->
 
+    <!--
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
         You may obtain a copy of the License at
@@ -22,7 +22,7 @@
     <property file="${basedir}/oemanager.properties"/>
 
     <target name="usage" description="Usage Instructions">
-        <init_oe/> <!-- Set standard environment variables. -->
+    	<init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <echo message="${line.separator}"/>
         <echo message="CLI utilities for monitoring and management of a PASOE instance."/>
@@ -92,7 +92,7 @@
         <echo message="                                          When no session ID provided, all available Client HTTP Sessions will be expired"/>
         <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator}"/>
-        <echo message="${line.separator}Available common parameters with their defaults, override as necessary:"/>
+        <echo message="${line.separator}Current parameter values, override as necessary:"/>
         <echo message="    -Dscheme=${scheme}"/>
         <echo message="      -Dhost=${host}"/>
         <echo message="      -Dport=${port}"/>
@@ -100,7 +100,8 @@
         <echo message="    -Dpasswd=${passwd}"/>
         <echo message="  -Dpas.root=${pas.root} - PAS parent directory, above the instance"/>
         <echo message="  -Dinstance=${instance} - Physical instance name (folder, not alias)"/>
-        <echo message="    -Dablapp=${ablapp} - ABL Application name for all tasks above"/>
+        <echo message="    -Dablapp=${ablapp}"/>
+    	<echo message="    -Dwebapp=${webapp}"/>
         <echo message="${line.separator}NOTE: The name of the ABLApp is case-sensitive!"/>
         <echo message="${line.separator}"/>
         <echo message="CATALINA_HOME: ${catalina.home}"/>
@@ -591,7 +592,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -624,7 +625,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -656,7 +657,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -688,7 +689,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -723,7 +724,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -757,7 +758,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -792,7 +793,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -828,7 +829,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -862,7 +863,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -895,7 +896,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -927,7 +928,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -959,7 +960,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Host" value="${host}"/>
@@ -1011,7 +1012,7 @@
             <propath>
                 <pathelement path="${basedir}"/>
                 <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <!-- End Database Connections -->
             <Parameter name="Scheme" value="${scheme}"/>
