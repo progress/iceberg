@@ -47,14 +47,14 @@ class Business.Report use-widget-pool:
         define variable iSec as integer no-undo.
         define variable iMin as integer no-undo.
         define variable iHr  as integer no-undo.
-    
+
         assign iMS = piValue modulo 1000.
         assign piValue = (piValue - iMS) / 1000.
         assign iSec = piValue modulo 60.
         assign piValue = (piValue - iSec) / 60.
         assign iMin = piValue modulo 60.
         assign iHr = (piValue - iMin) / 60.
-    
+
         return trim(string(iHr, ">99")) + ":" + string(iMin, "99") + ":" + string(iSec, "99") + "." + string(iMS, "999").
     end method. /* FormatMsTime */
 
@@ -473,8 +473,10 @@ class Business.Report use-widget-pool:
                     sessionActivity.agentPID     = SessionInfo.AgentPID
                     sessionActivity.sessionID    = SessionInfo.SessionID
                     sessionActivity.dateSample   = SessionSample.Timestamp
-                    sessionActivity.requestCount = 0
                     sessionActivity.memoryBytes  = fMemBytes
+                    sessionActivity.requestCount = 0
+                    sessionActivity.avgElapsed   = 0
+                    sessionActivity.maxElapsed   = 0
                     .
 
                 create sessionStat.
@@ -508,8 +510,10 @@ class Business.Report use-widget-pool:
                      and RequestInfo.StartTime lt SessionSample.Timestamp
                      and RequestInfo.EndTime ne ?:
                     assign
-                        sessionActivity.requestCount = sessionActivity.requestCount + 1
                         agentSession.requestCount    = agentSession.requestCount + 1
+                        sessionActivity.requestCount = sessionActivity.requestCount + 1
+                        sessionActivity.avgElapsed   = sessionActivity.avgElapsed + RequestInfo.Elapsed
+                        sessionActivity.maxElapsed   = max(sessionActivity.maxElapsed, RequestInfo.Elapsed)
                         iReqTime                     = iReqTime + RequestInfo.Elapsed
                         .
 
@@ -520,6 +524,9 @@ class Business.Report use-widget-pool:
                         assign agentStat.requestCount = agentStat.requestCount + 1.
                     end. /* for first */
                 end. /* For each request since last Sample. */
+
+                /* Calculate the average for this particular sample. */
+                assign sessionActivity.avgElapsed = if sessionActivity.requestCount gt 0 then round(sessionActivity.avgElapsed / sessionActivity.requestCount, 2) else 0.
 
                 /* Mark this as sample as the last timestamp for comparison in the next round. */
                 assign
@@ -615,7 +622,7 @@ class Business.Report use-widget-pool:
 
         /* Return all requests as of the first sample for the given group (or start of sampling). */
         for each SessionSample no-lock
-           where SessionSample.SessionUUID eq sessionUUID
+           where (sessionUUID eq "" or SessionSample.SessionUUID eq sessionUUID)
              and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
               by SessionSample.Timestamp:
 

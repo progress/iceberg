@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Start the database for the PAS instance.
 
 export DBPORT=@DBPORT@

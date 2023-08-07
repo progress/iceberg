@@ -2,7 +2,7 @@
 
 Execute the `oemanager.[bat|sh]` command from within the utils folder to run the desired tasks from the command line. Where possible, default values will be determined automatically for HTTP/S ports, server paths, the instance's name, and the default ABL Application name. Any required or optional parameters may be overridden via the command line or by editing the `oemanager.properties` file in advance.
 
-Note that each request to an OEM-API endpoint will be automatically logged to a `commands.log` file. No sensitive data will be included in these logged messages, only PID's and operationally-relevant information will be included in the URL or as query parameters to the API endpoint.
+Note that each request to an OEM-API endpoint will be automatically logged to an `oemanager.log` file. No sensitive data will be included in these logged messages, only PID's and operationally-relevant information will be included in the URL or as query parameters to the API endpoint.
 
 ## Basic Usage ##
 
@@ -92,6 +92,16 @@ The following represents the default usage for all tasks which can be executed u
      [echo]                         [OPTIONAL]       -Dsessid=[SESSION_ID]  - Alphanumeric Client Session ID to be stopped
      [echo]                                           When no session ID provided, all available Client HTTP Sessions will be expired
      [echo]                         [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish+stop
+
+## Tailoring ##
+
+Some tasks denote optional or required parameters, while all will use a set of common parameters either derived from the local PAS instance or specified via the command line or `oemanager.properties` file. When necessary to override any property values, simply pass as `name=value` on the command line or uncomment the property name and set a default value within the `oemanager.properties`.
+
+**Examples:**
+
+- The `userid` and `passwd` parameters for the oemanager/manager webapps must always be specified if changed from the default of tomcat/tomcat.
+- The `ablapp` (and `webapp` when necessary) should be checked and modified appropriately as it is not possible to assume which app names in the PAS instance may be intended for tasks.
+- The `port` property may still be overridden by use of the `scheme` command line parameter to prefer either "http" or "https".
 
 ## Use-Cases ##
 

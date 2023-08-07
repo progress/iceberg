@@ -459,6 +459,7 @@ class Business.Intake use-widget-pool:
         define variable oObject   as JsonObject no-undo.
         define variable iHandleID as integer    no-undo.
         define variable cSource   as character  no-undo.
+        define variable cReqId    as character  no-undo.
         define variable iLine     as integer    no-undo.
 
         define buffer bABLObject for ABLObject.
@@ -482,7 +483,10 @@ class Business.Intake use-widget-pool:
                 iHandleID = oObject:GetInteger("HandleId")
                 cSource   = oObject:GetCharacter("Source")
                 iLine     = oObject:GetInteger("Line")
+                cReqId    = if JsonPropertyHelper:HasTypedProperty(oObject, "cRqstIdOrig", JsonDataType:String) then oObject:GetCharacter("cRqstIdOrig") else ""
                 .
+
+            if cReqID eq "-" or not (cReqId matches "*:*:*") then assign cReqID = "". /* Treat "-" or an invalid format as a blank string. */
 
             /* Should be a unique match using these 4 fields (per the pukMain index). */
             find first bABLObject no-lock
@@ -501,6 +505,9 @@ class Business.Intake use-widget-pool:
                     bABLObject.Name       = if JsonPropertyHelper:HasTypedProperty(oObject, "Name", JsonDataType:String) then oObject:GetCharacter("Name") else "UNKNOWN"
                     bABLObject.ObjType    = if JsonPropertyHelper:HasTypedProperty(oObject, "ObjType", JsonDataType:String) then oObject:GetCharacter("ObjType") else "UNKNOWN"
                     bABLObject.Size       = if JsonPropertyHelper:HasTypedProperty( oObject, "Size", JsonDataType:Number) then oObject:GetInt64("Size") else 0
+                    bABLObject.WebAppName = entry(1, cReqID, ":") when (cReqID gt "") eq true
+                    bABLObject.Transport  = caps(entry(2, cReqID, ":")) when (cReqID gt "") eq true
+                    bABLObject.RequestID  = entry(3, cReqID, ":") when (cReqID gt "") eq true
                     .
                 release bABLObject no-error.
             end. /* not available */
@@ -1158,7 +1165,7 @@ class Business.Intake use-widget-pool:
                 if AccessLog.Transport eq "" then
                 case entry(3, cPath, "/"):
                     when "static" then
-                        assign AccessLog.Transport = "F".
+                        assign AccessLog.Transport = "F". // File (since "S" is for SOAP)
                     when "apsv" then
                         assign AccessLog.Transport = "A".
                     when "rest" then
@@ -2032,7 +2039,7 @@ class Business.Intake use-widget-pool:
 
                         if oLogger:LogLevel eq LogLevelEnum:Trace then
                             this-object:dumpRequests(iAgentPID). /* Dump all requests for the associated AgentPID when in trace mode. */
-                    
+
                         /* If requests were present, then we should note this seession was active. */
                         if oSubObj:GetJsonArray("requests"):Length gt 0 then
                             assign cSessions = trim(substitute("&1,&2", cSessions, cSessUUID), ",").
@@ -2364,7 +2371,7 @@ class Business.Intake use-widget-pool:
         define variable cTemp       as character no-undo.
         define variable cServerName as character no-undo.
         define variable cPortNumber as character no-undo.
-        
+
         /* Make note of where the latest data came from. */
         oLogger:Info(substitute("Health data received from &1 @ &2", AppName, Instance)).
 
@@ -2384,9 +2391,17 @@ class Business.Intake use-widget-pool:
         assign cServerUUID = this-object:UpdateServer(AppName, cServerName).
 
         /* Read the JSON data into the Dataset. */
-        dataset HealthCheck:read-json("JsonObject", HealthCheck, "empty").
+        do on error undo, throw:
+            dataset HealthCheck:read-json("JsonObject", HealthCheck, "empty").
+
+            catch err as Progress.Lang.Error:
+                oLogger:Error(substitute("Error Parsing HealthCheck Dataset for &1 @ &2: &3", AppName, Instance, err:GetMessage(1))).
+                undo, throw new AppError("Unable to read HealthCheck JSON into dataset for further processing.", 0).
+            end catch.
+        end.
 
         if oLogger:LogLevel eq LogLevelEnum:Trace then do:
+            // Generate file output for examination when at TRACE level.
             HealthCheck:WriteFile(substitute("&1/HealthCheck_Input_&2.json", this-object:TemporaryDir, mtime), true).
             dataset HealthCheck:write-json("file", substitute("&1/HealthCheck_Dataset_&2.json", this-object:TemporaryDir, mtime), true).
         end.
@@ -2426,7 +2441,7 @@ class Business.Intake use-widget-pool:
             .
 
         catch err as Progress.Lang.Error:
-            oLogger:Error(substitute("Error Parsing Health Config: &1", err:GetMessage(1))).
+            oLogger:Error(substitute("Error Processing Health Data: &1", err:GetMessage(1))).
             assign
                 success   = false
                 processed = now
