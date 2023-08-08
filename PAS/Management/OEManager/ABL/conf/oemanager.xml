@@ -22,7 +22,7 @@
     <property file="${basedir}/oemanager.properties"/>
 
     <target name="usage" description="Usage Instructions">
-    	<init_oe/> <!-- Initialize all OpenEdge properties. -->
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <echo message="${line.separator}"/>
         <echo message="CLI utilities for monitoring and management of a PASOE instance."/>
@@ -40,7 +40,7 @@
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Status/Info:"/>
         <echo message="${line.separator} ${util.name} status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
-        <echo message="                    [OPTIONAL] -Dbasemem=${basemem} - Minimum memory threshold, in bytes, of unused agent sessions"/>
+        <echo message="                    [OPTIONAL] -Dbasemem=${basemem} - Minimum memory threshold (bytes) to consider as 'unused' agent sessions"/>
         <echo message="${line.separator} ${util.name} stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
         <echo message="${line.separator} ${util.name} flush  - [RO] Flush the available deferred log buffer to agent log file"/>
         <echo message="${line.separator} ${util.name} locks  - [RO] Display database users and their table locks related to an MSAgent-Session"/>
@@ -53,7 +53,7 @@
         <echo message="${line.separator} ${util.name} add     - Add (read: start) one new MSAgent for an ABL App"/>
         <echo message="${line.separator} ${util.name} close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)"/>
         <echo message="                                      For this task the 'trimhttp' will be called with the termination option 1 (forced)"/>
-        <echo message="                     [REQUIRED] -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active sessions"/>
+        <echo message="                     [REQUIRED] -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active client sessions"/>
         <echo message="                                 The given WebApp is expected to be associated with the provided -Dablapp name"/>
         <echo message="                     [OPTIONAL] -Dsleep=${sleep} - Sleep time in minutes after stop, prior to final 'status' output"/>
         <echo message="${line.separator} ${util.name} clean   - Alias for 'close' task [Deprecated]"/>
@@ -92,7 +92,7 @@
         <echo message="                                          When no session ID provided, all available Client HTTP Sessions will be expired"/>
         <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator}"/>
-        <echo message="${line.separator}Current parameter values, override as necessary:"/>
+        <echo message="${line.separator}Current parameter values, override via command line or 'oemanager.properties':"/>
         <echo message="    -Dscheme=${scheme}"/>
         <echo message="      -Dhost=${host}"/>
         <echo message="      -Dport=${port}"/>
@@ -246,7 +246,8 @@
             <property name="oe.version" value="${oeMajor}.${oeMinor}.${oeRev}"/>
             <echo message="OpenEdge Version: ${oe.version}"/>
 
-            <!-- Add the ANT-Contrib library to this environment (present in 11.7.4+ and 12.0+). -->
+            <!-- Add the ANT-Contrib library to this environment (v0.6 present in 11.7.4+ and 12.0+). Updated to v1.0b3 in 12.8 -->
+            <!-- <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${dlcHome}/ant/lib/ant-contrib-1.0b3.jar"/> -->
             <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${dlcHome}/ant/lib/ant-contrib-0.6.jar"/>
 
             <!-- Set important path properties for the target PAS instance. -->
@@ -506,10 +507,13 @@
     <!-- Management Tools -->
 
     <target name="clean">
+        <!-- Deprecated name for the close task. -->
         <antcall target="close"/>
     </target>
 
     <target name="close">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
         <fail message="PAS instance port (-Dport) was not provided.">
             <condition>
                 <or>
@@ -548,6 +552,8 @@
     </target>
 
     <target name="selftest">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
         <fail message="PAS instance port (-Dport) was not provided.">
             <condition>
                 <or>
@@ -975,6 +981,7 @@
     </target>
 
     <target name="users">
+        <!-- Alternate name for the locks task. -->
         <antcall target="locks"/>
     </target>
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 MONITOR_IP=@MONITOR@
 MONITOR_PORT=@MONPORT@
@@ -15,4 +15,3 @@ echo "" > jmxqueries/profiler_on_$1.qry
 echo '{"O":"PASOE:type=OEManager,name=AgentManager", "M":["pushProfilerData", "'$1'", "'$MONITOR_URI'", "-1", "{\"AdapterMask\":\"\",\"Coverage\":true,\"Statistics\":true,\"ProcList\":\"\",\"TestRunDescriptor\":\"app='$APP_NAME'|host='$HOST_IP'|name='$NICKNAME'\"}"]}' > jmxqueries/profiler_on_$1.qry
 
 ./oejmx.sh -R -O profiler_on_$1.out -Q jmxqueries/profiler_on_$1.qry
-

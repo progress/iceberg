@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 PULSE_TIME=0
 

@@ -43,8 +43,10 @@ define temp-table sessionActivity no-undo
     field agentPID     as int64
     field sessionID    as int64
     field dateSample   as datetime serialize-hidden /* Duplicated data, doesn't need to be sent. */
-    field requestCount as int64 /* Roll-up of all requests served by session since last sample. */
-    field memoryBytes  as decimal
+    field memoryBytes  as decimal /* Memory for session */
+    field requestCount as int64   /* Roll-up of all requests served by session since last sample. */
+    field avgElapsed   as decimal /* Average request duration by session since last sample */
+    field maxElapsed   as int64   /* Peak request duration by session since last sample */
     index idxAgentSessionDate agentPID sessionID datesample
     .
 
@@ -85,9 +87,9 @@ define temp-table agentSession no-undo
 define temp-table sessionStat no-undo
     field agentSessionUUID  as character /* Used to drill-down into additional stats in UI. */
     field sessionSampleUUID as character /* Used to drill-down into additional stats in UI. */
-    field dateSample        as datetime
-    field memoryBytes       as decimal
-    field objectCount       as int64
+    field dateSample        as datetime  /* Standard timestamp for metric ingestion */
+    field memoryBytes       as decimal   /* Memory for session */
+    field objectCount       as int64     /* DynObject count */
     index idxDate datesample
     .
 

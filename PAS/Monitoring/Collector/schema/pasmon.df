@@ -51,6 +51,24 @@ ADD FIELD "RequestNum" OF "ABLObject" AS int64
   MAX-WIDTH 4
   ORDER 30
 
+ADD FIELD "WebAppName" OF "ABLObject" AS character
+  FORMAT "x(20)"
+  INITIAL ""
+  MAX-WIDTH 40
+  ORDER 90
+
+ADD FIELD "Transport" OF "ABLObject" AS character
+  FORMAT "x(10)"
+  INITIAL ""
+  MAX-WIDTH 20
+  ORDER 100
+
+ADD FIELD "RequestID" OF "ABLObject" AS character
+  FORMAT "x(10)"
+  INITIAL ""
+  MAX-WIDTH 20
+  ORDER 110
+
 ADD INDEX "pukMain" ON "ABLObject"
   AREA "Index Area"
   UNIQUE

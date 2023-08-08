@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Stop the database for the PAS instance.
 
 if [ "${DLC}" = "" ] ; then
