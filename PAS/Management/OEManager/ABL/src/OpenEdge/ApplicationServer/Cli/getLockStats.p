@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2022 Progress Software Corporation
+    Copyright 2020-2023 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -88,12 +88,12 @@ repeat:
 
     // As of OE 12.5 a new field _Connect-Details was added to hold a unique string to identify connections from a PAS instance.
     // https://docs.progress.com/bundle/openedge-whats-new/page/Whats-New-in-OpenEdge-12.5.html#ariaid-title15
-	assign hConnDetFld = hConnBuffer:Buffer-Field("_Connect-Details") no-error. // Purposeful no-error here.
+	assign hConnDetFld = hConnBuffer:buffer-field("_Connect-Details") no-error. // Purposeful no-error here.
 	if error-status:error then
 		error-status:error = false. // Ignore any generated error from above.
     if valid-object(hConnDetFld) then do:
         // The format of the data in this field should be "Container:Host:AgentPID:SessID"
-        assign cConnDetail = hConnDetFld:Buffer-Value().
+        assign cConnDetail = hConnDetFld:buffer-value().
         if num-entries(cConnDetail, ":") ge 4 then
             assign
                 iConnectPID = integer(entry(3, cConnDetail, ":"))
@@ -177,4 +177,3 @@ repeat:
     end.
 end. /* repeat - CONNECTBLK */
 hConnQuery:query-close().
-

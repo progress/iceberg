@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2022 Progress Software Corporation
+    Copyright 2020-2023 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -31,7 +31,10 @@ block-level on error undo, throw.
 
 using OpenEdge.ApplicationServer.Util.OEManagerConnection.
 using OpenEdge.Core.Json.JsonPropertyHelper.
-using OpenEdge.Core.Collections.*.
+using OpenEdge.Core.Collections.Array.
+using OpenEdge.Core.Collections.IIterator.
+using OpenEdge.Core.Collections.IMapEntry.
+using OpenEdge.Core.Collections.StringStringMap.
 using Progress.Json.ObjectModel.JsonObject.
 using Progress.Json.ObjectModel.JsonArray.
 using Progress.Json.ObjectModel.JsonDataType.
@@ -60,10 +63,11 @@ define variable oAgent      as IMapEntry       no-undo.
 define variable oMgrConn  as OEManagerConnection no-undo.
 define variable cScheme   as character           no-undo initial "http".
 define variable cHost     as character           no-undo initial "localhost".
-define variable cPort     as character           no-undo initial "8810".
-define variable cUserId   as character           no-undo initial "tomcat".
-define variable cPassword as character           no-undo initial "tomcat".
-define variable cAblApp   as character           no-undo initial "oepas1".
+define variable cPort     as character           no-undo.
+define variable cUserId   as character           no-undo.
+define variable cPassword as character           no-undo.
+
+function HasAgent returns logical ( input poInt as integer ) forward.
 
 define temp-table ttLock no-undo
     field UserNum      as int64
@@ -108,13 +112,12 @@ assign
 oAblApps:AutoExpand = true.
 oAgentList:AutoExpand = true.
 
-function HasAgent returns logical ( input poInt as integer ) forward.
-
 /* Populate temp-table with table lock status. */
 message "~nScanning for Table Locks from connected PASN clients...".
+DBLOOP:
 do iLoop = 1 to num-dbs:
     assign cDB = ldbname(iLoop).
-    if cDB eq ? then next.
+    if cDB eq ? then next DBLOOP.
 
     /* Change to the next DB by setting the "dictdb" alias. */
     create alias dictdb for database value(cDB).
@@ -125,15 +128,15 @@ do iLoop = 1 to num-dbs:
 end.
 
 /* Display table lock information to screen. */
-message "~nUsr#~tUser~t~tDomain~t~tTenant~t~tDatabase~t~tTable~t~tFlags~t~t~tPID~tSessionID".
+message "~nUser #~tUser Name~t~t~tDomain~t~t~tTenant~t~tDatabase~t~t~t~t~t~t~tTable~t~t~tFlags~t~t~t    PID~t SessionID".
 for each ttLock no-lock:
-    message substitute("&1  &2  &3 &4 &5 &6 &7 &8~t&9",
-                       string(ttLock.UserNum) + fill(" ", 8 - length(string(ttLock.UserNum))),
-                       string(ttLock.UserName, "x(16)"),
-                       string(ttLock.DomainName, "x(15)"),
+    message substitute("&1~t&2 &3 &4 &5 &6 &7 &8  &9",
+                       string(ttLock.UserNum) + fill(" ", 10 - length(string(ttLock.UserNum))),
+                       string(ttLock.UserName, "x(31)"),
+                       string(ttLock.DomainName, "x(23)"),
                        string(ttLock.TenantName, "x(15)"),
-                       string(ttLock.DatabaseName, "x(15)"),
-                       string(ttLock.TableName, "x(22)"),
+                       string(ttLock.DatabaseName, "x(63)"),
+                       string(ttLock.TableName, "x(23)"),
                        string(ttLock.LockFlags, "x(15)"),
                        string(ttLock.PID, ">>>>>>>>>>>>>>9"),
                        (if ttLock.SessionID eq ? then "UNKNOWN" else string(ttLock.SessionID, ">>>>>>>>9"))).
@@ -227,6 +230,7 @@ finally:
     delete alias dictdb.
 
     /* Return value expected by PCT Ant task. */
+    {&_proparse_ prolint-nowarn(returnfinally)}
     return string(0).
 end finally.
 
@@ -265,10 +269,10 @@ procedure getAblApplications:
 end procedure.
 
 procedure getAblAppAgents:
-    define variable iSize    as integer    no-undo.
-    define variable cAppName as character  no-undo.
-    define variable oAgents  as JsonArray  no-undo.
-    define variable oAgent   as JsonObject no-undo.
+    define variable iSize     as integer    no-undo.
+    define variable cAppName  as character  no-undo.
+    define variable oAgents   as JsonArray  no-undo.
+    define variable oAgentObj as JsonObject no-undo.
 
     /* Iterate through the list of ABL Applications, getting all MSAgent PID's. */
     assign iSize = oAblApps:Size.
@@ -283,11 +287,11 @@ procedure getAblAppAgents:
             do iLoop2 = 1 to oAgents:Length
             on error undo, next AGENTBLK
             on stop undo, next AGENTBLK:
-                oAgent = oAgents:GetJsonObject(iLoop2).
+                oAgentObj = oAgents:GetJsonObject(iLoop2).
 
-                if oAgent:GetCharacter("state") eq "available" then do:
-                    oAgentIDs:Put(oAgent:GetCharacter("pid"), oAgent:GetCharacter("agentId")).
-                    oAppAgents:Put(oAgent:GetCharacter("pid"), cAppName).
+                if oAgentObj:GetCharacter("state") eq "available" then do:
+                    oAgentIDs:Put(oAgentObj:GetCharacter("pid"), oAgentObj:GetCharacter("agentId")).
+                    oAppAgents:Put(oAgentObj:GetCharacter("pid"), cAppName).
                 end.
             end. /* iLoop - agents */
         end. /* Non-Null Array Item */

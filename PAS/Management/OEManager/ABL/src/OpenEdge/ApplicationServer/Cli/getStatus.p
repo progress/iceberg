@@ -57,15 +57,16 @@ define variable oVersion   as SemanticVersion no-undo.
 define variable lHasApps   as logical         no-undo.
 define variable lIsMin122  as logical         no-undo.
 define variable lIsMin127  as logical         no-undo.
+define variable lIsMin128  as logical         no-undo.
 
 /* Manage the server connection to the OEManager webapp */
 define variable oMgrConn  as OEManagerConnection no-undo.
 define variable cScheme   as character           no-undo initial "http".
 define variable cHost     as character           no-undo initial "localhost".
-define variable cPort     as character           no-undo initial "8810".
-define variable cUserId   as character           no-undo initial "tomcat".
-define variable cPassword as character           no-undo initial "tomcat".
-define variable cAblApp   as character           no-undo initial "oepas1".
+define variable cPort     as character           no-undo.
+define variable cUserId   as character           no-undo.
+define variable cPassword as character           no-undo.
+define variable cAblApp   as character           no-undo.
 
 define temp-table ttAgent no-undo
     field agentID     as character
@@ -170,6 +171,7 @@ finally:
     end.
 
     /* Return value expected by PCT Ant task. */
+    {&_proparse_ prolint-nowarn(returnfinally)}
     return string(0).
 end finally.
 
@@ -189,15 +191,23 @@ function FormatMsTime returns character ( input piValue as int64):
     define variable iSec as integer no-undo.
     define variable iMin as integer no-undo.
     define variable iHr  as integer no-undo.
+    define variable iDay as integer no-undo.
 
+    /* Break down millisecond time into D:H:M:S.SSS */
     assign iMS = piValue modulo 1000.
     assign piValue = (piValue - iMS) / 1000.
     assign iSec = piValue modulo 60.
     assign piValue = (piValue - iSec) / 60.
     assign iMin = piValue modulo 60.
+    {&_proparse_ prolint-nowarn(overflow)}
     assign iHr = (piValue - iMin) / 60.
+    {&_proparse_ prolint-nowarn(overflow)}
+    assign iDay = truncate(iHr / 24, 0).
+    if iDay gt 0 then
+        assign iHr = iHr modulo 24.
 
-    return trim(string(iHr, ">99")) + ":" + string(iMin, "99") + ":" + string(iSec, "99") + "." + string(iMS, "999").
+    /* Allow for days beyond 365 as we do not calculate for years (though possible, this is a highly unlikely scenario). */
+    return trim(string(iDay, ">>>,>99")) + ":" + string(iHr, "99") + ":" + string(iMin, "99") + ":" + string(iSec, "99") + "." + string(iMS, "999").
 end function. /* FormatMsTime */
 
 function FormatLongNumber returns character ( input pcValue as character, input plTrim as logical ):
@@ -268,6 +278,7 @@ procedure GetApplications:
     /* Set some simple indicators for minimum OE versions which affects other API calls. */
     assign lIsMin122 = (oVersion:Major eq 12 and oVersion:Minor ge 2) or oVersion:Major gt 12.
     assign lIsMin127 = (oVersion:Major eq 12 and oVersion:Minor ge 7) or oVersion:Major gt 12.
+    assign lIsMin128 = (oVersion:Major eq 12 and oVersion:Minor ge 8) or oVersion:Major gt 12.
 end procedure.
 
 /* Get the configured max for ABLSessions/Connections per MSAgent, along with min/max/initial MSAgents. */
@@ -553,9 +564,9 @@ procedure GetAgents:
 
         if lIsMin127 then
             /* This version adds additional session metrics for active memory high-water mark and count of completed/failed requests. */
-            put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tACTIVE MEM.   REQUESTS~tBOUND/ACTIVE CLIENT SESSION" skip.
+            put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~t  SESS. MEMORY~t   ACTIVE MEM.~t REQUESTS~tBOUND/ACTIVE CLIENT SESSION" skip.
         else
-            put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~tSESS. MEMORY~tBOUND/ACTIVE CLIENT SESSION" skip.
+            put unformatted "~n~tSESSION ID~tSTATE~t~tSTARTED~t~t~t~tLIFETIME~t  SESS. MEMORY~t BOUND/ACTIVE CLIENT SESSION" skip.
 
         assign iBaseMem = max(iBaseMem, iMinMem) + 1024. /* Use the higher of the BaseMem (Ant parameter) or discovered minimum memory, plus 1K. */
 
@@ -639,14 +650,14 @@ procedure GetSessions:
     if valid-object(oMetrics) then do:
         /* Total number of requests to the session. */
         if JsonPropertyHelper:HasTypedProperty(oMetrics, "requests", JsonDataType:Number) then
-            put unformatted substitute("~t       # Requests to Session:  &1",
+            put unformatted substitute("~t       # Requests to Session: &1",
                                         FormatLongNumber(string(oMetrics:GetInteger("requests")), false)) skip.
 
         /* Number of times a response was read by the session from the MSAgent. */
         /* Number of errors that occurred while reading a response from the MSAgent. */
         if JsonPropertyHelper:HasTypedProperty(oMetrics, "reads", JsonDataType:Number) and
            JsonPropertyHelper:HasTypedProperty(oMetrics, "readErrors", JsonDataType:Number) then
-            put unformatted substitute("~t      # Agent Responses Read:  &1 (&2 Errors)",
+            put unformatted substitute("~t      # Agent Responses Read: &1 (&2 Errors)",
                                         FormatLongNumber(string(oMetrics:GetInteger("reads")), false),
                                         trim(string(oMetrics:GetInteger("readErrors"), ">>>,>>>,>>9"))) skip.
 
@@ -663,7 +674,7 @@ procedure GetSessions:
         /* Number of errors that occurred during writing a request to the MSAgent. */
         if JsonPropertyHelper:HasTypedProperty(oMetrics, "writes", JsonDataType:Number) and
            JsonPropertyHelper:HasTypedProperty(oMetrics, "writeErrors", JsonDataType:Number) then
-            put unformatted substitute("~t    # Agent Requests Written:  &1 (&2 Errors)",
+            put unformatted substitute("~t    # Agent Requests Written: &1 (&2 Errors)",
                                         FormatLongNumber(string(oMetrics:GetInteger("writes")), false),
                                         trim(string(oMetrics:GetInteger("writeErrors"), ">>>,>>>,>>9"))) skip.
 
@@ -671,7 +682,7 @@ procedure GetSessions:
         /* Maximum number of concurrent clients. */
         if JsonPropertyHelper:HasTypedProperty(oMetrics, "concurrentConnectedClients", JsonDataType:Number) and
            JsonPropertyHelper:HasTypedProperty(oMetrics, "maxConcurrentClients", JsonDataType:Number) then
-            put unformatted substitute("~tConcurrent Connected Clients:  &1 (Max: &2)",
+            put unformatted substitute("~tConcurrent Connected Clients: &1 (Max: &2)",
                                         FormatLongNumber(string(oMetrics:GetInteger("concurrentConnectedClients")), false),
                                         trim(string(oMetrics:GetInteger("maxConcurrentClients"), ">>>,>>>,>>9"))) skip.
 
@@ -681,7 +692,7 @@ procedure GetSessions:
 
         /* Number of waits that occurred while reserving a local ABL session. */
         if JsonPropertyHelper:HasTypedProperty(oMetrics, "numReserveABLSessionWaits", JsonDataType:Number) then
-            put unformatted substitute("~t  # Reserve ABLSession Waits:  &1", FormatLongNumber(string(oMetrics:GetInteger("numReserveABLSessionWaits")), false)) skip.
+            put unformatted substitute("~t  # Reserve ABLSession Waits: &1", FormatLongNumber(string(oMetrics:GetInteger("numReserveABLSessionWaits")), false)) skip.
 
         /* Average time that a reserved ABL session had to wait before executing. */
         if JsonPropertyHelper:HasTypedProperty(oMetrics, "avgReserveABLSessionWaitTime", JsonDataType:Number) then
@@ -693,7 +704,7 @@ procedure GetSessions:
 
         /* Number of timeouts that occurred while reserving a local ABL session. */
         if JsonPropertyHelper:HasTypedProperty(oMetrics, "numReserveABLSessionTimeouts", JsonDataType:Number) then
-            put unformatted substitute("~t# Reserve ABLSession Timeout:  &1", FormatLongNumber(string(oMetrics:GetInteger("numReserveABLSessionTimeouts")), false)) skip.
+            put unformatted substitute("~t# Reserve ABLSession Timeout: &1", FormatLongNumber(string(oMetrics:GetInteger("numReserveABLSessionTimeouts")), false)) skip.
     end. /* valid oMetrics */
 
     /* Parse through and display statistics from the Client Sessions API as obtained previously. */

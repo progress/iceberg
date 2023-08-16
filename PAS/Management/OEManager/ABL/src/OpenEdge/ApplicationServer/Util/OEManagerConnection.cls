@@ -428,6 +428,25 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
             return new JsonArray().
     end method. /* GetAgents */
 
+    /* Get a listing of available MSAgents for an ABL Application, along with their
+       session metrics and special agent metrics (available to OpenEdge 12.8+ instances)
+
+       @param character ABL Application Name
+       @return JsonArray Array of MSAgent/Session information */
+    method public JsonArray GetAgentSessCombined ( input pcAblApp as character ):
+        define variable oJsonResp as JsonObject no-undo.
+
+        assign oJsonResp = this-object:GetData(substitute(OEManagerEndpoint:AgentSessCombined, pcAblApp)).
+        if JsonPropertyHelper:HasTypedProperty(oJsonResp, "result", JsonDataType:Object) then do:
+            if JsonPropertyHelper:HasTypedProperty(oJsonResp:GetJsonObject("result"), "agents", JsonDataType:Array) then
+                return oJsonResp:GetJsonObject("result"):GetJsonArray("agents").
+            else
+                return new JsonArray().
+        end. /* result */
+        else
+            return new JsonArray().
+    end method. /* GetAgentSessCombined */
+
     /* Get all the agent manager properties for an ABL Application
         https://docs.progress.com/bundle/pas-for-openedge-reference/page/Get-agent-configuration-properties.html
 
