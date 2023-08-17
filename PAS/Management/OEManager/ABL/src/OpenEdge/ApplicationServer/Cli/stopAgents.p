@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2022 Progress Software Corporation
+    Copyright 2020-2023 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -51,10 +51,10 @@ define variable cWaitFinish as character  no-undo initial "120000".
 define variable oMgrConn  as OEManagerConnection no-undo.
 define variable cScheme   as character           no-undo initial "http".
 define variable cHost     as character           no-undo initial "localhost".
-define variable cPort     as character           no-undo initial "8810".
-define variable cUserId   as character           no-undo initial "tomcat".
-define variable cPassword as character           no-undo initial "tomcat".
-define variable cAblApp   as character           no-undo initial "oepas1".
+define variable cPort     as character           no-undo.
+define variable cUserId   as character           no-undo.
+define variable cPassword as character           no-undo.
+define variable cAblApp   as character           no-undo.
 
 /* Check for passed-in arguments/parameters. */
 if num-entries(session:parameter) ge 9 then
@@ -144,5 +144,6 @@ end. /* iLoop - agent */
 
 finally:
     /* Return value expected by PCT Ant task. */
+    {&_proparse_ prolint-nowarn(returnfinally)}
     return string(0).
 end finally.
