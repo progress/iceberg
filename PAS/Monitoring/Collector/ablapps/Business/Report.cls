@@ -37,6 +37,10 @@ class Business.Report use-widget-pool:
     {Common/health.i}
     {Common/report.i}
 
+    define private temp-table ttDate
+        field sampleDate as date
+        .
+
     define private temp-table ttGroup
         field timestamp   as datetime-tz
         field sampleGroup as character
@@ -95,7 +99,8 @@ class Business.Report use-widget-pool:
     @openapi.openedge.export(type="REST", useReturnValue="false", writeDataSetBeforeImage="false").
     @progress.service.resourceMapping(type="REST", operation="invoke", URI="/servers", alias="servers", mediaType="application/json").
     method public void GetServerList ( output appServer as handle ):
-        define variable iGrpCount as integer no-undo.
+        define variable iDateCount as integer no-undo.
+        define variable iGrpCount  as integer no-undo.
 
         assign appServer = temp-table appServer:handle.
 
@@ -111,7 +116,7 @@ class Business.Report use-widget-pool:
                 appServer.appServerUUID   = ServerInfo.ServerUUID
                 .
 
-            /* First, find all sample groups for this agent. */
+            /* Find all sample groups for this agent. */
             empty temp-table ttGroup.
             for each AgentSample no-lock
                where AgentSample.ServerUUID eq ServerInfo.ServerUUID
@@ -125,7 +130,18 @@ class Business.Report use-widget-pool:
                 end.
             end. /* for each ServerInfo */
 
-            /* Next, add only the last 10 group names in reverse chronological order. */
+            /* Find all sample dates for this agent. */
+            empty temp-table ttDate.
+            for each AgentSample no-lock
+               where AgentSample.ServerUUID eq ServerInfo.ServerUUID
+               break by AgentSample.Timestamp:
+                if not can-find(first ttDate where ttDate.sampleDate eq date(AgentSample.Timestamp)) then do:
+                    create ttDate.
+                    assign ttDate.sampleDate = date(AgentSample.Timestamp).
+                end.
+            end. /* for each ServerInfo */
+
+            /* Add only the last 10 group names in reverse chronological order. */
             assign iGrpCount = 1.
             for each ttGroup no-lock
                   by ttGroup.timestamp descending:
@@ -133,6 +149,15 @@ class Business.Report use-widget-pool:
                     appServer.sampleGroup[iGrpCount] = ttGroup.SampleGroup.
                 assign iGrpCount = iGrpCount + 1.
             end. /* for each ttGroup */
+
+            /* Add only the last 10 dates in reverse chronological order. */
+            assign iDateCount = 1.
+            for each ttDate no-lock
+                  by ttDate.sampleDate descending:
+                if iDateCount le 10 then
+                    appServer.sampleDate[iDateCount] = ttDate.sampleDate.
+                assign iDateCount = iDateCount + 1.
+            end. /* for each iDateCount */
 
             release appServer no-error.
         end. /* for each ServerInfo*/
@@ -308,6 +333,7 @@ class Business.Report use-widget-pool:
     method public void GetAgentMetrics ( input  serverUUID   as character,
                                          input  agentPID     as integer,
                                          input  sessionID    as integer,
+                                         input  sampleDate   as date,
                                          input  sampleGroup  as character,
                                          output agentMetrics as handle ):
         define variable lSuccess    as logical  no-undo.
@@ -352,6 +378,9 @@ class Business.Report use-widget-pool:
                     .
                 release instanceAgent no-error.
             end.
+
+            /* If a sample date is provided but date does not match, skip the sample.*/
+            if sampleDate ne ? and date(AgentSample.Timestamp) ne sampleDate then next.
 
             create agentStat.
             assign
@@ -445,6 +474,9 @@ class Business.Report use-widget-pool:
                where SessionSample.SessionUUID eq SessionInfo.SessionUUID
                  and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
                   by SessionSample.Timestamp:
+                /* If a sample date is provided but date does not match, skip the sample.*/
+                if sampleDate ne ? and date(SessionSample.Timestamp) ne sampleDate then next.
+
                 /* Count the total samples reported for this session. */
                 assign iSmplCount = iSmplCount + 1.
 
@@ -611,6 +643,7 @@ class Business.Report use-widget-pool:
     @openapi.openedge.export(type="REST", useReturnValue="false", writeDataSetBeforeImage="false").
     @progress.service.resourceMapping(type="REST", operation="invoke", URI="/requests", alias="requests", mediaType="application/json").
     method public void GetRequests ( input  sessionUUID     as character,
+                                     input  sampleDate      as date,
                                      input  sampleGroup     as character,
                                      output ablRequestStack as handle ):
         assign ablRequestStack = dataset ablRequestStack:handle.
@@ -625,6 +658,8 @@ class Business.Report use-widget-pool:
            where (sessionUUID eq "" or SessionSample.SessionUUID eq sessionUUID)
              and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
               by SessionSample.Timestamp:
+            /* If a sample date is provided but date does not match, skip the sample.*/
+            if sampleDate ne ? and date(SessionSample.Timestamp) ne sampleDate then next.
 
             /* Return a list of objects for a given sample interval. */
             for each RequestInfo no-lock

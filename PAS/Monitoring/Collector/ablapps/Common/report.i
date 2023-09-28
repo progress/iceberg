@@ -14,6 +14,7 @@ define temp-table appServer no-undo
     field applicationName as character
     field serverName      as character
     field appServerUUID   as character
+    field sampleDates     as date      extent 10 /* This tracks the last 10 days of collected metrics. */
     field sampleGroup     as character extent 10 /* This tracks the last 10 sample groups for the server/application. */
     index idxAppServer applicationName serverName
     .
