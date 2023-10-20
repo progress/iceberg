@@ -39,11 +39,13 @@ class Business.Report use-widget-pool:
 
     define private temp-table ttDate
         field sampleDate as date
+        index idxDate sampleDate
         .
 
     define private temp-table ttGroup
         field timestamp   as datetime-tz
         field sampleGroup as character
+        index idxTime as primary timestamp
         .
 
     method private character FormatMsTime ( input piValue as int64 ):
@@ -102,44 +104,47 @@ class Business.Report use-widget-pool:
         define variable iDateCount as integer no-undo.
         define variable iGrpCount  as integer no-undo.
 
+        define buffer bAgentSample for AgentSample.
+        define buffer bServerInfo for ServerInfo.
+
         assign appServer = temp-table appServer:handle.
 
         empty temp-table appServer.
 
-        for each ServerInfo no-lock
-              by ServerInfo.ApplicationName
-              by ServerInfo.ServerName:
+        for each bServerInfo no-lock
+              by bServerInfo.ApplicationName
+              by bServerInfo.ServerName:
             create appServer.
             assign
-                appServer.applicationName = ServerInfo.ApplicationName
-                appServer.serverName      = ServerInfo.ServerName
-                appServer.appServerUUID   = ServerInfo.ServerUUID
+                appServer.applicationName = bServerInfo.ApplicationName
+                appServer.serverName      = bServerInfo.ServerName
+                appServer.appServerUUID   = bServerInfo.ServerUUID
                 .
 
             /* Find all sample groups for this agent. */
             empty temp-table ttGroup.
-            for each AgentSample no-lock
-               where AgentSample.ServerUUID eq ServerInfo.ServerUUID
-               break by AgentSample.SampleGroup:
-                if first-of(AgentSample.SampleGroup) then do:
+            for each bAgentSample no-lock
+               where bAgentSample.ServerUUID eq bServerInfo.ServerUUID
+               break by bAgentSample.SampleGroup:
+                if first-of(bAgentSample.SampleGroup) then do:
                     create ttGroup.
                     assign
-                        ttGroup.sampleGroup = AgentSample.SampleGroup
-                        ttGroup.timestamp   = AgentSample.Timestamp
+                        ttGroup.sampleGroup = bAgentSample.SampleGroup
+                        ttGroup.timestamp   = bAgentSample.Timestamp
                         .
                 end.
-            end. /* for each ServerInfo */
+            end. /* for each bServerInfo */
 
             /* Find all sample dates for this agent. */
             empty temp-table ttDate.
-            for each AgentSample no-lock
-               where AgentSample.ServerUUID eq ServerInfo.ServerUUID
-               break by AgentSample.Timestamp:
-                if not can-find(first ttDate where ttDate.sampleDate eq date(AgentSample.Timestamp)) then do:
+            for each bAgentSample no-lock
+               where bAgentSample.ServerUUID eq bServerInfo.ServerUUID
+               break by bAgentSample.Timestamp:
+                if not can-find(first ttDate where ttDate.sampleDate eq date(bAgentSample.Timestamp)) then do:
                     create ttDate.
-                    assign ttDate.sampleDate = date(AgentSample.Timestamp).
+                    assign ttDate.sampleDate = date(bAgentSample.Timestamp).
                 end.
-            end. /* for each ServerInfo */
+            end. /* for each bServerInfo */
 
             /* Add only the last 10 group names in reverse chronological order. */
             assign iGrpCount = 1.
@@ -160,7 +165,7 @@ class Business.Report use-widget-pool:
             end. /* for each iDateCount */
 
             release appServer no-error.
-        end. /* for each ServerInfo*/
+        end. /* for each bServerInfo*/
     end method. /* GetServerList */
 
 
@@ -183,6 +188,10 @@ class Business.Report use-widget-pool:
         define variable iSort       as int64    no-undo initial 1.
         define variable dLastSample as datetime no-undo.
 
+        define buffer bRequestInfo   for RequestInfo.
+        define buffer bSessionInfo   for SessionInfo.
+        define buffer bSessionSample for SessionSample.
+
         assign agentSession = temp-table agentSession:handle.
 
         if sampleGroup eq "All" then assign sampleGroup = "". /* Normalize the option for all groups. */
@@ -190,22 +199,22 @@ class Business.Report use-widget-pool:
         empty temp-table agentSession.
 
         /* Return a list of ALL agents and their sessions for the given application/server. */
-        for each SessionInfo no-lock
-           where SessionInfo.ServerUUID eq serverUUID
-              by SessionInfo.Started
-              by SessionInfo.AgentPID
-              by SessionInfo.SessionID:
+        for each bSessionInfo no-lock
+           where bSessionInfo.ServerUUID eq serverUUID
+              by bSessionInfo.Started
+              by bSessionInfo.AgentPID
+              by bSessionInfo.SessionID:
 
             /* Create record for each agent-session. */
             create agentSession.
             assign
-                agentSession.sessionSort      = iSort
-                agentSession.agentPID         = SessionInfo.AgentPID
-                agentSession.agentDisplay     = string(SessionInfo.AgentPID)
-                agentSession.sessionID        = SessionInfo.SessionID
-                agentSession.startedDate      = date(SessionInfo.Started) /* Extract only the date! */
-                agentSession.startedTime      = entry(2, string(SessionInfo.Started), " ") when num-entries(string(SessionInfo.Started), " ") ge 2
-                agentSession.agentSessionUUID = SessionInfo.SessionUUID
+                agentSession.sessionSort      = iSort /* Keeps data sorted by the original query (time, agent, session). */
+                agentSession.agentPID         = bSessionInfo.AgentPID
+                agentSession.agentDisplay     = string(bSessionInfo.AgentPID)
+                agentSession.sessionID        = bSessionInfo.SessionID
+                agentSession.startedDate      = date(bSessionInfo.Started) /* Extract only the date! */
+                agentSession.startedTime      = entry(2, string(bSessionInfo.Started), " ") when num-entries(string(bSessionInfo.Started), " ") ge 2
+                agentSession.agentSessionUUID = bSessionInfo.SessionUUID
                 .
 
             assign
@@ -225,67 +234,75 @@ class Business.Report use-widget-pool:
 
             /* Get the timestamp of the very first request for this agent-session. */
             firstreqblk:
-            for each SessionSample no-lock
-               where SessionSample.SessionUUID eq SessionInfo.SessionUUID
-                 and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-                  by SessionSample.Timestamp:
-                for first RequestInfo no-lock
-                    where RequestInfo.SampleUUID eq SessionSample.SampleUUID
-                      and RequestInfo.StartTime ne ?
-                       by RequestInfo.StartTime:
-                    assign agentSession.requestStart = RequestInfo.StartTime.
-                end. /* for first RequestInfo */
+            for each bSessionSample no-lock
+               where bSessionSample.SessionUUID eq bSessionInfo.SessionUUID                 
+                  by bSessionSample.Timestamp:
+                /* Move to the next if a sample group was named but this record is not in that group. */ 
+                if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next firstreqblk.
+
+                for first bRequestInfo no-lock
+                    where bRequestInfo.SampleUUID eq bSessionSample.SampleUUID
+                      and bRequestInfo.StartTime ne ?
+                       by bRequestInfo.StartTime:
+                    assign agentSession.requestStart = bRequestInfo.StartTime.
+                end. /* for first bRequestInfo */
 
                 if agentSession.requestStart ne ? then leave firstreqblk.
-            end. /* for each SessionSample */
+            end. /* for each bSessionSample */
 
             /* Get the timestamp of the very last request for this agent-session. */
-            for each SessionSample no-lock
-               where SessionSample.SessionUUID eq SessionInfo.SessionUUID
-                 and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-                  by SessionSample.Timestamp:
-                for last RequestInfo no-lock
-                   where RequestInfo.SampleUUID eq SessionSample.SampleUUID
-                     and RequestInfo.EndTime ne ?
-                      by RequestInfo.EndTime:
-                    assign agentSession.requestLast = RequestInfo.EndTime.
-                end. /* for last RequestInfo */
-            end. /* for each SessionSample */
+            lastreqblk:
+            for each bSessionSample no-lock
+               where bSessionSample.SessionUUID eq bSessionInfo.SessionUUID
+                  by bSessionSample.Timestamp:
+                /* Move to the next if a sample group was named but this record is not in that group. */ 
+                if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next lastreqblk.
+
+                for last bRequestInfo no-lock
+                   where bRequestInfo.SampleUUID eq bSessionSample.SampleUUID
+                     and bRequestInfo.EndTime ne ?
+                      by bRequestInfo.EndTime:
+                    assign agentSession.requestLast = bRequestInfo.EndTime.
+                end. /* for last bRequestInfo */
+            end. /* for each bSessionSample */
 
             /* If request did not have a known end time, assume last request was recieved as of now. */
             if agentSession.requestLast eq ? then
                 assign agentSession.requestLast = now.
 
             /* Get a count of total requests for this agent-session. */
-            for each RequestInfo no-lock
-               where RequestInfo.ServerUUID eq SessionInfo.ServerUUID
-                 and RequestInfo.SessionUUID eq SessionInfo.SessionUUID:
+            for each bRequestInfo no-lock
+               where bRequestInfo.ServerUUID eq bSessionInfo.ServerUUID
+                 and bRequestInfo.SessionUUID eq bSessionInfo.SessionUUID:
                 assign
                     agentSession.requestCount = agentSession.requestCount + 1
-                    iReqTime                  = iReqTime + RequestInfo.Elapsed
+                    iReqTime                  = iReqTime + bRequestInfo.Elapsed
                     .
             end. /* for each agentSession */
 
             /* Cycle through samples for each session of agent. */
-            for each SessionSample no-lock
-               where SessionSample.SessionUUID eq SessionInfo.SessionUUID
-                 and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-                  by SessionSample.Timestamp:
+            sampleblk:
+            for each bSessionSample no-lock
+               where bSessionSample.SessionUUID eq bSessionInfo.SessionUUID
+                  by bSessionSample.Timestamp:
+                /* Move to the next if a sample group was named but this record is not in that group. */ 
+                if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next sampleblk.
+
                 /* Count the total samples reported for this session. */
                 assign iSmplCount = iSmplCount + 1.
 
                 /* Count objects but only for samples with a non-zero value. */
-                if SessionSample.ObjectCount gt 0 then
+                if bSessionSample.ObjectCount gt 0 then
                     assign
-                        iObjCount  = iObjCount + SessionSample.ObjectCount
-                        iObjMax    = max(iObjMax, SessionSample.ObjectCount)
+                        iObjCount  = iObjCount + bSessionSample.ObjectCount
+                        iObjMax    = max(iObjMax, bSessionSample.ObjectCount)
                         iObjSample = iObjSample + 1
                         .
 
                 /* Calculate memory metrics but only for samples with a non-zero value. */
-                if SessionSample.MemoryBytes gt 0 then do:
+                if bSessionSample.MemoryBytes gt 0 then do:
                     assign
-                        fMemBytes  = round(SessionSample.MemoryBytes / 1024, 1)
+                        fMemBytes  = round(bSessionSample.MemoryBytes / 1024, 1)
                         fMemMax    = max(fMemMax, fMemBytes)
                         fMemMin    = min(fMemMin, fMemBytes)
                         fMemTotal  = fMemTotal + fMemBytes
@@ -295,8 +312,8 @@ class Business.Report use-widget-pool:
                 end. /* Non-Zero Memory */
 
                 /* Get the last sample time when this session appears. */
-                assign dLastSample = SessionSample.Timestamp.
-            end. /* for each SessionInfo */
+                assign dLastSample = bSessionSample.Timestamp.
+            end. /* for each bSessionInfo */
 
             assign /* Assign min/max/avg values for the session. */
                 agentSession.memoryMin      = fMemMin
@@ -317,11 +334,11 @@ class Business.Report use-widget-pool:
                 agentSession.requestDuration = interval(agentSession.requestLast, agentSession.requestStart, "seconds")
                 agentSession.requestPerSec   = if agentSession.requestDuration gt 0 then (agentSession.requestCount / agentSession.requestDuration) else 0
                 /* Calculate the elapsed runtime by getting the difference of a last sample time and the start of the session. */
-                agentSession.elapsedRuntime  = FormatMsTime(interval(agentSession.lastSample, SessionInfo.Started, "milliseconds"))
+                agentSession.elapsedRuntime  = FormatMsTime(interval(agentSession.lastSample, bSessionInfo.Started, "milliseconds"))
                 .
 
             release agentSession no-error.
-        end. /* for each ServerInfo, SessionInfo */
+        end. /* for each bSessionInfo */
 
         /* Get some totals for the entire application. */
         this-object:CalculateRequestPercentages().
@@ -336,7 +353,8 @@ class Business.Report use-widget-pool:
                                          input  sampleDate   as date,
                                          input  sampleGroup  as character,
                                          output agentMetrics as handle ):
-        define variable lSuccess    as logical  no-undo.
+        define variable lSuccess    as logical  no-undo initial false.
+        define variable lHasSession as logical  no-undo initial false.
         define variable dLastSample as datetime no-undo initial ?.
         define variable fMemPeak    as decimal  no-undo initial 0. /* Tracked across all sessions for this agent. */
         define variable fMemBytes   as decimal  no-undo initial 0.
@@ -353,9 +371,15 @@ class Business.Report use-widget-pool:
         define variable iReqCount   as int64    no-undo initial 0.
         define variable iSort       as int64    no-undo initial 1.
 
+        define buffer bAgentSample   for AgentSample.
+        define buffer bRequestInfo   for RequestInfo.
+        define buffer bSessionInfo   for SessionInfo.
+        define buffer bSessionSample for SessionSample.
+
         assign agentMetrics = dataset agentMetrics:handle.
 
         if sampleGroup eq "All" then assign sampleGroup = "". /* Normalize the option for all groups. */
+        if sessionID gt 0 then lHasSession = true. /* Denotes a specific session was given. */
 
         empty temp-table instanceAgent.
         empty temp-table agentStat.
@@ -364,13 +388,17 @@ class Business.Report use-widget-pool:
         empty temp-table sessionStat.
 
         /* Get the agent stats for this server and sample group. */
-        for each AgentSample no-lock
-           where AgentSample.ServerUUID eq serverUUID
-             and AgentSample.AgentPID eq agentPID
-             and (sampleGroup eq "" or AgentSample.SampleGroup eq sampleGroup)
-           break by AgentSample.AgentPID
-                 by AgentSample.Timestamp:
-            if first-of(AgentSample.AgentPID) then do:
+        sampleblk:
+        for each bAgentSample no-lock
+           where bAgentSample.ServerUUID eq serverUUID
+             and bAgentSample.AgentPID eq agentPID
+           break by bAgentSample.AgentPID
+                 by bAgentSample.Timestamp:
+            /* Move to the next if a sample group was named but this record is not in that group. */ 
+            if sampleGroup gt "" and bAgentSample.SampleGroup ne sampleGroup then next sampleblk.
+
+            /* Always create a record for an agent of this server.*/
+            if first-of(bAgentSample.AgentPID) then do:
                 create instanceAgent.
                 assign
                     instanceAgent.appServerUUID = serverUUID
@@ -380,43 +408,49 @@ class Business.Report use-widget-pool:
             end.
 
             /* If a sample date is provided but date does not match, skip the sample.*/
-            if sampleDate ne ? and date(AgentSample.Timestamp) ne sampleDate then next.
+            if sampleDate ne ? and date(bAgentSample.Timestamp) ne sampleDate then next sampleblk.
 
             create agentStat.
             assign
                 agentStat.agentPID       = agentPID
-                agentStat.agentStarted   = AgentSample.AgentStarted
-                agentStat.dateSample     = AgentSample.Timestamp
-                agentStat.busySessions   = AgentSample.BusySessions
+                agentStat.agentStarted   = bAgentSample.AgentStarted
+                agentStat.dateSample     = bAgentSample.Timestamp
+                agentStat.busySessions   = bAgentSample.BusySessions
                 agentStat.requestCount   = 0
                 .
             release agentStat no-error.
 
             /* Remember the current overhead memory value for this agent. */
-            if AgentSample.OverheadMemory ne ? and AgentSample.OverheadMemory gt 0 then
-                assign fAgentMem = round(AgentSample.OverheadMemory / 1024, 1).
-        end. /* AgentSample */
+            if bAgentSample.OverheadMemory ne ? and bAgentSample.OverheadMemory gt 0 then
+                assign fAgentMem = round(bAgentSample.OverheadMemory / 1024, 1).
+        end. /* bAgentSample */
 
         /* Return a specific agent-session's memory/object data over time for each session sample. */
-        for each SessionInfo no-lock
-           where SessionInfo.ServerUUID eq serverUUID
-             and (agentPID eq 0 or SessionInfo.AgentPID eq agentPID)
-             and (sessionID eq 0 or SessionInfo.SessionID eq sessionID)
-              by SessionInfo.Started
-              by SessionInfo.AgentPID
-              by SessionInfo.SessionID:
+        infoblk:
+        for each bSessionInfo no-lock
+           where bSessionInfo.ServerUUID eq serverUUID
+              by bSessionInfo.Started
+              by bSessionInfo.AgentPID
+              by bSessionInfo.SessionID:
+            /* Move to the next if an agentPID was given but this sample is not for that Agent. */ 
+            if agentPID gt 0 and bSessionInfo.AgentPID ne agentPID then next infoblk.
 
-            /* Create record for each agent-session. */
-            create agentSession.
-            assign
-                agentSession.sessionSort      = iSort
-                agentSession.agentPID         = SessionInfo.AgentPID
-                agentSession.agentDisplay     = string(SessionInfo.AgentPID)
-                agentSession.sessionID        = SessionInfo.SessionID
-                agentSession.startedDate      = date(SessionInfo.Started) /* Extract only the date! */
-                agentSession.startedTime      = entry(2, string(SessionInfo.Started), " ") when num-entries(string(SessionInfo.Started), " ") ge 2
-                agentSession.agentSessionUUID = SessionInfo.SessionUUID
-                .
+            /* Move to the next if a sessionID was given but this sample is not for that Session. */ 
+            if lHasSession and bSessionInfo.SessionID ne sessionID then next infoblk.
+
+            if lHasSession then do:
+                /* Create record for each agent-session. */
+                create agentSession.
+                assign
+                    agentSession.sessionSort      = iSort
+                    agentSession.agentPID         = bSessionInfo.AgentPID
+                    agentSession.agentDisplay     = string(bSessionInfo.AgentPID)
+                    agentSession.sessionID        = bSessionInfo.SessionID
+                    agentSession.startedDate      = date(bSessionInfo.Started) /* Extract only the date! */
+                    agentSession.startedTime      = entry(2, string(bSessionInfo.Started), " ") when num-entries(string(bSessionInfo.Started), " ") ge 2
+                    agentSession.agentSessionUUID = bSessionInfo.SessionUUID
+                    .
+            end. /* lHasSession */
 
             assign
                 fMemBytes  = 0
@@ -435,63 +469,73 @@ class Business.Report use-widget-pool:
 
             /* Get the timestamp of the very first request for this agent-session. */
             firstreqblk:
-            for each SessionSample no-lock
-               where SessionSample.SessionUUID eq SessionInfo.SessionUUID
-                 and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-                  by SessionSample.Timestamp:
-                for first RequestInfo no-lock
-                    where RequestInfo.SampleUUID eq SessionSample.SampleUUID
-                      and RequestInfo.StartTime ne ?
-                       by RequestInfo.StartTime:
+            for each bSessionSample no-lock
+               where bSessionSample.SessionUUID eq bSessionInfo.SessionUUID
+                  by bSessionSample.Timestamp:
+                /* Move to the next if a sample group was named but this record is not in that group. */ 
+                if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next firstreqblk.
+
+                for first bRequestInfo no-lock
+                    where bRequestInfo.SampleUUID eq bSessionSample.SampleUUID
+                      and bRequestInfo.StartTime ne ?
+                       by bRequestInfo.StartTime:
                     assign
-                        agentSession.requestStart = RequestInfo.StartTime
-                        dLastSample               = RequestInfo.StartTime
+                        agentSession.requestStart = bRequestInfo.StartTime when available(agentSession)
+                        dLastSample               = bRequestInfo.StartTime
                         .
-                end. /* for first RequestInfo */
+                end. /* for first bRequestInfo */
 
-                if agentSession.requestStart ne ? then leave firstreqblk.
-            end. /* for each SessionSample */
+                if available(agentSession) and agentSession.requestStart ne ? then leave firstreqblk.
+            end. /* for each bSessionSample */
 
-            /* Get the timestamp of the very last request for this agent-session. */
-            for each SessionSample no-lock
-               where SessionSample.SessionUUID eq SessionInfo.SessionUUID
-                 and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-                  by SessionSample.Timestamp:
-                for last RequestInfo no-lock
-                   where RequestInfo.SampleUUID eq SessionSample.SampleUUID
-                     and RequestInfo.EndTime ne ?
-                      by RequestInfo.EndTime:
-                    assign agentSession.requestLast = RequestInfo.EndTime.
-                end. /* for last RequestInfo */
-            end. /* for each SessionSample */
+            if lHasSession then do:
+                /* Get the timestamp of the very last request for this agent-session. */
+                sampleblk:
+                for each bSessionSample no-lock
+                   where bSessionSample.SessionUUID eq bSessionInfo.SessionUUID
+                      by bSessionSample.Timestamp:
+                    /* Move to the next if a sample group was named but this record is not in that group. */ 
+                    if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next sampleblk.
+    
+                    for last bRequestInfo no-lock
+                       where bRequestInfo.SampleUUID eq bSessionSample.SampleUUID
+                         and bRequestInfo.EndTime ne ?
+                          by bRequestInfo.EndTime:
+                        assign agentSession.requestLast = bRequestInfo.EndTime.
+                    end. /* for last bRequestInfo */
+                end. /* for each bSessionSample */
 
-            /* If request did not have a known end time, assume last request was recieved as of now. */
-            if agentSession.requestLast eq ? then
-                assign agentSession.requestLast = now.
+                /* If request did not have a known end time, assume last request was recieved as of now. */
+                if agentSession.requestLast eq ? then
+                    assign agentSession.requestLast = now.
+            end. /* lHasSession */
 
             /* Get stats for the session as based on the available samples. */
-            for each SessionSample no-lock
-               where SessionSample.SessionUUID eq SessionInfo.SessionUUID
-                 and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-                  by SessionSample.Timestamp:
+            sampleblk:
+            for each bSessionSample no-lock
+               where bSessionSample.SessionUUID eq bSessionInfo.SessionUUID
+                  by bSessionSample.Timestamp:
+                /* Move to the next if a sample group was named but this record is not in that group. */ 
+                if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next sampleblk.
+
                 /* If a sample date is provided but date does not match, skip the sample.*/
-                if sampleDate ne ? and date(SessionSample.Timestamp) ne sampleDate then next.
+                if sampleDate ne ? and date(bSessionSample.Timestamp) ne sampleDate then next sampleblk.
 
                 /* Count the total samples reported for this session. */
                 assign iSmplCount = iSmplCount + 1.
 
                 /* Count objects but only for samples with a non-zero value. */
-                if SessionSample.ObjectCount gt 0 then
+                if bSessionSample.ObjectCount gt 0 then
                     assign
-                        iObjCount  = iObjCount + SessionSample.ObjectCount
-                        iObjMax    = max(iObjMax, SessionSample.ObjectCount)
+                        iObjCount  = iObjCount + bSessionSample.ObjectCount
+                        iObjMax    = max(iObjMax, bSessionSample.ObjectCount)
                         iObjSample = iObjSample + 1
                         .
 
                 /* Calculate memory metrics but only for samples with a non-zero value. */
-                if SessionSample.MemoryBytes gt 0 then do:
+                if bSessionSample.MemoryBytes gt 0 then do:
                     assign
-                        fMemBytes  = round(SessionSample.MemoryBytes / 1024, 1)
+                        fMemBytes  = round(bSessionSample.MemoryBytes / 1024, 1)
                         fMemMax    = max(fMemMax, fMemBytes)
                         fMemMin    = min(fMemMin, fMemBytes)
                         fMemTotal  = fMemTotal + fMemBytes
@@ -502,9 +546,9 @@ class Business.Report use-widget-pool:
 
                 create sessionActivity.
                 assign
-                    sessionActivity.agentPID     = SessionInfo.AgentPID
-                    sessionActivity.sessionID    = SessionInfo.SessionID
-                    sessionActivity.dateSample   = SessionSample.Timestamp
+                    sessionActivity.agentPID     = bSessionInfo.AgentPID
+                    sessionActivity.sessionID    = bSessionInfo.SessionID
+                    sessionActivity.dateSample   = bSessionSample.Timestamp
                     sessionActivity.memoryBytes  = fMemBytes
                     sessionActivity.requestCount = 0
                     sessionActivity.avgElapsed   = 0
@@ -513,17 +557,17 @@ class Business.Report use-widget-pool:
 
                 create sessionStat.
                 assign
-                    sessionStat.agentSessionUUID  = SessionSample.SessionUUID
-                    sessionStat.sessionSampleUUID = SessionSample.SampleUUID
-                    sessionStat.dateSample        = SessionSample.Timestamp
+                    sessionStat.agentSessionUUID  = bSessionSample.SessionUUID
+                    sessionStat.SessionSampleUUID = bSessionSample.SampleUUID
+                    sessionStat.dateSample        = bSessionSample.Timestamp
                     sessionStat.memoryBytes       = fMemBytes
-                    sessionStat.objectCount       = SessionSample.ObjectCount
+                    sessionStat.objectCount       = bSessionSample.ObjectCount
                     .
 
                 /* Keep a cumulative count of requests by agent/timestamp. */
                 for first agentStat exclusive-lock
-                    where agentStat.agentPID eq SessionInfo.AgentPID
-                      and agentStat.dateSample eq SessionSample.Timestamp:
+                    where agentStat.agentPID eq bSessionInfo.AgentPID
+                      and agentStat.dateSample eq bSessionSample.Timestamp:
                     /* Keep tracking the cumulative MAXIMUM calculated memory value. */
                     assign fMemPeak = max(agentStat.memoryBytes + fMemMax, fMemPeak).
 
@@ -536,23 +580,23 @@ class Business.Report use-widget-pool:
                 end. /* for first */
 
                 /* If not the first sample, count the requests serviced by this session since the last sample. */
-                for each RequestInfo no-lock
-                   where RequestInfo.SampleUUID eq SessionSample.SampleUUID
-                     and RequestInfo.StartTime ge dLastSample
-                     and RequestInfo.StartTime lt SessionSample.Timestamp
-                     and RequestInfo.EndTime ne ?:
+                for each bRequestInfo no-lock
+                   where bRequestInfo.SampleUUID eq bSessionSample.SampleUUID
+                     and bRequestInfo.StartTime ge dLastSample
+                     and bRequestInfo.StartTime lt bSessionSample.Timestamp
+                     and bRequestInfo.EndTime ne ?:
                     assign
-                        agentSession.requestCount    = agentSession.requestCount + 1
+                        agentSession.requestCount    = agentSession.requestCount + 1 when available(agentSession)
                         sessionActivity.requestCount = sessionActivity.requestCount + 1
-                        sessionActivity.avgElapsed   = sessionActivity.avgElapsed + RequestInfo.Elapsed
-                        sessionActivity.maxElapsed   = max(sessionActivity.maxElapsed, RequestInfo.Elapsed)
-                        iReqTime                     = iReqTime + RequestInfo.Elapsed
+                        sessionActivity.avgElapsed   = sessionActivity.avgElapsed + bRequestInfo.Elapsed
+                        sessionActivity.maxElapsed   = max(sessionActivity.maxElapsed, bRequestInfo.Elapsed)
+                        iReqTime                     = iReqTime + bRequestInfo.Elapsed
                         .
 
                     /* Keep a cumulative count of requests by agent/timestamp. */
                     for first agentStat exclusive-lock
-                        where agentStat.agentPID eq SessionInfo.AgentPID
-                          and agentStat.dateSample eq SessionSample.Timestamp:
+                        where agentStat.agentPID eq bSessionInfo.AgentPID
+                          and agentStat.dateSample eq bSessionSample.Timestamp:
                         assign agentStat.requestCount = agentStat.requestCount + 1.
                     end. /* for first */
                 end. /* For each request since last Sample. */
@@ -562,35 +606,37 @@ class Business.Report use-widget-pool:
 
                 /* Mark this as sample as the last timestamp for comparison in the next round. */
                 assign
-                    dLastSample = SessionSample.Timestamp
-                    iReqCount   = agentSession.requestCount
+                    dLastSample = bSessionSample.Timestamp
+                    iReqCount   = agentSession.requestCount when available(agentSession)
                     .
 
                 release sessionActivity no-error.
                 release sessionStat no-error.
-            end. /* for each SessionInfo */
+            end. /* for each bSessionSample */
 
-            assign /* Assign min/max/avg values for the session. */
-                agentSession.memoryMin      = fMemMin
-                agentSession.memoryMax      = fMemMax
-                agentSession.memoryAvg      = round((fMemTotal / iMemSample), 2) when iMemSample gt 0
-                agentSession.memoryDelta    = round((fMemMax - fMemMin), 2)
-                agentSession.memorySamples  = iMemSample
-                agentSession.objectMax      = iObjMax
-                agentSession.objectTotal    = iObjCount
-                agentSession.objectAvg      = round((iObjCount / iObjSample), 1) when iObjSample gt 0
-                agentSession.objectSamples  = iObjSample
-                agentSession.totalSamples   = iSmplCount
-                agentSession.requestTimeAvg = round((iReqTime / iReqCount), 1) when iReqCount gt 0
-                .
+            if lHasSession then do:
+                assign /* Assign min/max/avg values for the session. */
+                    agentSession.memoryMin      = fMemMin
+                    agentSession.memoryMax      = fMemMax
+                    agentSession.memoryAvg      = round((fMemTotal / iMemSample), 2) when iMemSample gt 0
+                    agentSession.memoryDelta    = round((fMemMax - fMemMin), 2)
+                    agentSession.memorySamples  = iMemSample
+                    agentSession.objectMax      = iObjMax
+                    agentSession.objectTotal    = iObjCount
+                    agentSession.objectAvg      = round((iObjCount / iObjSample), 1) when iObjSample gt 0
+                    agentSession.objectSamples  = iObjSample
+                    agentSession.totalSamples   = iSmplCount
+                    agentSession.requestTimeAvg = round((iReqTime / iReqCount), 1) when iReqCount gt 0
+                    .
 
-            assign
-                agentSession.requestDuration = interval(agentSession.requestLast, agentSession.requestStart, "seconds")
-                agentSession.requestPerSec   = if agentSession.requestDuration gt 0 then (agentSession.requestCount / agentSession.requestDuration) else 0
-                .
+                assign
+                    agentSession.requestDuration = interval(agentSession.requestLast, agentSession.requestStart, "seconds")
+                    agentSession.requestPerSec   = if agentSession.requestDuration gt 0 then (agentSession.requestCount / agentSession.requestDuration) else 0
+                    .
 
-            release agentSession no-error.
-        end. /* for each SessionInfo */
+                release agentSession no-error.
+            end. /* lHasSession */
+        end. /* for each bSessionInfo */
 
         /* Get some totals for the entire application. */
         this-object:CalculateRequestPercentages().
@@ -604,39 +650,42 @@ class Business.Report use-widget-pool:
                                        input  sampleGroup  as character,
                                        input  sampleDate   as datetime,
                                        output sampleObject as handle ):
+        define buffer bABLObject     for ABLObject.
+        define buffer bSessionSample for SessionSample.
+
         assign sampleObject = temp-table sampleObject:handle.
 
         if sampleGroup eq "All" then assign sampleGroup = "". /* Normalize the option for all groups. */
 
         /* Locate the first session sample with the given object count, nearest the given date. */
-        find first SessionSample no-lock
-             where SessionSample.SampleUUID eq sampleUUID
-               and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-               and SessionSample.ObjectCount eq objectCount no-error.
-        if not available(SessionSample) then
-            find first SessionSample no-lock
-                 where (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-                   and SessionSample.ObjectCount eq objectCount
-                   and SessionSample.Timestamp gt sampleDate no-error.
+        find first bSessionSample no-lock
+             where bSessionSample.SampleUUID eq sampleUUID
+               and (sampleGroup eq "" or bSessionSample.SampleGroup eq sampleGroup)
+               and bSessionSample.ObjectCount eq objectCount no-error.
+        if not available(bSessionSample) then
+            find first bSessionSample no-lock
+                 where (sampleGroup eq "" or bSessionSample.SampleGroup eq sampleGroup)
+                   and bSessionSample.ObjectCount eq objectCount
+                   and bSessionSample.Timestamp gt sampleDate no-error.
 
         empty temp-table sampleObject.
 
         /* Return a list of objects for a given sample interval. */
-        if available(SessionSample) then
-            for each ABLObject no-lock
-               where ABLObject.SampleUUID eq SessionSample.SampleUUID:
+        if available(bSessionSample) then
+            for each bABLObject no-lock
+               where bABLObject.SampleUUID eq bSessionSample.SampleUUID:
                 create sampleObject.
                 assign
-                    sampleObject.handleId  = ABLObject.HandleId
-                    sampleObject.source    = ABLObject.Source
-                    sampleObject.line      = ABLObject.Line
-                    sampleObject.origReqId = ABLObject.RequestNum
-                    sampleObject.name      = ABLObject.Name
-                    sampleObject.objType   = ABLObject.ObjType
-                    sampleObject.objSize   = ABLObject.Size
+                    sampleObject.handleId  = bABLObject.HandleId
+                    sampleObject.source    = bABLObject.Source
+                    sampleObject.line      = bABLObject.Line
+                    sampleObject.origReqId = bABLObject.RequestNum
+                    sampleObject.name      = bABLObject.Name
+                    sampleObject.objType   = bABLObject.ObjType
+                    sampleObject.objSize   = bABLObject.Size
                     .
                 release sampleObject no-error.
-            end. /* for each ABLObject */
+            end. /* for each bABLObject */
     end method. /* GetABLObjects */
 
 
@@ -646,6 +695,9 @@ class Business.Report use-widget-pool:
                                      input  sampleDate      as date,
                                      input  sampleGroup     as character,
                                      output ablRequestStack as handle ):
+        define buffer bRequestInfo   for RequestInfo.
+        define buffer bSessionSample for SessionSample.
+
         assign ablRequestStack = dataset ablRequestStack:handle.
 
         empty temp-table ablRequest.
@@ -654,38 +706,41 @@ class Business.Report use-widget-pool:
         if sampleGroup eq "All" then assign sampleGroup = "". /* Normalize the option for all groups. */
 
         /* Return all requests as of the first sample for the given group (or start of sampling). */
-        for each SessionSample no-lock
-           where (sessionUUID eq "" or SessionSample.SessionUUID eq sessionUUID)
-             and (sampleGroup eq "" or SessionSample.SampleGroup eq sampleGroup)
-              by SessionSample.Timestamp:
+        sampleblk:
+        for each bSessionSample no-lock
+           where bSessionSample.SessionUUID eq sessionUUID
+              by bSessionSample.Timestamp:
+            /* Move to the next if a sample group was named but this record is not in that group. */ 
+            if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next sampleblk.
+            
             /* If a sample date is provided but date does not match, skip the sample.*/
-            if sampleDate ne ? and date(SessionSample.Timestamp) ne sampleDate then next.
+            if sampleDate ne ? and date(bSessionSample.Timestamp) ne sampleDate then next sampleblk.
 
             /* Return a list of objects for a given sample interval. */
-            for each RequestInfo no-lock
-               where RequestInfo.SampleUUID eq SessionSample.SampleUUID:
+            for each bRequestInfo no-lock
+               where bRequestInfo.SampleUUID eq bSessionSample.SampleUUID:
                 create ablRequest.
                 assign
-                    ablRequest.agentSessionUUID = RequestInfo.SessionUUID
-                    ablRequest.requestUUID      = RequestInfo.RequestUUID
-                    ablRequest.requestNum       = RequestInfo.RequestNum
-                    ablRequest.requestID        = substitute("&1:&2:&3", RequestInfo.WebAppName, RequestInfo.Transport, RequestInfo.RequestID)
-                    ablRequest.programName      = RequestInfo.ProcName
-                    ablRequest.startTime        = string(RequestInfo.StartTime)
-                    ablRequest.endTime          = string(RequestInfo.EndTime)
-                    ablRequest.elapsedTime      = RequestInfo.Elapsed
+                    ablRequest.agentSessionUUID = bRequestInfo.SessionUUID
+                    ablRequest.requestUUID      = bRequestInfo.RequestUUID
+                    ablRequest.requestNum       = bRequestInfo.RequestNum
+                    ablRequest.requestID        = substitute("&1:&2:&3", bRequestInfo.WebAppName, bRequestInfo.Transport, bRequestInfo.RequestID)
+                    ablRequest.programName      = bRequestInfo.ProcName
+                    ablRequest.startTime        = string(bRequestInfo.StartTime)
+                    ablRequest.endTime          = string(bRequestInfo.EndTime)
+                    ablRequest.elapsedTime      = bRequestInfo.Elapsed
                     ablRequest.hasCallTree      = false
                     ablRequest.hasProfiler      = false
                     .
 
                 for first CallTree no-lock
-                    where CallTree.RequestUUID eq RequestInfo.RequestUUID:
+                    where CallTree.RequestUUID eq bRequestInfo.RequestUUID:
                     assign ablRequest.hasCallTree = true.
                 end. /* for first CallTree */
 
                 for first ProfilerData no-lock
                     where ProfilerData.SessionUUID eq sessionUUID
-                      and ProfilerData.Timestamp eq RequestInfo.StartTime:
+                      and ProfilerData.Timestamp eq bRequestInfo.StartTime:
                     assign
                         ablRequest.hasProfiler = true
                         ablRequest.profilerRec = string(rowid(ProfilerData))
@@ -694,7 +749,7 @@ class Business.Report use-widget-pool:
 
                 /* Add any available CallStack entries to the appropriate table. */
                 for each CallStack no-lock
-                   where CallStack.RequestUUID eq RequestInfo.RequestUUID:
+                   where CallStack.RequestUUID eq bRequestInfo.RequestUUID:
                     create requestStack.
                     assign
                         requestStack.requestUUID = CallStack.RequestUUID
@@ -707,8 +762,8 @@ class Business.Report use-widget-pool:
                 end. /* for each CallStack */
 
                 release ablRequest no-error.
-            end. /* for each RequestInfo */
-        end. /* for each SessionSample */
+            end. /* for each bRequestInfo */
+        end. /* for each bSessionSample */
     end method. /* GetRequests */
 
 
@@ -724,20 +779,23 @@ class Business.Report use-widget-pool:
         define variable lcTemp  as longchar  no-undo initial "".
         define variable cTemp   as character no-undo.
 
-        find first RequestInfo no-lock
-             where RequestInfo.RequestUUID eq requestUUID no-error.
-        if not available(RequestInfo) then return.
+        define buffer bCallTree    for CallTree.
+        define buffer bRequestInfo for RequestInfo.
+
+        find first bRequestInfo no-lock
+             where bRequestInfo.RequestUUID eq requestUUID no-error.
+        if not available(bRequestInfo) then return.
 
         /* Use version 4 of the profiler output which includes the calltree section. */
         /* This also provides some basic but useful AVM Information for the final report. */
         assign callTreeData = substitute('4 &1 "Call-Tree for Request #&2" &3 "" ~{~}~n.',
-                                         trim(string(RequestInfo.StartTime, "99/99/9999")), RequestInfo.RequestNum,
-                                         trim(string(integer(truncate(mtime(RequestInfo.StartTime) / 1000, 0))), "HH:MM:SS")).
+                                         trim(string(bRequestInfo.StartTime, "99/99/9999")), bRequestInfo.RequestNum,
+                                         trim(string(integer(truncate(mtime(bRequestInfo.StartTime) / 1000, 0))), "HH:MM:SS")).
 
         /* Extract the stringified JSON array. */
-        for first CallTree no-lock
-            where CallTree.RequestUUID eq requestUUID:
-            copy-lob CallTree.Data to lcData no-error.
+        for first bCallTree no-lock
+            where bCallTree.RequestUUID eq requestUUID:
+            copy-lob bCallTree.Data to lcData no-error.
         end.
 
         if lcData eq ? or lcData eq "" then return.
@@ -791,32 +849,35 @@ class Business.Report use-widget-pool:
         define variable dStart as datetime    no-undo.
         define variable dEnd   as datetime    no-undo.
 
+        define buffer bRequestInfo   for RequestInfo.
+        define buffer bSessionSample for SessionSample.
+
         assign accessHistory = dataset accessHistory:handle.
 
         empty temp-table tomcatAccess.
         empty temp-table sessionRequest.
 
         /* Determine the first sample for this agent/session to limit the log results. */
-        for first RequestInfo no-lock
-            where RequestInfo.SessionUUID eq sessionUUID:
-            assign dBegin = add-interval(datetime-tz(RequestInfo.StartTime), -1, "minutes").
-        end. /* for first RequestInfo */
+        for first bRequestInfo no-lock
+            where bRequestInfo.SessionUUID eq sessionUUID:
+            assign dBegin = add-interval(datetime-tz(bRequestInfo.StartTime), -1, "minutes").
+        end. /* for first bRequestInfo */
         if dBegin eq ? then /* No requests logged. */
-            for first SessionSample no-lock
-                where SessionSample.SessionUUID eq sessionUUID:
-                assign dBegin = add-interval(datetime-tz(SessionSample.Timestamp), -4, "minutes").
-            end. /* for first SessionSample */
+            for first bSessionSample no-lock
+                where bSessionSample.SessionUUID eq sessionUUID:
+                assign dBegin = add-interval(datetime-tz(bSessionSample.Timestamp), -4, "minutes").
+            end. /* for first bSessionSample */
 
         /* Determine the last sample for this agent/session to limit the log results. */
-        for last RequestInfo no-lock
-           where RequestInfo.SessionUUID eq sessionUUID:
-            assign dLimit = add-interval(datetime-tz(RequestInfo.EndTime), 1, "minutes").
-        end. /* for last RequestInfo */
+        for last bRequestInfo no-lock
+           where bRequestInfo.SessionUUID eq sessionUUID:
+            assign dLimit = add-interval(datetime-tz(bRequestInfo.EndTime), 1, "minutes").
+        end. /* for last bRequestInfo */
         if dBegin eq ? then /* No requests logged. */
-            for last SessionSample no-lock
-               where SessionSample.SessionUUID eq sessionUUID:
-                assign dLimit = add-interval(datetime-tz(SessionSample.Timestamp), 4, "minutes").
-            end. /* for last SessionSample */
+            for last bSessionSample no-lock
+               where bSessionSample.SessionUUID eq sessionUUID:
+                assign dLimit = add-interval(datetime-tz(bSessionSample.Timestamp), 4, "minutes").
+            end. /* for last bSessionSample */
 
         /* Look through the access log entries, previously limited to just transport and security endpoints. */
         for each AccessLog no-lock
@@ -849,23 +910,23 @@ class Business.Report use-widget-pool:
                 .
 
             /* Locate any ABL requests that may have occurred during the elapsed time of the access. */
-            for each RequestInfo no-lock
-               where RequestInfo.ServerUUID eq AccessLog.ServerUUID
-                 and RequestInfo.StartTime ge dStart
-                 and RequestInfo.EndTime le dEnd:
+            for each bRequestInfo no-lock
+               where bRequestInfo.ServerUUID eq AccessLog.ServerUUID
+                 and bRequestInfo.StartTime ge dStart
+                 and bRequestInfo.EndTime le dEnd:
                 create sessionRequest.
                 assign
                     sessionRequest.accessOrder  = iCount
-                    sessionRequest.requestNum   = RequestInfo.RequestNum
-                    sessionRequest.requestID    = substitute("&1:&2:&3", RequestInfo.WebAppName, RequestInfo.Transport, RequestInfo.RequestID)
-                    sessionRequest.programName  = RequestInfo.ProcName
-                    sessionRequest.startTime    = string(RequestInfo.StartTime)
-                    sessionRequest.endTime      = string(RequestInfo.EndTime)
-                    sessionRequest.elapsedTime  = RequestInfo.Elapsed
+                    sessionRequest.requestNum   = bRequestInfo.RequestNum
+                    sessionRequest.requestID    = substitute("&1:&2:&3", bRequestInfo.WebAppName, bRequestInfo.Transport, bRequestInfo.RequestID)
+                    sessionRequest.programName  = bRequestInfo.ProcName
+                    sessionRequest.startTime    = string(bRequestInfo.StartTime)
+                    sessionRequest.endTime      = string(bRequestInfo.EndTime)
+                    sessionRequest.elapsedTime  = bRequestInfo.Elapsed
                     .
 
                 /* Track total time for internal ABL requests found. */
-                assign iTime = iTime + RequestInfo.Elapsed.
+                assign iTime = iTime + bRequestInfo.Elapsed.
                 release sessionRequest no-error.
             end. /* for each ABLObject */
 
@@ -918,11 +979,13 @@ class Business.Report use-widget-pool:
     @progress.service.resourceMapping(type="REST", operation="invoke", URI="/profilerData", alias="profilerData", mediaType="application/json").
     method public void GetProfilerData ( input  profilerRowID as character,
                                          output profilerOut   as longchar ):
+        define buffer bProfiler for ProfilerData.
+
         /* Return the profiler data for the exact record. */
-        for first ProfilerData no-lock
-            where rowid(ProfilerData) eq to-rowid(profilerRowID):
-            copy-lob from ProfilerData.CodeProfile to profilerOut no-error.
-        end. /* for first ProfilerData */
+        for first bProfiler no-lock
+            where rowid(bProfiler) eq to-rowid(profilerRowID):
+            copy-lob from bProfiler.CodeProfile to profilerOut no-error.
+        end. /* for first bProfiler */
     end method. /* GetProfilerData */
 
 
@@ -1074,6 +1137,9 @@ class Business.Report use-widget-pool:
         define variable iOSHealth as integer     no-undo.
         define variable iTomcatID as integer     no-undo.
 
+        define buffer bConfig for HealthCheckConfig.
+        define buffer bData   for HealthCheckData.
+
         assign healthTrend = dataset healthTrend:handle.
 
         if (serverUUID gt "") ne true then undo, throw new AppError("Server UUID Missing", 0).
@@ -1086,96 +1152,96 @@ class Business.Report use-widget-pool:
             assign trendPeriod = 1.
 
         /* Track the overall health probe (ID 1). */
-        for first HealthCheckConfig no-lock
-            where HealthCheckConfig.ServerUUID eq serverUUID
-              and HealthCheckConfig.probeid eq 1:
+        for first bConfig no-lock
+            where bConfig.ServerUUID eq serverUUID
+              and bConfig.probeid eq 1:
             create healthProbe.
             assign
-                healthProbe.probeID   = HealthCheckConfig.probeid
-                healthProbe.parentID  = HealthCheckConfig.parentid
-                healthProbe.probeName = HealthCheckConfig.config_name
+                healthProbe.probeID   = bConfig.probeid
+                healthProbe.parentID  = bConfig.parentid
+                healthProbe.probeName = bConfig.config_name
                 .
         end. /* for first HealthConfig */
 
         /* Get all of the top-level probes under the overall health probe (ID 1). */
-        for each HealthCheckConfig no-lock
-           where HealthCheckConfig.ServerUUID eq serverUUID
-             and HealthCheckConfig.parentid eq 1
-             and HealthCheckConfig.enabled:
+        for each bConfig no-lock
+           where bConfig.ServerUUID eq serverUUID
+             and bConfig.parentid eq 1
+             and bConfig.enabled:
             /* Skip if we somehow find a duplicate of this probeID. */
-            if can-find(first healthProbe where healthProbe.probeID eq HealthCheckConfig.probeid no-lock) then next.
+            if can-find(first healthProbe where healthProbe.probeID eq bConfig.probeid no-lock) then next.
 
             /* Ignore the overall OS Health score for later. */
-            if HealthCheckConfig.config_name eq "OS Health" then
-                assign iOSHealth = HealthCheckConfig.probeid.
+            if bConfig.config_name eq "OS Health" then
+                assign iOSHealth = bConfig.probeid.
             else do:
                 create healthProbe.
                 assign
-                    healthProbe.probeID   = HealthCheckConfig.probeid
-                    healthProbe.parentID  = HealthCheckConfig.parentid
-                    healthProbe.probeName = HealthCheckConfig.config_name
+                    healthProbe.probeID   = bConfig.probeid
+                    healthProbe.parentID  = bConfig.parentid
+                    healthProbe.probeName = bConfig.config_name
                     .
 
                 /* Remember the probeID for the Tomcat Health. */
-                if HealthCheckConfig.config_name eq "Tomcat Health" then
-                    assign iTomcatID = HealthCheckConfig.probeid.
+                if bConfig.config_name eq "Tomcat Health" then
+                    assign iTomcatID = bConfig.probeid.
             end.
         end. /* for each HealthConfig */
 
         /* Add the individual OS Health probes which may be of more interest. */
-        for each HealthCheckConfig no-lock
-           where HealthCheckConfig.ServerUUID eq serverUUID
-             and HealthCheckConfig.parentid eq iOSHealth
-             and HealthCheckConfig.enabled:
+        for each bConfig no-lock
+           where bConfig.ServerUUID eq serverUUID
+             and bConfig.parentid eq iOSHealth
+             and bConfig.enabled:
             /* Skip if we somehow find a duplicate of this probeID. */
-            if can-find(first healthProbe where healthProbe.probeID eq HealthCheckConfig.probeid no-lock) then next.
+            if can-find(first healthProbe where healthProbe.probeID eq bConfig.probeid no-lock) then next.
 
             create healthProbe.
             assign
-                healthProbe.probeID   = HealthCheckConfig.probeid
-                healthProbe.parentID  = HealthCheckConfig.parentid
-                healthProbe.probeName = HealthCheckConfig.config_name
+                healthProbe.probeID   = bConfig.probeid
+                healthProbe.parentID  = bConfig.parentid
+                healthProbe.probeName = bConfig.config_name
                 .
         end. /* for each HealthConfig */
 
         /* Add the individual Tomcat Health probes which may be of more interest. */
-        for each HealthCheckConfig no-lock
-           where HealthCheckConfig.ServerUUID eq serverUUID
-             and HealthCheckConfig.parentid eq iTomcatID
-             and HealthCheckConfig.enabled:
+        for each bConfig no-lock
+           where bConfig.ServerUUID eq serverUUID
+             and bConfig.parentid eq iTomcatID
+             and bConfig.enabled:
             /* Skip if we somehow find a duplicate of this probeID. */
-            if can-find(first healthProbe where healthProbe.probeID eq HealthCheckConfig.probeid no-lock) then next.
+            if can-find(first healthProbe where healthProbe.probeID eq bConfig.probeid no-lock) then next.
 
             create healthProbe.
             assign
-                healthProbe.probeID   = HealthCheckConfig.probeid
-                healthProbe.parentID  = HealthCheckConfig.parentid
-                healthProbe.probeName = HealthCheckConfig.config_name
+                healthProbe.probeID   = bConfig.probeid
+                healthProbe.parentID  = bConfig.parentid
+                healthProbe.probeName = bConfig.config_name
                 .
         end. /* for each HealthConfig */
 
         /* Find the last (non-ignored) data point for this serverUUID. */
-        for last HealthCheckData no-lock
-           where HealthCheckData.ServerUUID eq serverUUID
-             and not HealthCheckData.ignore
-              by HealthCheckData.lastpoll:
-            assign dLastTime = HealthCheckData.lastpoll.
+        for last bData no-lock
+           where bData.ServerUUID eq serverUUID
+             and not bData.ignore
+              by bData.lastpoll:
+            assign dLastTime = bData.lastpoll.
         end.
 
         /* Get data for every probe found within the last-specified trend period. */
         for each healthProbe no-lock:
-            for each HealthCheckData no-lock
-               where HealthCheckData.ServerUUID eq serverUUID
-                 and HealthCheckData.probeid eq healthProbe.probeID
-                 and HealthCheckData.lastpoll ge add-interval(dLastTime, (trendPeriod * -1), "hours")
-                 and not HealthCheckData.ignore:
+            for each bData no-lock
+               where bData.ServerUUID eq serverUUID
+                 and bData.probeid eq healthProbe.probeID
+                 and bData.lastpoll ge add-interval(dLastTime, (trendPeriod * -1), "hours")
+                 and not bData.ignore:
                 create probeData.
                 assign
-                    probeData.probeID    = HealthCheckData.probeid
-                    probeData.health     = (HealthCheckData.health * 100) /* Return as a percentage out of 100. */
-                    probeData.isMarginal = HealthCheckData.marginal
-                    probeData.isCritical = HealthCheckData.critical
-                    probeData.pollTime   = HealthCheckData.lastpoll
+                    probeData.probeID    = bData.probeid
+                    probeData.health     = (bData.health * 100) /* Return as a percentage out of 100. */
+                    probeData.isMarginal = bData.marginal
+                    probeData.isCritical = bData.critical
+                    probeData.pollTime   = bData.lastpoll
                     .
             end. /* for each HealthData */
         end. /* for each healthProbe */

@@ -81,7 +81,9 @@ define temp-table agentSession no-undo
     field totalSamples     as int64
     field lastSample       as datetime
     field agentSessionUUID as character /* Used to relate the sampled statistics to this session. */
-    index idxSessionSort sessionSort
+    index idxSessionSort as primary sessionSort
+    index idxAgentPID               agentPID
+    index idxSessionUUID            agentSessionUUID agentPID
     .
 
 /* Specific sample-based stats per agent-session. */
