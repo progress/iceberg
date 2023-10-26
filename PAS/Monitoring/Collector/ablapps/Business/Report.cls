@@ -352,9 +352,12 @@ class Business.Report use-widget-pool:
                                          input  sessionID    as integer,
                                          input  sampleDate   as date,
                                          input  sampleGroup  as character,
+                                         input  trendPeriod  as integer,
                                          output agentMetrics as handle ):
         define variable lSuccess    as logical  no-undo initial false.
         define variable lHasSession as logical  no-undo initial false.
+        define variable dTrendStart as datetime no-undo initial ?.
+        define variable dTrendEnd   as datetime no-undo initial ?.
         define variable dLastSample as datetime no-undo initial ?.
         define variable fMemPeak    as decimal  no-undo initial 0. /* Tracked across all sessions for this agent. */
         define variable fMemBytes   as decimal  no-undo initial 0.
@@ -387,6 +390,26 @@ class Business.Report use-widget-pool:
         empty temp-table agentSession.
         empty temp-table sessionStat.
 
+        /* If no trend period is specified, default to 2 hour. */
+        if trendPeriod eq ? or trendPeriod eq 0 then
+            assign trendPeriod = 2.
+
+        /* If no sample date provided, default to today. */
+        if sampleDate eq ? then assign sampleDate = today.
+
+        /* Find the last timestamp collected, to be used as the start of the trend period. */
+        for last bAgentSample no-lock
+           where bAgentSample.ServerUUID eq serverUUID
+             and bAgentSample.AgentPID eq agentPID
+             and bAgentSample.Timestamp gt datetime(sampleDate)
+              by bAgentSample.Timestamp:
+            assign dTrendEnd = bAgentSample.Timestamp.
+        end.
+
+        /* Calculate the starting timestamp based on the trend period and end timestamp. */
+        assign dTrendStart = add-interval(dTrendEnd, (trendPeriod * -1), "hours").
+        if dTrendStart lt datetime(sampleDate) then assign dTrendStart = datetime(sampleDate).
+
         /* Get the agent stats for this server and sample group. */
         sampleblk:
         for each bAgentSample no-lock
@@ -407,8 +430,8 @@ class Business.Report use-widget-pool:
                 release instanceAgent no-error.
             end.
 
-            /* If a sample date is provided but date does not match, skip the sample.*/
-            if sampleDate ne ? and date(bAgentSample.Timestamp) ne sampleDate then next sampleblk.
+            /* Skip samples which are outside the trend period.*/
+            if bAgentSample.Timestamp lt dTrendStart or bAgentSample.Timestamp gt dTrendEnd then next sampleblk.
 
             create agentStat.
             assign
@@ -471,6 +494,7 @@ class Business.Report use-widget-pool:
             firstreqblk:
             for each bSessionSample no-lock
                where bSessionSample.SessionUUID eq bSessionInfo.SessionUUID
+                 and bSessionSample.Timestamp ge add-interval(dTrendStart, (trendPeriod * -1), "hours")
                   by bSessionSample.Timestamp:
                 /* Move to the next if a sample group was named but this record is not in that group. */ 
                 if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next firstreqblk.
@@ -518,8 +542,8 @@ class Business.Report use-widget-pool:
                 /* Move to the next if a sample group was named but this record is not in that group. */ 
                 if sampleGroup gt "" and bSessionSample.SampleGroup ne sampleGroup then next sampleblk.
 
-                /* If a sample date is provided but date does not match, skip the sample.*/
-                if sampleDate ne ? and date(bSessionSample.Timestamp) ne sampleDate then next sampleblk.
+                /* Skip samples which are outside the trend period.*/
+                if bSessionSample.Timestamp lt dTrendStart or bSessionSample.Timestamp gt dTrendEnd then next sampleblk.
 
                 /* Count the total samples reported for this session. */
                 assign iSmplCount = iSmplCount + 1.
@@ -1147,9 +1171,9 @@ class Business.Report use-widget-pool:
         empty temp-table healthProbe.
         empty temp-table probeData.
 
-        /* If no trend period is specified, default to 1 hour. */
+        /* If no trend period is specified, default to 2 hour. */
         if trendPeriod eq ? or trendPeriod eq 0 then
-            assign trendPeriod = 1.
+            assign trendPeriod = 2.
 
         /* Track the overall health probe (ID 1). */
         for first bConfig no-lock

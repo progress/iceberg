@@ -905,6 +905,15 @@
                   }
                 },
                 {
+                  "ablName": "trendPeriod",
+                  "ablType": "INTEGER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "trendPeriod"
+                  }
+                },
+                {
                   "ablName": "agentMetrics",
                   "ablType": "HANDLE",
                   "ioMode": "OUTPUT",
