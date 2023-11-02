@@ -2,267 +2,267 @@ ADD TABLE "ABLObject"
   AREA "Data Area"
   DUMP-NAME "ablobject"
 
-ADD FIELD "Line" OF "ABLObject" AS integer
+ADD FIELD "Line" OF "ABLObject" AS integer 
   FORMAT ">>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 50
 
-ADD FIELD "ObjType" OF "ABLObject" AS character
+ADD FIELD "ObjType" OF "ABLObject" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 70
 
-ADD FIELD "HandleId" OF "ABLObject" AS int64
+ADD FIELD "HandleId" OF "ABLObject" AS int64 
   DESCRIPTION "Unique handle ID for this object, relative to the session"
   FORMAT ">>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 8
   ORDER 20
 
-ADD FIELD "Source" OF "ABLObject" AS character
+ADD FIELD "Source" OF "ABLObject" AS character 
   FORMAT "x(32)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 40
 
-ADD FIELD "Name" OF "ABLObject" AS character
+ADD FIELD "Name" OF "ABLObject" AS character 
   FORMAT "x(32)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 60
 
-ADD FIELD "SampleUUID" OF "ABLObject" AS character
+ADD FIELD "SampleUUID" OF "ABLObject" AS character 
   FORMAT "x(8)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 10
 
-ADD FIELD "Size" OF "ABLObject" AS int64
+ADD FIELD "Size" OF "ABLObject" AS int64 
   FORMAT "->>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 8
   ORDER 80
 
-ADD FIELD "RequestNum" OF "ABLObject" AS int64
+ADD FIELD "RequestNum" OF "ABLObject" AS int64 
   FORMAT ">>>,>>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 30
 
-ADD FIELD "WebAppName" OF "ABLObject" AS character
+ADD FIELD "WebAppName" OF "ABLObject" AS character 
   FORMAT "x(20)"
   INITIAL ""
   MAX-WIDTH 40
   ORDER 90
 
-ADD FIELD "Transport" OF "ABLObject" AS character
+ADD FIELD "Transport" OF "ABLObject" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 100
 
-ADD FIELD "RequestID" OF "ABLObject" AS character
+ADD FIELD "RequestID" OF "ABLObject" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 110
 
-ADD INDEX "pukMain" ON "ABLObject"
+ADD INDEX "pukMain" ON "ABLObject" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "SampleUUID" ASCENDING
-  INDEX-FIELD "HandleId" ASCENDING
-  INDEX-FIELD "Source" ASCENDING
-  INDEX-FIELD "Line" ASCENDING
+  INDEX-FIELD "SampleUUID" ASCENDING 
+  INDEX-FIELD "HandleId" ASCENDING 
+  INDEX-FIELD "Source" ASCENDING 
+  INDEX-FIELD "Line" ASCENDING 
 
 ADD TABLE "AccessLog"
   AREA "Data Area"
   DUMP-NAME "accesslog"
 
-ADD FIELD "RequestStart" OF "AccessLog" AS datetime-tz
+ADD FIELD "RequestStart" OF "AccessLog" AS datetime-tz 
   FORMAT "99/99/9999 HH:MM:SS.SSS+HH:MM"
   INITIAL ?
   MAX-WIDTH 12
   ORDER 20
 
-ADD FIELD "RequestPath" OF "AccessLog" AS character
+ADD FIELD "RequestPath" OF "AccessLog" AS character 
   FORMAT "x(200)"
   INITIAL ""
   MAX-WIDTH 400
   ORDER 50
 
-ADD FIELD "RequestVerb" OF "AccessLog" AS character
+ADD FIELD "RequestVerb" OF "AccessLog" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 60
 
-ADD FIELD "ResponseCode" OF "AccessLog" AS integer
+ADD FIELD "ResponseCode" OF "AccessLog" AS integer 
   FORMAT ">999"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 70
 
-ADD FIELD "ResponseSize" OF "AccessLog" AS integer
+ADD FIELD "ResponseSize" OF "AccessLog" AS integer 
   FORMAT ">>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 80
 
-ADD FIELD "ResponseTime" OF "AccessLog" AS integer
+ADD FIELD "ResponseTime" OF "AccessLog" AS integer 
   FORMAT ">>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 90
 
-ADD FIELD "RequestEnd" OF "AccessLog" AS datetime-tz
+ADD FIELD "RequestEnd" OF "AccessLog" AS datetime-tz 
   FORMAT "99/99/9999 HH:MM:SS.SSS+HH:MM"
   INITIAL ?
   MAX-WIDTH 12
   ORDER 30
 
-ADD FIELD "ServerUUID" OF "AccessLog" AS character
+ADD FIELD "ServerUUID" OF "AccessLog" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 10
 
-ADD FIELD "ThreadID" OF "AccessLog" AS integer
+ADD FIELD "ThreadID" OF "AccessLog" AS integer 
   FORMAT ">>>>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 40
 
-ADD FIELD "Username" OF "AccessLog" AS character
+ADD FIELD "Username" OF "AccessLog" AS character 
   FORMAT "x(40)"
   INITIAL ""
   MAX-WIDTH 80
   ORDER 100
 
-ADD FIELD "WebAppName" OF "AccessLog" AS character
+ADD FIELD "WebAppName" OF "AccessLog" AS character 
   FORMAT "x(20)"
   INITIAL ""
   MAX-WIDTH 40
   ORDER 110
 
-ADD FIELD "Transport" OF "AccessLog" AS character
+ADD FIELD "Transport" OF "AccessLog" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 120
 
-ADD FIELD "RequestID" OF "AccessLog" AS character
+ADD FIELD "RequestID" OF "AccessLog" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 130
 
-ADD INDEX "pukMain" ON "AccessLog"
+ADD INDEX "pukMain" ON "AccessLog" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "RequestStart" ASCENDING
-  INDEX-FIELD "RequestEnd" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "RequestStart" ASCENDING 
+  INDEX-FIELD "RequestEnd" ASCENDING 
 
 ADD TABLE "AgentLog"
   AREA "Data Area"
   DUMP-NAME "agentlog"
 
-ADD FIELD "ServerUUID" OF "AgentLog" AS character
+ADD FIELD "ServerUUID" OF "AgentLog" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 10
 
-ADD FIELD "AgentPID" OF "AgentLog" AS integer
+ADD FIELD "AgentPID" OF "AgentLog" AS integer 
   FORMAT ">>>>>>>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 20
 
-ADD FIELD "MsgNum" OF "AgentLog" AS int64
+ADD FIELD "MsgNum" OF "AgentLog" AS int64 
   FORMAT ">>>,>>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 8
   ORDER 30
 
-ADD FIELD "RawMessage" OF "AgentLog" AS character
+ADD FIELD "RawMessage" OF "AgentLog" AS character 
   FORMAT "x(200)"
   INITIAL ""
   MAX-WIDTH 400
   ORDER 40
 
-ADD FIELD "Timestamp" OF "AgentLog" AS datetime-tz
+ADD FIELD "Timestamp" OF "AgentLog" AS datetime-tz 
   FORMAT "99/99/9999 HH:MM:SS.SSS+HH:MM"
   INITIAL ?
   MAX-WIDTH 12
   ORDER 50
 
-ADD FIELD "WebAppName" OF "AgentLog" AS character
+ADD FIELD "WebAppName" OF "AgentLog" AS character 
   FORMAT "x(20)"
   INITIAL ""
   MAX-WIDTH 40
   ORDER 60
 
-ADD FIELD "Transport" OF "AgentLog" AS character
+ADD FIELD "Transport" OF "AgentLog" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 70
 
-ADD FIELD "RequestID" OF "AgentLog" AS character
+ADD FIELD "RequestID" OF "AgentLog" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 80
 
-ADD FIELD "MsgType" OF "AgentLog" AS character
+ADD FIELD "MsgType" OF "AgentLog" AS character 
   FORMAT "x(12)"
   INITIAL ""
   MAX-WIDTH 24
   ORDER 90
 
-ADD FIELD "MessageText" OF "AgentLog" AS character
+ADD FIELD "MessageText" OF "AgentLog" AS character 
   FORMAT "x(200)"
   INITIAL ""
   MAX-WIDTH 400
   ORDER 100
 
-ADD INDEX "pukAgentMsg" ON "AgentLog"
+ADD INDEX "pukAgentMsg" ON "AgentLog" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "AgentPID" ASCENDING
-  INDEX-FIELD "MsgNum" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "AgentPID" ASCENDING 
+  INDEX-FIELD "MsgNum" ASCENDING 
 
 ADD TABLE "AgentLogRaw"
   AREA "Data Area"
   DUMP-NAME "agentlograw"
 
-ADD FIELD "ServerUUID" OF "AgentLogRaw" AS character
+ADD FIELD "ServerUUID" OF "AgentLogRaw" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 10
 
-ADD FIELD "AgentPID" OF "AgentLogRaw" AS integer
+ADD FIELD "AgentPID" OF "AgentLogRaw" AS integer 
   FORMAT ">>>>>>>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 20
 
-ADD FIELD "Timestamp" OF "AgentLogRaw" AS datetime-tz
+ADD FIELD "Timestamp" OF "AgentLogRaw" AS datetime-tz 
   FORMAT "99/99/9999 HH:MM:SS.SSS+HH:MM"
   INITIAL ?
   MAX-WIDTH 12
   ORDER 30
 
-ADD FIELD "MessageData" OF "AgentLogRaw" AS clob
+ADD FIELD "MessageData" OF "AgentLogRaw" AS clob 
   FORMAT "x(8)"
   INITIAL ?
   LOB-AREA "LOB Area"
@@ -273,149 +273,149 @@ ADD FIELD "MessageData" OF "AgentLogRaw" AS clob
   CLOB-TYPE 2
   ORDER 60
 
-ADD FIELD "MsgSequence" OF "AgentLogRaw" AS int64
+ADD FIELD "MsgSequence" OF "AgentLogRaw" AS int64 
   FORMAT ">>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 8
   ORDER 40
 
-ADD FIELD "MsgCount" OF "AgentLogRaw" AS int64
+ADD FIELD "MsgCount" OF "AgentLogRaw" AS int64 
   FORMAT ">>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 8
   ORDER 50
 
-ADD INDEX "pukMain" ON "AgentLogRaw"
+ADD INDEX "pukMain" ON "AgentLogRaw" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "AgentPID" ASCENDING
-  INDEX-FIELD "Timestamp" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "AgentPID" ASCENDING 
+  INDEX-FIELD "Timestamp" ASCENDING 
 
 ADD TABLE "AgentSample"
   AREA "Data Area"
   DUMP-NAME "agentsample"
 
-ADD FIELD "ServerUUID" OF "AgentSample" AS character
+ADD FIELD "ServerUUID" OF "AgentSample" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 10
 
-ADD FIELD "AgentPID" OF "AgentSample" AS integer
+ADD FIELD "AgentPID" OF "AgentSample" AS integer 
   FORMAT ">>>>>>>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 20
 
-ADD FIELD "AgentStarted" OF "AgentSample" AS datetime
+ADD FIELD "AgentStarted" OF "AgentSample" AS datetime 
   DESCRIPTION "Timestamp of when this agent was started."
   FORMAT "99/99/9999 HH:MM:SS.SSS"
   INITIAL ?
   MAX-WIDTH 8
   ORDER 30
 
-ADD FIELD "SampleGroup" OF "AgentSample" AS character
+ADD FIELD "SampleGroup" OF "AgentSample" AS character 
   FORMAT "x(20)"
   INITIAL ""
   MAX-WIDTH 40
   HELP "User-defined name for current sample grouping."
   ORDER 40
 
-ADD FIELD "Timestamp" OF "AgentSample" AS datetime
+ADD FIELD "Timestamp" OF "AgentSample" AS datetime 
   FORMAT "99/99/9999 HH:MM:SS.SSS"
   INITIAL ?
   MAX-WIDTH 8
   ORDER 50
 
-ADD FIELD "BusySessions" OF "AgentSample" AS integer
+ADD FIELD "BusySessions" OF "AgentSample" AS integer 
   DESCRIPTION "Count of sessions which had activity since last sample."
   FORMAT ">>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 60
 
-ADD FIELD "ActiveSessions" OF "AgentSample" AS character
+ADD FIELD "ActiveSessions" OF "AgentSample" AS character 
   DESCRIPTION "List of session ID's which were seen during this sample."
   FORMAT "x(200)"
   INITIAL ""
   MAX-WIDTH 400
   ORDER 70
 
-ADD FIELD "OverheadMemory" OF "AgentSample" AS int64
+ADD FIELD "OverheadMemory" OF "AgentSample" AS int64 
   DESCRIPTION "Overhead memory reported by the agent at the time of this sample"
   FORMAT ">>>,>>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 8
   ORDER 80
 
-ADD INDEX "pukMain" ON "AgentSample"
+ADD INDEX "pukMain" ON "AgentSample" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "AgentPID" ASCENDING
-  INDEX-FIELD "Timestamp" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "AgentPID" ASCENDING 
+  INDEX-FIELD "Timestamp" ASCENDING 
 
-ADD INDEX "idxSample" ON "AgentSample"
-  AREA "Data Area"
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "AgentPID" ASCENDING
-  INDEX-FIELD "SampleGroup" ASCENDING
+ADD INDEX "idxServerTime" ON "AgentSample" 
+  AREA "Index Area"
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "AgentPID" ASCENDING 
+  INDEX-FIELD "Timestamp" ASCENDING 
 
 ADD TABLE "CallStack"
   AREA "Data Area"
   DUMP-NAME "callstack"
 
-ADD FIELD "RequestUUID" OF "CallStack" AS character
+ADD FIELD "RequestUUID" OF "CallStack" AS character 
   FORMAT "x(32)"
   INITIAL ""
   MAX-WIDTH 64
   ORDER 10
 
-ADD FIELD "StackOrder" OF "CallStack" AS integer
+ADD FIELD "StackOrder" OF "CallStack" AS integer 
   FORMAT ">>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 20
 
-ADD FIELD "Line" OF "CallStack" AS integer
+ADD FIELD "Line" OF "CallStack" AS integer 
   FORMAT ">>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 30
 
-ADD FIELD "Routine" OF "CallStack" AS character
+ADD FIELD "Routine" OF "CallStack" AS character 
   FORMAT "x(64)"
   INITIAL ""
   MAX-WIDTH 128
   ORDER 40
 
-ADD FIELD "Source" OF "CallStack" AS character
+ADD FIELD "Source" OF "CallStack" AS character 
   FORMAT "x(64)"
   INITIAL ""
   MAX-WIDTH 128
   ORDER 50
 
-ADD INDEX "pukMain" ON "CallStack"
+ADD INDEX "pukMain" ON "CallStack" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "RequestUUID" ASCENDING
-  INDEX-FIELD "StackOrder" ASCENDING
+  INDEX-FIELD "RequestUUID" ASCENDING 
+  INDEX-FIELD "StackOrder" ASCENDING 
 
 ADD TABLE "CallTree"
   AREA "Data Area"
   DUMP-NAME "calltree"
 
-ADD FIELD "RequestUUID" OF "CallTree" AS character
+ADD FIELD "RequestUUID" OF "CallTree" AS character 
   FORMAT "x(32)"
   INITIAL ""
   MAX-WIDTH 64
   ORDER 10
 
-ADD FIELD "Data" OF "CallTree" AS clob
+ADD FIELD "Data" OF "CallTree" AS clob 
   FORMAT "x(8)"
   INITIAL ?
   LOB-AREA "LOB Area"
@@ -426,60 +426,60 @@ ADD FIELD "Data" OF "CallTree" AS clob
   CLOB-TYPE 2
   ORDER 20
 
-ADD INDEX "pukMain" ON "CallTree"
+ADD INDEX "pukMain" ON "CallTree" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "RequestUUID" ASCENDING
+  INDEX-FIELD "RequestUUID" ASCENDING 
 
 ADD TABLE "HealthCheckConfig"
   AREA "Data Area"
   DESCRIPTION "HealthCheck Config Values"
   DUMP-NAME "healthconfig"
 
-ADD FIELD "probeid" OF "HealthCheckConfig" AS integer
+ADD FIELD "probeid" OF "HealthCheckConfig" AS integer 
   DESCRIPTION "Probe Identifier"
   FORMAT ">>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 20
 
-ADD FIELD "parentid" OF "HealthCheckConfig" AS integer
+ADD FIELD "parentid" OF "HealthCheckConfig" AS integer 
   DESCRIPTION "Parent Probe ID"
   FORMAT ">>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 30
 
-ADD FIELD "composite" OF "HealthCheckConfig" AS logical
+ADD FIELD "composite" OF "HealthCheckConfig" AS logical 
   DESCRIPTION "Is probe a composite?"
   FORMAT "yes/no"
   INITIAL "no"
   MAX-WIDTH 1
   ORDER 40
 
-ADD FIELD "config_name" OF "HealthCheckConfig" AS character
+ADD FIELD "config_name" OF "HealthCheckConfig" AS character 
   DESCRIPTION "Configured Probe Name"
   FORMAT "x(64)"
   INITIAL ""
   MAX-WIDTH 128
   ORDER 50
 
-ADD FIELD "timestamp" OF "HealthCheckConfig" AS datetime-tz
+ADD FIELD "timestamp" OF "HealthCheckConfig" AS datetime-tz 
   DESCRIPTION "Config value as of date/time"
   FORMAT "99/99/9999 HH:MM:SS.SSS+HH:MM"
   INITIAL ?
   MAX-WIDTH 12
   ORDER 60
 
-ADD FIELD "calculation" OF "HealthCheckConfig" AS character
+ADD FIELD "calculation" OF "HealthCheckConfig" AS character 
   DESCRIPTION "Calculated probe value formula"
   FORMAT "x(64)"
   INITIAL ""
   MAX-WIDTH 128
   ORDER 70
 
-ADD FIELD "critical" OF "HealthCheckConfig" AS decimal
+ADD FIELD "critical" OF "HealthCheckConfig" AS decimal 
   DESCRIPTION "Critical Probe Value"
   FORMAT ">>9.9"
   INITIAL "0"
@@ -487,7 +487,7 @@ ADD FIELD "critical" OF "HealthCheckConfig" AS decimal
   DECIMALS 1
   ORDER 80
 
-ADD FIELD "marginal" OF "HealthCheckConfig" AS decimal
+ADD FIELD "marginal" OF "HealthCheckConfig" AS decimal 
   DESCRIPTION "Marginal Probe Value"
   FORMAT ">>9.99"
   INITIAL "0"
@@ -495,14 +495,14 @@ ADD FIELD "marginal" OF "HealthCheckConfig" AS decimal
   DECIMALS 1
   ORDER 90
 
-ADD FIELD "description" OF "HealthCheckConfig" AS character
+ADD FIELD "description" OF "HealthCheckConfig" AS character 
   DESCRIPTION "Probe Description"
   FORMAT "x(64)"
   INITIAL ""
   MAX-WIDTH 128
   ORDER 100
 
-ADD FIELD "weight" OF "HealthCheckConfig" AS decimal
+ADD FIELD "weight" OF "HealthCheckConfig" AS decimal 
   DESCRIPTION "Weight of probe in overall formula"
   FORMAT ">>9.99"
   INITIAL "0"
@@ -510,28 +510,28 @@ ADD FIELD "weight" OF "HealthCheckConfig" AS decimal
   DECIMALS 1
   ORDER 110
 
-ADD FIELD "className" OF "HealthCheckConfig" AS character
+ADD FIELD "className" OF "HealthCheckConfig" AS character 
   DESCRIPTION "Probe ABL Class Name"
   FORMAT "x(64)"
   INITIAL ""
   MAX-WIDTH 128
   ORDER 120
 
-ADD FIELD "enabled" OF "HealthCheckConfig" AS logical
+ADD FIELD "enabled" OF "HealthCheckConfig" AS logical 
   DESCRIPTION "Is probe enabled?"
   FORMAT "yes/no"
   INITIAL "no"
   MAX-WIDTH 1
   ORDER 130
 
-ADD FIELD "failOnCritical" OF "HealthCheckConfig" AS logical
+ADD FIELD "failOnCritical" OF "HealthCheckConfig" AS logical 
   DESCRIPTION "Will critical state of probe fail overall health?"
   FORMAT "yes/no"
   INITIAL "no"
   MAX-WIDTH 1
   ORDER 140
 
-ADD FIELD "config" OF "HealthCheckConfig" AS clob
+ADD FIELD "config" OF "HealthCheckConfig" AS clob 
   DESCRIPTION "JSON-formatted configuration options for probe"
   FORMAT "x(8)"
   INITIAL ?
@@ -543,40 +543,40 @@ ADD FIELD "config" OF "HealthCheckConfig" AS clob
   CLOB-TYPE 2
   ORDER 150
 
-ADD FIELD "ServerUUID" OF "HealthCheckConfig" AS character
+ADD FIELD "ServerUUID" OF "HealthCheckConfig" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 10
 
-ADD INDEX "pukServerProbe" ON "HealthCheckConfig"
+ADD INDEX "pukServerProbe" ON "HealthCheckConfig" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "probeid" ASCENDING
-  INDEX-FIELD "parentid" ASCENDING
-  INDEX-FIELD "config_name" ASCENDING
-  INDEX-FIELD "timestamp" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "probeid" ASCENDING 
+  INDEX-FIELD "parentid" ASCENDING 
+  INDEX-FIELD "config_name" ASCENDING 
+  INDEX-FIELD "timestamp" ASCENDING 
 
-ADD INDEX "idxParentProbe" ON "HealthCheckConfig"
+ADD INDEX "idxParentProbe" ON "HealthCheckConfig" 
   AREA "Index Area"
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "parentid" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "parentid" ASCENDING 
 
 ADD TABLE "HealthCheckData"
   AREA "Data Area"
   DESCRIPTION "HealthCheck Data Points"
   DUMP-NAME "healthdata"
 
-ADD FIELD "probeid" OF "HealthCheckData" AS integer
+ADD FIELD "probeid" OF "HealthCheckData" AS integer 
   DESCRIPTION "Probe Identifier"
   FORMAT ">>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 20
 
-ADD FIELD "health" OF "HealthCheckData" AS decimal
+ADD FIELD "health" OF "HealthCheckData" AS decimal 
   DESCRIPTION "Probe Health (0-1)"
   FORMAT ">>9.9"
   INITIAL "0"
@@ -584,35 +584,35 @@ ADD FIELD "health" OF "HealthCheckData" AS decimal
   DECIMALS 1
   ORDER 30
 
-ADD FIELD "ignore" OF "HealthCheckData" AS logical
+ADD FIELD "ignore" OF "HealthCheckData" AS logical 
   DESCRIPTION "Is probe currently ignored?"
   FORMAT "yes/no"
   INITIAL "no"
   MAX-WIDTH 1
   ORDER 60
 
-ADD FIELD "failOnCritical" OF "HealthCheckData" AS logical
+ADD FIELD "failOnCritical" OF "HealthCheckData" AS logical 
   DESCRIPTION "Will critical state of probe fail overall health?"
   FORMAT "yes/no"
   INITIAL "no"
   MAX-WIDTH 1
   ORDER 70
 
-ADD FIELD "failedBy" OF "HealthCheckData" AS character
+ADD FIELD "failedBy" OF "HealthCheckData" AS character 
   DESCRIPTION "Item responsible for failure of probe"
   FORMAT "x(64)"
   INITIAL ""
   MAX-WIDTH 128
   ORDER 80
 
-ADD FIELD "lastpoll" OF "HealthCheckData" AS datetime-tz
+ADD FIELD "lastpoll" OF "HealthCheckData" AS datetime-tz 
   DESCRIPTION "Date/time of Last Poll"
   FORMAT "99/99/9999 HH:MM:SS.SSS+HH:MM"
   INITIAL ?
   MAX-WIDTH 12
   ORDER 100
 
-ADD FIELD "data_value" OF "HealthCheckData" AS clob
+ADD FIELD "data_value" OF "HealthCheckData" AS clob 
   DESCRIPTION "JSON-formatted raw data for probe"
   FORMAT "x(8)"
   INITIAL ?
@@ -624,57 +624,57 @@ ADD FIELD "data_value" OF "HealthCheckData" AS clob
   CLOB-TYPE 2
   ORDER 90
 
-ADD FIELD "marginal" OF "HealthCheckData" AS logical
+ADD FIELD "marginal" OF "HealthCheckData" AS logical 
   DESCRIPTION "Has probe exceeded marginal value?"
   FORMAT "yes/no"
   INITIAL "no"
   MAX-WIDTH 1
   ORDER 40
 
-ADD FIELD "critical" OF "HealthCheckData" AS logical
+ADD FIELD "critical" OF "HealthCheckData" AS logical 
   DESCRIPTION "Has probe exceeded critical value?"
   FORMAT "yes/no"
   INITIAL "no"
   MAX-WIDTH 1
   ORDER 50
 
-ADD FIELD "ServerUUID" OF "HealthCheckData" AS character
+ADD FIELD "ServerUUID" OF "HealthCheckData" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 10
 
-ADD INDEX "pukServerProbe" ON "HealthCheckData"
+ADD INDEX "pukServerProbe" ON "HealthCheckData" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "probeid" ASCENDING
-  INDEX-FIELD "lastpoll" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "probeid" ASCENDING 
+  INDEX-FIELD "lastpoll" ASCENDING 
 
 ADD TABLE "ProfilerData"
   AREA "Data Area"
   DUMP-NAME "profile"
 
-ADD FIELD "Timestamp" OF "ProfilerData" AS datetime
+ADD FIELD "Timestamp" OF "ProfilerData" AS datetime 
   FORMAT "99/99/9999 HH:MM:SS.SSS"
   INITIAL ?
   MAX-WIDTH 8
   ORDER 20
 
-ADD FIELD "SessionUUID" OF "ProfilerData" AS character
+ADD FIELD "SessionUUID" OF "ProfilerData" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 10
 
-ADD FIELD "ProfileBytes" OF "ProfilerData" AS int64
+ADD FIELD "ProfileBytes" OF "ProfilerData" AS int64 
   FORMAT ">>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 30
 
-ADD FIELD "CodeProfile" OF "ProfilerData" AS clob
+ADD FIELD "CodeProfile" OF "ProfilerData" AS clob 
   FORMAT "x(8)"
   INITIAL ?
   LOB-AREA "LOB Area"
@@ -685,300 +685,318 @@ ADD FIELD "CodeProfile" OF "ProfilerData" AS clob
   CLOB-TYPE 2
   ORDER 40
 
-ADD FIELD "RequestLength" OF "ProfilerData" AS int64
+ADD FIELD "RequestLength" OF "ProfilerData" AS int64 
   FORMAT ">>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 8
   ORDER 50
 
-ADD FIELD "APIEntryPoint" OF "ProfilerData" AS character
+ADD FIELD "APIEntryPoint" OF "ProfilerData" AS character 
   DESCRIPTION "Originating procedure or method for this profiler request."
   FORMAT "x(32)"
   INITIAL ""
   MAX-WIDTH 64
   ORDER 60
 
-ADD FIELD "TestRun" OF "ProfilerData" AS character
+ADD FIELD "TestRun" OF "ProfilerData" AS character 
   DESCRIPTION "User-friendly name for a test which may have generated this data; set via PROFILER:DESCRIPTION."
   FORMAT "x(32)"
   INITIAL ""
   MAX-WIDTH 64
   ORDER 70
 
-ADD FIELD "Transport" OF "ProfilerData" AS character
+ADD FIELD "Transport" OF "ProfilerData" AS character 
   DESCRIPTION "Transport used for the request (REST, WEB, APSV, SOAP)"
   FORMAT "x(4)"
   INITIAL ""
   MAX-WIDTH 8
   ORDER 80
 
-ADD INDEX "pukMain" ON "ProfilerData"
+ADD INDEX "pukMain" ON "ProfilerData" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "SessionUUID" ASCENDING
-  INDEX-FIELD "Timestamp" ASCENDING
+  INDEX-FIELD "SessionUUID" ASCENDING 
+  INDEX-FIELD "Timestamp" ASCENDING 
 
 ADD TABLE "RequestInfo"
   AREA "Data Area"
   DUMP-NAME "request"
 
-ADD FIELD "ServerUUID" OF "RequestInfo" AS character
+ADD FIELD "ServerUUID" OF "RequestInfo" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 10
 
-ADD FIELD "SessionUUID" OF "RequestInfo" AS character
+ADD FIELD "SessionUUID" OF "RequestInfo" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 20
 
-ADD FIELD "RequestUUID" OF "RequestInfo" AS character
+ADD FIELD "RequestUUID" OF "RequestInfo" AS character 
   FORMAT "x(32)"
   INITIAL ""
   MAX-WIDTH 64
   ORDER 40
 
-ADD FIELD "RequestNum" OF "RequestInfo" AS int64
+ADD FIELD "RequestNum" OF "RequestInfo" AS int64 
   FORMAT ">>>,>>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 50
 
-ADD FIELD "ClientID" OF "RequestInfo" AS character
+ADD FIELD "ClientID" OF "RequestInfo" AS character 
   FORMAT "x(30)"
   INITIAL ""
   MAX-WIDTH 60
   ORDER 60
 
-ADD FIELD "ConnectionID" OF "RequestInfo" AS integer
+ADD FIELD "ConnectionID" OF "RequestInfo" AS integer 
   FORMAT ">>>>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 70
 
-ADD FIELD "ProcName" OF "RequestInfo" AS character
+ADD FIELD "ProcName" OF "RequestInfo" AS character 
   FORMAT "x(100)"
   INITIAL ""
   MAX-WIDTH 200
   ORDER 80
 
-ADD FIELD "StartTime" OF "RequestInfo" AS datetime
+ADD FIELD "StartTime" OF "RequestInfo" AS datetime 
   FORMAT "99/99/9999 HH:MM:SS.SSS"
   INITIAL ?
   MAX-WIDTH 8
   ORDER 90
 
-ADD FIELD "EndTime" OF "RequestInfo" AS datetime
+ADD FIELD "EndTime" OF "RequestInfo" AS datetime 
   FORMAT "99/99/9999 HH:MM:SS.SSS"
   INITIAL ?
   MAX-WIDTH 8
   ORDER 100
 
-ADD FIELD "Elapsed" OF "RequestInfo" AS int64
+ADD FIELD "Elapsed" OF "RequestInfo" AS int64 
   FORMAT ">>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 110
 
-ADD FIELD "WebAppName" OF "RequestInfo" AS character
+ADD FIELD "WebAppName" OF "RequestInfo" AS character 
   FORMAT "x(20)"
   INITIAL ""
   MAX-WIDTH 40
   ORDER 120
 
-ADD FIELD "Transport" OF "RequestInfo" AS character
+ADD FIELD "Transport" OF "RequestInfo" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 130
 
-ADD FIELD "RequestID" OF "RequestInfo" AS character
+ADD FIELD "RequestID" OF "RequestInfo" AS character 
   FORMAT "x(10)"
   INITIAL ""
   MAX-WIDTH 20
   ORDER 140
 
-ADD FIELD "SampleUUID" OF "RequestInfo" AS character
+ADD FIELD "SampleUUID" OF "RequestInfo" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 30
 
-ADD INDEX "pukMain" ON "RequestInfo"
+ADD INDEX "pukMain" ON "RequestInfo" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "SessionUUID" ASCENDING
-  INDEX-FIELD "RequestNum" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "SessionUUID" ASCENDING 
+  INDEX-FIELD "RequestNum" ASCENDING 
 
-ADD INDEX "idxStart" ON "RequestInfo"
+ADD INDEX "idxEnd" ON "RequestInfo" 
   AREA "Index Area"
-  INDEX-FIELD "SampleUUID" ASCENDING
-  INDEX-FIELD "StartTime" ASCENDING
+  INDEX-FIELD "SampleUUID" ASCENDING 
+  INDEX-FIELD "EndTime" ASCENDING 
+
+ADD INDEX "idxRequest" ON "RequestInfo" 
+  AREA "Index Area"
+  INDEX-FIELD "RequestUUID" ASCENDING 
+
+ADD INDEX "idxSession" ON "RequestInfo" 
+  AREA "Index Area"
+  INDEX-FIELD "SessionUUID" ASCENDING 
+
+ADD INDEX "idxStart" ON "RequestInfo" 
+  AREA "Index Area"
+  INDEX-FIELD "SampleUUID" ASCENDING 
+  INDEX-FIELD "StartTime" ASCENDING 
 
 ADD TABLE "ServerInfo"
   AREA "Data Area"
   DUMP-NAME "server"
 
-ADD FIELD "ApplicationName" OF "ServerInfo" AS character
+ADD FIELD "ApplicationName" OF "ServerInfo" AS character 
   FORMAT "x(20)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 10
 
-ADD FIELD "ServerName" OF "ServerInfo" AS character
+ADD FIELD "ServerName" OF "ServerInfo" AS character 
   FORMAT "x(20)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 20
 
-ADD FIELD "ServerUUID" OF "ServerInfo" AS character
+ADD FIELD "ServerUUID" OF "ServerInfo" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 30
 
-ADD INDEX "pukMain" ON "ServerInfo"
+ADD INDEX "pukMain" ON "ServerInfo" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ApplicationName" ASCENDING
-  INDEX-FIELD "ServerName" ASCENDING
+  INDEX-FIELD "ApplicationName" ASCENDING 
+  INDEX-FIELD "ServerName" ASCENDING 
 
-ADD INDEX "ukUUID" ON "ServerInfo"
+ADD INDEX "ukUUID" ON "ServerInfo" 
   AREA "Index Area"
   UNIQUE
-  INDEX-FIELD "ServerUUID" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
 
 ADD TABLE "SessionInfo"
   AREA "Data Area"
   DUMP-NAME "sessioninfo"
 
-ADD FIELD "ServerUUID" OF "SessionInfo" AS character
+ADD FIELD "ServerUUID" OF "SessionInfo" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 16
   ORDER 10
 
-ADD FIELD "AgentPID" OF "SessionInfo" AS integer
+ADD FIELD "AgentPID" OF "SessionInfo" AS integer 
   FORMAT ">>>>>>>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 20
 
-ADD FIELD "SessionID" OF "SessionInfo" AS integer
+ADD FIELD "SessionID" OF "SessionInfo" AS integer 
   FORMAT ">>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 30
 
-ADD FIELD "Started" OF "SessionInfo" AS datetime
+ADD FIELD "Started" OF "SessionInfo" AS datetime 
   DESCRIPTION "Timestamp of when this session was started, or when it was first seen in reported metrics."
   FORMAT "99/99/9999 HH:MM:SS.SSS"
   INITIAL ?
   MAX-WIDTH 8
   ORDER 40
 
-ADD FIELD "SessionUUID" OF "SessionInfo" AS character
+ADD FIELD "SessionUUID" OF "SessionInfo" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 50
 
-ADD INDEX "pukMain" ON "SessionInfo"
+ADD INDEX "pukMain" ON "SessionInfo" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "ServerUUID" ASCENDING
-  INDEX-FIELD "AgentPID" ASCENDING
-  INDEX-FIELD "SessionID" ASCENDING
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "AgentPID" ASCENDING 
+  INDEX-FIELD "SessionID" ASCENDING 
 
-ADD INDEX "ukUUID" ON "SessionInfo"
+ADD INDEX "idxStarted" ON "SessionInfo" 
+  AREA "Index Area"
+  INDEX-FIELD "ServerUUID" ASCENDING 
+  INDEX-FIELD "Started" ASCENDING 
+  INDEX-FIELD "AgentPID" ASCENDING 
+  INDEX-FIELD "SessionID" ASCENDING 
+
+ADD INDEX "ukUUID" ON "SessionInfo" 
   AREA "Index Area"
   UNIQUE
-  INDEX-FIELD "SessionUUID" ASCENDING
+  INDEX-FIELD "SessionUUID" ASCENDING 
 
 ADD TABLE "SessionSample"
   AREA "Data Area"
   DUMP-NAME "sessionsample"
 
-ADD FIELD "SessionUUID" OF "SessionSample" AS character
+ADD FIELD "SessionUUID" OF "SessionSample" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 10
 
-ADD FIELD "SampleUUID" OF "SessionSample" AS character
+ADD FIELD "SampleUUID" OF "SessionSample" AS character 
   FORMAT "x(16)"
   INITIAL ""
   MAX-WIDTH 32
   ORDER 20
 
-ADD FIELD "Timestamp" OF "SessionSample" AS datetime
+ADD FIELD "Timestamp" OF "SessionSample" AS datetime 
   FORMAT "99/99/9999 HH:MM:SS.SSS"
   INITIAL ?
   MAX-WIDTH 8
   ORDER 40
 
-ADD FIELD "MemoryBytes" OF "SessionSample" AS int64
+ADD FIELD "MemoryBytes" OF "SessionSample" AS int64 
   DESCRIPTION "Total memory reported by the session at the time of this sample"
   FORMAT ">>>,>>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 50
 
-ADD FIELD "ObjectCount" OF "SessionSample" AS integer
+ADD FIELD "ObjectCount" OF "SessionSample" AS integer 
   DESCRIPTION "Roll-up value of total ABLObjects encountered at the time of this sample."
   FORMAT ">>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 4
   ORDER 60
 
-ADD FIELD "SampleGroup" OF "SessionSample" AS character
+ADD FIELD "SampleGroup" OF "SessionSample" AS character 
   FORMAT "x(20)"
   INITIAL ""
   MAX-WIDTH 40
   HELP "User-defined name for current sample grouping."
   ORDER 30
 
-ADD FIELD "RequestCount" OF "SessionSample" AS int64
+ADD FIELD "RequestCount" OF "SessionSample" AS int64 
   DESCRIPTION "Roll-up value of total requests served by this session since last sample"
   FORMAT ">>>,>>>,>>>,>>9"
   INITIAL "0"
   MAX-WIDTH 8
   ORDER 70
 
-ADD INDEX "pukMain" ON "SessionSample"
+ADD INDEX "pukMain" ON "SessionSample" 
   AREA "Index Area"
   UNIQUE
   PRIMARY
-  INDEX-FIELD "SessionUUID" ASCENDING
-  INDEX-FIELD "SampleUUID" ASCENDING
-  INDEX-FIELD "Timestamp" ASCENDING
+  INDEX-FIELD "SessionUUID" ASCENDING 
+  INDEX-FIELD "SampleUUID" ASCENDING 
+  INDEX-FIELD "Timestamp" ASCENDING 
 
-ADD INDEX "idxName" ON "SessionSample"
+ADD INDEX "idxName" ON "SessionSample" 
   AREA "Index Area"
-  INDEX-FIELD "SessionUUID" ASCENDING
-  INDEX-FIELD "SampleGroup" ASCENDING
+  INDEX-FIELD "SessionUUID" ASCENDING 
+  INDEX-FIELD "SampleGroup" ASCENDING 
 
-ADD INDEX "idxSessionTime" ON "SessionSample"
+ADD INDEX "idxSessionTime" ON "SessionSample" 
   AREA "Index Area"
-  INDEX-FIELD "SessionUUID" ASCENDING
-  INDEX-FIELD "MemoryBytes" ASCENDING
-  INDEX-FIELD "ObjectCount" ASCENDING
-  INDEX-FIELD "Timestamp" ASCENDING
+  INDEX-FIELD "SessionUUID" ASCENDING 
+  INDEX-FIELD "Timestamp" ASCENDING 
 
-ADD INDEX "ukUUID" ON "SessionSample"
+ADD INDEX "ukUUID" ON "SessionSample" 
   AREA "Index Area"
   UNIQUE
-  INDEX-FIELD "SampleUUID" ASCENDING
+  INDEX-FIELD "SampleUUID" ASCENDING 
 
 .
 PSC
 cpstream=UTF-8
 .
-0000021021
+0000022256

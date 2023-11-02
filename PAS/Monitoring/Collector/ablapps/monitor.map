@@ -887,12 +887,30 @@
                   }
                 },
                 {
+                  "ablName": "sampleDate",
+                  "ablType": "DATE",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sampleDate"
+                  }
+                },
+                {
                   "ablName": "sampleGroup",
                   "ablType": "CHARACTER",
                   "ioMode": "INPUT",
                   "msgElem": {
                     "type": "field",
                     "name": "sampleGroup"
+                  }
+                },
+                {
+                  "ablName": "trendPeriod",
+                  "ablType": "INTEGER",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "trendPeriod"
                   }
                 },
                 {
@@ -961,6 +979,15 @@
                   "msgElem": {
                     "type": "field",
                     "name": "sessionUUID"
+                  }
+                },
+                {
+                  "ablName": "sampleDate",
+                  "ablType": "DATE",
+                  "ioMode": "INPUT",
+                  "msgElem": {
+                    "type": "field",
+                    "name": "sampleDate"
                   }
                 },
                 {
