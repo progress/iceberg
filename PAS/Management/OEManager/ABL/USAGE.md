@@ -32,7 +32,7 @@ The following represents the default usage for all tasks which can be executed u
      [echo]                     [OPTIONAL] -Dbasemem=819200 - Minimum memory threshold, in bytes, of unused agent sessions
      [echo]
      [echo]  oemanager stacks - [RO] Obtain stack information for all MSAgents for an ABL App
-	 [echo]                     [OPTIONAL]    -Dpid=[AGENT_PID]  - Limit stack information to a specific MSAgent process ID
+     [echo]                     [OPTIONAL]    -Dpid=[AGENT_PID]  - Limit stack information to a specific MSAgent process ID
      [echo]                     [OPTIONAL] -Dsessid=[SESSION_ID] - Limit stack information to a specific ABL Session ID
      [echo]                                                        Requires specifying an MSAgent via pid=[AGENT_PID]
      [echo]
