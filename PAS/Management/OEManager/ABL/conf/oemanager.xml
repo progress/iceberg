@@ -44,7 +44,7 @@
         <echo message="${line.separator} ${util.name} stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
         <echo message="                    [OPTIONAL]    -Dpid=[AGENT_PID]  - Limit stack information to a specific MSAgent process ID"/>
         <echo message="                    [OPTIONAL] -Dsessid=[SESSION_ID] - Limit stack information to a specific ABL Session ID"/>
-		<echo message="                                                       Requires specifying an MSAgent via -Dpid=[AGENT_PID]"/>
+        <echo message="                                                       Requires specifying an MSAgent via -Dpid=[AGENT_PID]"/>
         <echo message="${line.separator} ${util.name} flush  - [RO] Flush the available deferred log buffer to agent log file"/>
         <echo message="${line.separator} ${util.name} locks  - [RO] Display database users and their table locks related to an MSAgent-Session"/>
         <echo message="                    This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary"/>
