@@ -1,6 +1,6 @@
 <project name="OEManager CLI Tools" basedir="." default="usage">
 
-    <!-- Copyright 2020-2023 Progress Software Corporation -->
+    <!-- Copyright 2020-2024 Progress Software Corporation -->
 
     <!--
         Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,6 +42,9 @@
         <echo message="${line.separator} ${util.name} status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
         <echo message="                    [OPTIONAL] -Dbasemem=${basemem} - Minimum memory threshold (bytes) to consider as 'unused' agent sessions"/>
         <echo message="${line.separator} ${util.name} stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
+        <echo message="                    [OPTIONAL]    -Dpid=[AGENT_PID]  - Limit stack information to a specific MSAgent process ID"/>
+        <echo message="                    [OPTIONAL] -Dsessid=[SESSION_ID] - Limit stack information to a specific ABL Session ID"/>
+        <echo message="                                                       Requires specifying an MSAgent via -Dpid=[AGENT_PID]"/>
         <echo message="${line.separator} ${util.name} flush  - [RO] Flush the available deferred log buffer to agent log file"/>
         <echo message="${line.separator} ${util.name} locks  - [RO] Display database users and their table locks related to an MSAgent-Session"/>
         <echo message="                    This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary"/>
@@ -58,12 +61,16 @@
         <echo message="                     [OPTIONAL] -Dsleep=${sleep} - Sleep time in minutes after stop, prior to final 'status' output"/>
         <echo message="${line.separator} ${util.name} clean   - Alias for 'close' task [Deprecated]"/>
         <if>
-            <equals arg1="${oeMajor}" arg2="12"/>
+            <equals arg1="${oeMajor}" arg2="11"/>
             <then>
-                <echo message="${line.separator} ${util.name} refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)"/>
+                <!-- No additional options for OpenEdge 11. -->
+            </then>
+            <else>
+                <!-- Additional options available for OpenEdge 12 and later. -->
+                <echo message="${line.separator} ${util.name} refresh - Refresh ABL Sessions for each MSAgent for an ABL App"/>
                 <echo message="                     Note: This will essentially terminate all sessions (gracefully),"/>
                 <echo message="                           and prepare the Agent to pick up any R-code changes"/>
-            </then>
+            </else>
         </if>
         <echo message="${line.separator} ${util.name} reset   - Reset an aspect of each MSAgent for an ABL App"/>
         <echo message="                     [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
@@ -299,6 +306,7 @@
             </if>
 
             <!-- Set the appropriate TCMAN command for managing the server as based on OpenEdge release version. -->
+
             <if>
                 <equals arg1="${oeMajor}" arg2="11"/>
                 <then>
@@ -306,7 +314,12 @@
                     <property name="serverCmd" value="pasoestart"/>
                     <property name="stopOpts" value="-halt -abort"/>
                 </then>
-                <else>
+            </if>
+
+            <if>
+                <equals arg1="${oeMajor}" arg2="12"/>
+                <then>
+                    <!-- Use either pasoestart oe oeserver command for OpenEdge 12 -->
                     <if>
                         <equals arg1="${oeMinor}" arg2="0"/>
                         <then>
@@ -347,12 +360,23 @@
                             <property name="stopOpts" value="-halt -abort"/>
                         </then>
                     </if>
+                    <else>
+                        <!-- Use the new oeserver command for OpenEdge 12.5+ -->
+                        <property name="serverCmd" value="oeserver"/>
+                        <property name="stopOpts" value="-stop -force"/>
+                    </else>
+                </then>
+            </if>
 
-                    <!-- Use the new oeserver command for OpenEdge 12.5+ -->
+            <if>
+                <equals arg1="${oeMajor}" arg2="13"/>
+                <then>
+                    <!-- Use the oeserver command for OpenEdge 13 -->
                     <property name="serverCmd" value="oeserver"/>
                     <property name="stopOpts" value="-stop -force"/>
-                </else>
+                </then>
             </if>
+
             <property name="jsonOpts" value="-json -array"/>
         </sequential>
     </macrodef>
@@ -639,6 +663,8 @@
             <Parameter name="UserID" value="${userid}"/>
             <Parameter name="PassWD" value="${passwd}"/>
             <Parameter name="ABLApp" value="${ablapp}"/>
+            <Parameter name="ProcID" value="${pid}"/>
+            <Parameter name="SessionID" value="${sessid}"/>
         </PCTRun>
     </target>
 
