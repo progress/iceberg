@@ -359,12 +359,12 @@
                             <property name="serverCmd" value="pasoestart"/>
                             <property name="stopOpts" value="-halt -abort"/>
                         </then>
+                        <else>
+                            <!-- Use the new oeserver command for OpenEdge 12.5+ -->
+                            <property name="serverCmd" value="oeserver"/>
+                            <property name="stopOpts" value="-stop -force"/>
+                        </else>
                     </if>
-                    <else>
-                        <!-- Use the new oeserver command for OpenEdge 12.5+ -->
-                        <property name="serverCmd" value="oeserver"/>
-                        <property name="stopOpts" value="-stop -force"/>
-                    </else>
                 </then>
             </if>
 

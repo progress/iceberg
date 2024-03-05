@@ -216,6 +216,16 @@
 
         <mkdir dir="${basedir}/xbuild"/>
 
+        <!-- Use the replaceregexp task to change line endings. -->
+        <replaceregexp match="\r\n" replace="\n" flags="g">
+            <fileset file="${basedir}/bin/oemanager.sh"/>
+        </replaceregexp>
+
+        <!-- Use the chmod task to add executable rights. -->
+        <chmod perm="+x">
+            <fileset file="${basedir}/bin/oemanager.sh"/>
+        </chmod>
+
         <!-- Some customers can only execute encrypted source on their production environment.
              So create xcode from source, placing in a temporary directory prior to bundling. -->
         <PCTXCode
