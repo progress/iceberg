@@ -59,7 +59,6 @@
         <echo message="                     [REQUIRED] -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active client sessions"/>
         <echo message="                                 The given WebApp is expected to be associated with the provided -Dablapp name"/>
         <echo message="                     [OPTIONAL] -Dsleep=${sleep} - Sleep time in minutes after stop, prior to final 'status' output"/>
-        <echo message="${line.separator} ${util.name} clean   - Alias for 'close' task [Deprecated]"/>
         <if>
             <equals arg1="${oeMajor}" arg2="11"/>
             <then>
