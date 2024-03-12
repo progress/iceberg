@@ -59,18 +59,6 @@
         <echo message="                     [REQUIRED] -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active client sessions"/>
         <echo message="                                 The given WebApp is expected to be associated with the provided -Dablapp name"/>
         <echo message="                     [OPTIONAL] -Dsleep=${sleep} - Sleep time in minutes after stop, prior to final 'status' output"/>
-        <if>
-            <equals arg1="${oeMajor}" arg2="11"/>
-            <then>
-                <!-- No additional options for OpenEdge 11. -->
-            </then>
-            <else>
-                <!-- Additional options available for OpenEdge 12 and later. -->
-                <echo message="${line.separator} ${util.name} refresh - Refresh ABL Sessions for each MSAgent for an ABL App"/>
-                <echo message="                     Note: This will essentially terminate all sessions (gracefully),"/>
-                <echo message="                           and prepare the Agent to pick up any R-code changes"/>
-            </else>
-        </if>
         <echo message="${line.separator} ${util.name} reset   - Reset an aspect of each MSAgent for an ABL App"/>
         <echo message="                     [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
         <echo message="${line.separator} ${util.name} stop    - Gracefully stop one or all MSAgents (+stacks output) for an ABL App"/>
@@ -86,7 +74,7 @@
         <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator} ${util.name} trimall    - Trim all available ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
         <echo message="                        Note: For any busy sessions considered stuck use 'trimhttp' with a specific Session ID"/>
-        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish/stop"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator} ${util.name} trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
         <echo message="                        Allows for manually scaling down an MSAgent which may have many unused ABL Sessions"/>
         <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
@@ -97,6 +85,19 @@
         <echo message="                        [OPTIONAL]       -Dsessid=[SESSION_ID]  - Alphanumeric Client Session ID to be stopped"/>
         <echo message="                                          When no session ID provided, all available Client HTTP Sessions will be expired"/>
         <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
+        <if>
+            <equals arg1="${oeMajor}" arg2="11"/>
+            <then>
+                <!-- No additional options for OpenEdge 11. -->
+            </then>
+            <else>
+                <!-- Additional options available for OpenEdge 12 and later. -->
+                <echo message="${line.separator} ${util.name} refresh    - Refresh ABL Sessions for each MSAgent for an ABL App"/>
+                <echo message="                        Note: This will essentially terminate all sessions using 'finish+stop',"/>
+                <echo message="                              which prepares the MSAgent to pick up any R-code changes; Use the"/>
+                <echo message="                              available trim* tasks to change the termination option as needed"/>
+            </else>
+        </if>
         <echo message="${line.separator}"/>
         <echo message="${line.separator}Current parameter values, override via command line or 'oemanager.properties':"/>
         <echo message="    -Dscheme=${scheme}"/>

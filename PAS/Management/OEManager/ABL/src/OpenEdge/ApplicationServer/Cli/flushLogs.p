@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2023 Progress Software Corporation
+    Copyright 2020-2024 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -74,7 +74,8 @@ oMgrConn:LogCommand("RUN", this-procedure:name).
 
 /* Initial URL to obtain a list of all MSAgents for an ABL Application. */
 message substitute("Flushing deferred log buffer for MSAgents of &1...", cAblApp).
-oAgents = oMgrConn:GetAgents(cAblApp).
+assign oAgents = oMgrConn:GetAgents(cAblApp).
+
 if oAgents:Length eq 0 then
     message "No MSAgents running".
 else
@@ -96,6 +97,9 @@ on stop undo, next AGENTBLK:
         message substitute("Agent PID &1 not AVAILABLE, skipping flush.", oAgent:GetCharacter("pid")).
 end. /* iLoop - agent */
 
+catch err as Progress.Lang.Error:
+    put unformatted substitute("~nError while communicating with PASOE instance: &1", err:GetMessage(1)) skip.
+end catch.
 finally:
     /* Return value expected by PCT Ant task. */
     return string(0).

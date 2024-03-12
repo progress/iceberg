@@ -29,12 +29,12 @@ The following represents the default usage for all tasks which can be executed u
      [echo]  Status/Info:
      [echo]
      [echo]  oemanager status - [RO] Obtain MSAgent/connection status information for an ABL App
-     [echo]                     [OPTIONAL] -Dbasemem=819200 - Minimum memory threshold, in bytes, of unused agent sessions
+     [echo]                     [OPTIONAL] -Dbasemem=819200 - Minimum memory threshold (bytes) to consider as 'unused' agent sessions
      [echo]
      [echo]  oemanager stacks - [RO] Obtain stack information for all MSAgents for an ABL App
      [echo]                     [OPTIONAL]    -Dpid=[AGENT_PID]  - Limit stack information to a specific MSAgent process ID
      [echo]                     [OPTIONAL] -Dsessid=[SESSION_ID] - Limit stack information to a specific ABL Session ID
-     [echo]                                                        Requires specifying an MSAgent via pid=[AGENT_PID]
+     [echo]                                                        Requires specifying an MSAgent via -Dpid=[AGENT_PID]
      [echo]
      [echo]  oemanager flush  - [RO] Flush the available deferred log buffer to agent log file
      [echo]
@@ -52,13 +52,9 @@ The following represents the default usage for all tasks which can be executed u
      [echo]
      [echo]  oemanager close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)
      [echo]                                       For this task the 'trimhttp' will be called with the termination option 1 (forced)
-     [echo]                      [REQUIRED] -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active sessions
+     [echo]                      [REQUIRED] -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active client sessions
      [echo]                                  The given WebApp is expected to be associated with the provided -Dablapp name
-     [echo]                      [OPTIONAL] -Dsleep=1 - Sleep time in minutes after stop
-     [echo]
-     [echo]  oemanager refresh - Refresh ABL Sessions for each MSAgent for an ABL App (OE 12 Only)
-     [echo]                      Note: This will essentially terminate all sessions (gracefully),
-     [echo]                            and prepare the Agent to pick up any R-code changes
+     [echo]                      [OPTIONAL] -Dsleep=1 - Sleep time in minutes after stop, prior to final 'status' output
      [echo]
      [echo]  oemanager reset   - Reset an aspect of each MSAgent for an ABL App
      [echo]                      [REQUIRED] -Dresettype=stats [stats|logs]
@@ -80,7 +76,7 @@ The following represents the default usage for all tasks which can be executed u
      [echo]
      [echo]  oemanager trimall    - Trim all available ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
      [echo]                         Note: For any busy sessions considered stuck use 'trimhttp' with a specific Session ID
-     [echo]                         [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish/stop
+     [echo]                         [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish+stop
      [echo]
      [echo]  oemanager trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App
      [echo]                         Allows for manually scaling down an MSAgent which may have many unused ABL Sessions
@@ -93,6 +89,11 @@ The following represents the default usage for all tasks which can be executed u
      [echo]                         [OPTIONAL]       -Dsessid=[SESSION_ID]  - Alphanumeric Client Session ID to be stopped
      [echo]                                           When no session ID provided, all available Client HTTP Sessions will be expired
      [echo]                         [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish+stop
+     [echo]
+     [echo]  oemanager refresh    - Refresh ABL Sessions for each MSAgent for an ABL App
+     [echo]                         Note: This will essentially terminate all sessions using 'finish+stop',
+     [echo]                               which prepares the MSAgent to pick up any R-code changes; Use the
+     [echo]                               available trim* tasks to change the termination option as needed
 
 ## Tailoring ##
 
@@ -131,7 +132,7 @@ The following have a distinct effect on the operation of a PAS instance and shou
 
 - **add** - [Starts a new MSAgent](https://docs.progress.com/bundle/pas-for-openedge-reference/page/Add-a-multi-session-agent.html) for an ABL Application, provided the maxAgents setting has not yet been reached.
 - **stop** - [Stops a running MSAgent](https://docs.progress.com/bundle/pas-for-openedge-reference/page/Stop-a-multi-session-agent.html) for an ABL Application, provided there are any MSAgents to be stopped. It is advised to use the "close" task to adequately prepare each ABL Application for termination which includes terminating any active connections and stopping all running MSAgents.
-- **close** - This is a synthetic task which executes many of the existing tasks in a specific order to help safely prepare a PAS instance for shutdown. Before and after all of the following tasks are run, the "status" task is run to get a snapshot of the ABL Application. Any deferred log information is then flushed (flush), any available Client HTTP Sessions are terminated gracefully (trimhttp), and all MSAgents for the ABL Application are stopped (stop).
+- **close** - This is a compound task which executes several existing tasks in a specific order to help safely prepare a PAS instance for shutdown. Before and after all of the following tasks are run, the "status" task is run to get a snapshot of the ABL Application. Any deferred log information is then flushed (flush), any available Client HTTP Sessions are terminated gracefully (trimhttp), and all MSAgents for the ABL Application are stopped (stop).
 - **reset** - Used to either reset internal MSAgent stats or to [clear any accumulated deferred log data](https://docs.progress.com/bundle/pas-for-openedge-reference/page/Reset-deferred-log-buffer.html). In most cases these actions will not be needed unless instructed by tech support.
 - **trimhttp / trimsingle / trimall / trimidle / refresh** - These tasks all affect the termination of "sessions" which requires additional context for correct operation. Please see the next section on **Trimming Sessions** for those details.
 
@@ -148,6 +149,6 @@ We use the term "trim" as a carry-over from Classic AppServer and WebSpeed where
 	- This task will only work against available HTTP connections. If no active sessions are present, no impact to existing ABL Sessions will be observed--in this situation one of the 3 "trim" tasks in the next section can/should be used.
 - **trimsingle** / **trimall** / **trimidle** - When there are no active or bound/reserved Client HTTP Sessions the use of these may be run to reduce the number of running ABL Sessions for an MSAgent. This can be an effective means of scaling down an MSAgent which has started a large number of ABL Sessions which are no longer of use. All 3 of these tasks operate in a similar manner, first obtaining a list of current ABL Sessions for an MSAgent and iterating over those sessions using any applicable criteria. For the "trimsingle" this will only terminate an ABL Session which matches the given session ID, while "trimidle" will only terminate an ABL Session if its status is reported as "IDLE". Before each session is terminated, the current session stack information will be written to disk to identify what may have been running at the time the termination was requested. These actions utilize the API endpoint to [terminate a single ABL Session](https://docs.progress.com/bundle/pas-for-openedge-reference/page/Terminate-an-ABL-session.html) (note: link goes to the OEJMX query as we do not have a page which covers this action via the OEM REST API's).
 	- It is advised to use the "**trimhttp**" task first to terminate any active or lingering Client HTTP Sessions first, then use the appropriate task above to terminate additional ABL Sessions.
-- **refresh** - This task is a built-in operation which behaves similar to the "trimall" task with one crucial difference: Whereas the "trim" tasks (just covered above) will iterate directly over each ABL Session of an MSAgent, this acts upon the MSAgent itself. In other words, refresh tells the MSAgent of an ABL Application to terminate all of its current ABL Sessions, thereby refreshing the MSAgent so that changes to the application can be picked up. The refresh API allows newly-created sessions to use the updated persistent procedures, static objects, or online schema changes, and starts running sessions against the new application code. This task was intended to be used for high-availability environments, during a "quiet period" with no user activity, where new code may be deployed but it is not desirable to shut down or restart the entire PAS instance, only to refresh the running MSAgents. More information on this operation may be found [here in the product documentation](https://docs.progress.com/bundle/pas-for-openedge-management/page/Refresh-agents-in-an-ABL-application.html).
+- **refresh** - This task is a built-in operation which behaves similar to the "trimall" task with the Finish+Stop termination option. Whereas the "trim" tasks (just covered above) will iterate directly over each ABL Session of an MSAgent, this acts upon the MSAgent itself. In other words, refresh tells the MSAgent of an ABL Application to terminate all of its current ABL Sessions, thereby refreshing the MSAgent so that changes to the application can be picked up. The refresh API allows newly-created sessions to use the updated persistent procedures, static objects, or online schema changes, and starts running sessions against the new application code. This task was intended to be used for high-availability environments, during a "quiet period" with no user activity, where new code may be deployed but it is not desirable to shut down or restart the entire PAS instance, only to refresh the running MSAgents. More information on this operation may be found [here in the product documentation](https://docs.progress.com/bundle/pas-for-openedge-management/page/Refresh-agents-in-an-ABL-application.html).
 	- **Warning:** This task is not intended to be used when a PAS instance is serving active requests, or if it may have stuck/busy sessions. You should make use of the "trim" tasks above to gracefully terminate those sessions prior to using the refresh task.
 	- As an alternative to the suggested "trim" tasks, the "**close**" task will gracefully terminate any existing Client HTTP Sessions then stop all MSAgents for an ABL Application. This allows the MSAgent to return any memory back to the OS, and then use the "**add**" task to start one or more new MSAgents.

@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2023 Progress Software Corporation
+    Copyright 2020-2024 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -279,6 +279,10 @@ procedure GetApplications:
     assign lIsMin122 = (oVersion:Major eq 12 and oVersion:Minor ge 2) or oVersion:Major gt 12.
     assign lIsMin127 = (oVersion:Major eq 12 and oVersion:Minor ge 7) or oVersion:Major gt 12.
     assign lIsMin128 = (oVersion:Major eq 12 and oVersion:Minor ge 8) or oVersion:Major gt 12.
+
+    catch err as Progress.Lang.Error:
+        put unformatted substitute("~nUnable to get application list from PASOE instance: &1", err:GetMessage(1)) skip.
+    end catch.
 end procedure.
 
 /* Get the configured max for ABLSessions/Connections per MSAgent, along with min/max/initial MSAgents. */
