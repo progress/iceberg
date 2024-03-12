@@ -303,7 +303,7 @@ class OpenEdge.ApplicationServer.Util.OEManagerConnection implements ISupportLog
         catch err as Progress.Lang.Error:
             define variable oReturnObj as JsonObject.
             assign oReturnObj = new JsonObject().
-            
+
             /* Always report any errors during the API requests, and return an empty JSON object allowing remaining logic to continue. */
             case err:GetMessageNum(1):
                 when 401 then do:

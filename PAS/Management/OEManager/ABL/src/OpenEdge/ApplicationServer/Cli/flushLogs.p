@@ -102,5 +102,6 @@ catch err as Progress.Lang.Error:
 end catch.
 finally:
     /* Return value expected by PCT Ant task. */
+    {&_proparse_ prolint-nowarn(returnfinally)}
     return string(0).
 end finally.
