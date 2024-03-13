@@ -93,9 +93,9 @@
             <else>
                 <!-- Additional options available for OpenEdge 12 and later. -->
                 <echo message="${line.separator} ${util.name} refresh    - Refresh ABL Sessions for each MSAgent for an ABL App"/>
-                <echo message="                        Note: This will essentially terminate all sessions using 'finish+stop',"/>
-                <echo message="                              which prepares the MSAgent to pick up any R-code changes; Use the"/>
-                <echo message="                              available trim* tasks to change the termination option as needed"/>
+                <echo message="                        Note: This will terminate all sessions using the 'finish+stop' option,"/>
+                <echo message="                              which prepares the MSAgent to pick up available R-code changes."/>
+                <echo message="                              Use this only during a 'quiet period' for your application."/>
             </else>
         </if>
         <echo message="${line.separator}"/>

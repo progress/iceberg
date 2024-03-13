@@ -91,9 +91,9 @@ The following represents the default usage for all tasks which can be executed u
      [echo]                         [OPTIONAL] -Dterminateopt=0 - Termination Option: 0=graceful, 1=forced, 2=finish+stop
      [echo]
      [echo]  oemanager refresh    - Refresh ABL Sessions for each MSAgent for an ABL App
-     [echo]                         Note: This will essentially terminate all sessions using 'finish+stop',
-     [echo]                               which prepares the MSAgent to pick up any R-code changes; Use the
-     [echo]                               available trim* tasks to change the termination option as needed
+     [echo]                         Note: This will terminate all sessions using the 'finish+stop' option,
+     [echo]                               which prepares the MSAgent to pick up available R-code changes.
+     [echo]                               Use this only during a 'quiet period' for your application.
 
 ## Tailoring ##
 
