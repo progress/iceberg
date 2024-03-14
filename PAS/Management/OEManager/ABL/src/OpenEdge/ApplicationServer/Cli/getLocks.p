@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2023 Progress Software Corporation
+    Copyright 2020-2024 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -266,6 +266,10 @@ procedure getAblApplications:
         if oApp:Has("name") and oApp:Has("type") and oApp:GetCharacter("type") eq "OPENEDGE" then
             oAblApps:Add(new OpenEdge.Core.String(oApp:GetCharacter("name"))).
     end. /* iLoop - Application */
+
+    catch err as Progress.Lang.Error:
+        put unformatted substitute("~nUnable to get application list from PASOE instance: &1", err:GetMessage(1)) skip.
+    end catch.
 end procedure.
 
 procedure getAblAppAgents:

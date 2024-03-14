@@ -1,5 +1,5 @@
 /*
-    Copyright 2022-2023 Progress Software Corporation
+    Copyright 2022-2024 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -114,6 +114,7 @@ oMgrConn:LogCommand("RUN", this-procedure:name).
 /* Initial URL to obtain a list of all AgentSessions for an MSAgent of an ABL Application. */
 message substitute("Looking for MSAgent &1 of &2...", cPID, cAblApp).
 assign oSessions = oMgrConn:GetAgentSessions(cAblApp, integer(cPID)).
+
 assign iTotSess = oSessions:Length.
 if iTotSess gt 0 then
 SESSIONBLK:
@@ -163,6 +164,9 @@ end. /* iLoop - session */
 if not lFound then /* Report on whether the session was even found. */
     message substitute("ABL Session &1 not available.", cSessID).
 
+catch err as Progress.Lang.Error:
+    put unformatted substitute("~nError while communicating with PASOE instance: &1", err:GetMessage(1)) skip.
+end catch.
 finally:
     /* Return value expected by PCT Ant task. */
     {&_proparse_ prolint-nowarn(returnfinally)}

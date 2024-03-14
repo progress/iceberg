@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2023 Progress Software Corporation
+    Copyright 2020-2024 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -68,6 +68,9 @@ oMgrConn:LogCommand("RUN", this-procedure:name).
 message substitute("Starting new MSAgent for &1...", cAblApp).
 message oMgrConn:AddAgent(cAblApp).
 
+catch err as Progress.Lang.Error:
+    put unformatted substitute("~nError while communicating with PASOE instance: &1", err:GetMessage(1)) skip.
+end catch.
 finally:
     /* Return value expected by PCT Ant task. */
     {&_proparse_ prolint-nowarn(returnfinally)}
