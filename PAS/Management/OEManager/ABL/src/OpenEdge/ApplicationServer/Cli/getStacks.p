@@ -89,7 +89,7 @@ if (cPID gt "") eq true then do:
         if oStacks:Length gt 0 then do:
             message substitute("Saving stack information for MSAgent PID &1, Session &2...", cPID, cSessID).
             assign cOutFile = substitute("agentSessionStacks_&1_&2_&3.json", cPID, cSessID, replace(iso-date(now), ":", "_")).
-            oStacks:WriteFile(cOutFile, true). /* Write entire response to disk. */
+            oStacks:WriteFile(session:temp-directory + cOutFile, true). /* Write entire response to disk. */
             message substitute("~tStack data written to &1", cOutFile).
         end.
         else
@@ -100,7 +100,7 @@ if (cPID gt "") eq true then do:
         if oStacks:Length gt 0 then do:
             message substitute("Saving stack information for MSAgent PID &1...", cPID).
             assign cOutFile = substitute("agentStacks_&1_&2.json", cPID, replace(iso-date(now), ":", "_")).
-            oStacks:WriteFile(cOutFile, true). /* Write entire response to disk. */
+            oStacks:WriteFile(session:temp-directory + cOutFile, true). /* Write entire response to disk. */
             message substitute("~tStack data written to &1", cOutFile).
         end.
         else
@@ -132,7 +132,7 @@ else do:
             if oStacks:Length gt 0 then do:
                 message substitute("Saving stack information for MSAgent PID &1...", iPID).
                 assign cOutFile = substitute("agentStacks_&1_&2.json", iPID, replace(iso-date(now), ":", "_")).
-                oStacks:WriteFile(cOutFile, true). /* Write entire response to disk. */
+                oStacks:WriteFile(session:temp-directory + cOutFile, true). /* Write entire response to disk. */
                 message substitute("~tStack data written to &1", cOutFile).
             end.
             else
