@@ -40,28 +40,36 @@
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Status/Info:"/>
         <echo message="${line.separator} ${util.name} status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
+        <echo message="                    [REQUIRED]  -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
         <echo message="                    [OPTIONAL] -Dbasemem=${basemem} - Minimum memory threshold (bytes) to consider as 'unused' agent sessions"/>
         <echo message="${line.separator} ${util.name} stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
+        <echo message="                    [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
         <echo message="                    [OPTIONAL]    -Dpid=[AGENT_PID]  - Limit stack information to a specific MSAgent process ID"/>
         <echo message="                    [OPTIONAL] -Dsessid=[SESSION_ID] - Limit stack information to a specific ABL Session ID"/>
         <echo message="                                                       Requires specifying an MSAgent via -Dpid=[AGENT_PID]"/>
         <echo message="${line.separator} ${util.name} flush  - [RO] Flush the available deferred log buffer to agent log file"/>
+        <echo message="                     [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
         <echo message="${line.separator} ${util.name} locks  - [RO] Display database users and their table locks related to an MSAgent-Session"/>
         <echo message="                    This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary"/>
         <echo message="                    Note: Only provides session data if using self-service DB connections for OE versions under 12.5"/>
-        <echo message="                    [REQUIRED] -Dpf=[PF_NAME] - PF file to use for database connection(s)"/>
+        <echo message="                    [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="                    [REQUIRED]     -Dpf=[PF_NAME] - PF file to use for database connection(s)"/>
         <echo message="${line.separator} ${util.name} users  - [RO] Alias for 'locks' task"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Agent Management:"/>
         <echo message="${line.separator} ${util.name} add     - Add (read: start) one new MSAgent for an ABL App"/>
+        <echo message="                     [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
         <echo message="${line.separator} ${util.name} close   - Perform a 'soft restart' of an ABL App (runs: status, flush + trimhttp + stop, status)"/>
         <echo message="                                      For this task the 'trimhttp' will be called with the termination option 1 (forced)"/>
+        <echo message="                     [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
         <echo message="                     [REQUIRED] -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active client sessions"/>
         <echo message="                                 The given WebApp is expected to be associated with the provided -Dablapp name"/>
-        <echo message="                     [OPTIONAL] -Dsleep=${sleep} - Sleep time in minutes after stop, prior to final 'status' output"/>
+        <echo message="                     [OPTIONAL]  -Dsleep=${sleep}             - Sleep time in minutes after stop, prior to final 'status' output"/>
         <echo message="${line.separator} ${util.name} reset   - Reset an aspect of each MSAgent for an ABL App"/>
-        <echo message="                     [REQUIRED] -Dresettype=${resettype} [stats|logs]"/>
+        <echo message="                     [REQUIRED]    -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="                     [REQUIRED] -Dresettype=${resettype}  - Type may be one of the following [stats|logs]"/>
         <echo message="${line.separator} ${util.name} stop    - Gracefully stop one or all MSAgents (+stacks output) for an ABL App"/>
+        <echo message="                     [REQUIRED]     -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
         <echo message="                     [OPTIONAL] -Dwaitfinish=${waitfinish} - How long to wait (milliseconds) if the MSAgent is busy serving a request"/>
         <echo message="                     [OPTIONAL]  -Dwaitafter=${waitafter}  - Additional time to wait (milliseconds) before killing [hard stop] the MSAgent"/>
         <echo message="                     [OPTIONAL]        -Dpid=[AGENT_PID] - Numeric process ID for a specific MSAgent to be stopped"/>
@@ -69,22 +77,26 @@
         <echo message="${line.separator} Session Management:"/>
         <echo message="${line.separator} Note: All trim actions listed below will write application stack information to a file."/>
         <echo message="${line.separator} ${util.name} trimsingle - Trim a single ABL Session (via the Agent Manager) for a specific MSAgent"/>
+        <echo message="                        [REQUIRED]       -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
         <echo message="                        [REQUIRED]          -Dpid=[AGENT_PID]  - Numeric process ID of the MSAgent for context"/>
         <echo message="                        [REQUIRED]       -Dsessid=[SESSION_ID] - Numeric ID for the ABL Session to be stopped"/>
-        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt}            - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator} ${util.name} trimall    - Trim all available ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
         <echo message="                        Note: For any busy sessions considered stuck use 'trimhttp' with a specific Session ID"/>
-        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
+        <echo message="                        [REQUIRED]       -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt}      - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator} ${util.name} trimidle   - Trim only the IDLE ABL Sessions (via the Agent Manager) for each MSAgent for an ABL App"/>
         <echo message="                        Allows for manually scaling down an MSAgent which may have many unused ABL Sessions"/>
-        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
+        <echo message="                        [REQUIRED]       -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt}      - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <echo message="${line.separator} ${util.name} trimhttp   - Trim one or all Client HTTP Sessions (via the Session Manager) for an ABLApp + WebApp"/>
         <echo message="                        Terminating a client HTTP session will also terminate its associated ABL Session"/>
+        <echo message="                        [REQUIRED]       -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
         <echo message="                        [REQUIRED]       -Dwebapp=[WEBAPP_NAME] - WebApp for Tomcat Manager to terminate active sessions"/>
         <echo message="                                          The given WebApp is expected to be associated with the provided -Dablapp name"/>
         <echo message="                        [OPTIONAL]       -Dsessid=[SESSION_ID]  - Alphanumeric Client Session ID to be stopped"/>
         <echo message="                                          When no session ID provided, all available Client HTTP Sessions will be expired"/>
-        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt} - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
+        <echo message="                        [OPTIONAL] -Dterminateopt=${terminateopt}             - Termination Option: 0=graceful, 1=forced, 2=finish+stop"/>
         <if>
             <equals arg1="${oeMajor}" arg2="11"/>
             <then>
@@ -96,6 +108,7 @@
                 <echo message="                        Note: This will terminate all sessions using the 'finish+stop' option,"/>
                 <echo message="                              which prepares the MSAgent to pick up available R-code changes."/>
                 <echo message="                              Use this only during a 'quiet period' for your application."/>
+                <echo message="                        [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
             </else>
         </if>
         <echo message="${line.separator}"/>
@@ -108,11 +121,14 @@
         <echo message="  -Dpas.root=${pas.root} - PAS parent directory, above the instance"/>
         <echo message="  -Dinstance=${instance} - Physical instance name (folder, not alias)"/>
         <echo message="    -Dablapp=${ablapp}"/>
-    	<echo message="    -Dwebapp=${webapp}"/>
+        <echo message="    -Dwebapp=${webapp}"/>
+        <echo message="    -Doutdir=${outdir} [${output.dir}]"/>
         <echo message="${line.separator}NOTE: The name of the ABLApp is case-sensitive!"/>
         <echo message="${line.separator}"/>
         <echo message="CATALINA_HOME: ${catalina.home}"/>
         <echo message="CATALINA_BASE: ${catalina.base}"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator}See oemanager.README.md for more information"/>
     </target>
 
     <macrodef name="init_env">
@@ -302,6 +318,43 @@
                     <condition property="port" value="${psc.as.http.port}" else="">
                         <isset property="psc.as.http.port"/>
                     </condition>
+                </else>
+            </if>
+
+            <!-- Determine the output directory to use. -->
+            <condition property="outdir.unset">
+                <not>
+                    <isset property="outdir" />
+                </not>
+            </condition>
+
+            <!-- Set the default value if the property is not set. -->
+            <if>
+                <isset property="outdir.unset"/>
+                <then>
+                    <property name="outdir" value="PWD"/>
+                </then>
+            </if>
+
+            <!-- Set output based on a default or given value. -->
+            <if>
+                <equals arg1="${outdir}" arg2="PWD"/>
+                <then>
+                    <!-- Default to the current directory. -->
+                    <property name="output.dir" value="${basedir}"/>
+                </then>
+                <else>
+                    <if>
+                        <equals arg1="${outdir}" arg2="TMP"/>
+                        <then>
+                            <!-- Use the PAS instance temp directory. -->
+                            <property name="output.dir" value="${catalina.base}${delim}temp"/>
+                        </then>
+                        <else>
+                            <!-- Otherwise use the given location. -->
+                            <property name="output.dir" value="${outdir}"/>
+                        </else>
+                    </if>
                 </else>
             </if>
 
@@ -618,6 +671,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}getStatus${proc.ext}">
             <propath>
                 <pathelement path="${basedir}"/>
@@ -651,6 +705,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}getStacks${proc.ext}">
             <propath>
                 <pathelement path="${basedir}"/>
@@ -685,6 +740,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}flushLogs${proc.ext}">
             <propath>
                 <pathelement path="${basedir}"/>
@@ -717,6 +773,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}trimSessMgrSessions${proc.ext}">
             <propath>
                 <pathelement path="${basedir}"/>
@@ -752,6 +809,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}trimABLSessions${proc.ext}"> <!-- Plural name, works on multiple sessions. -->
             <propath>
                 <pathelement path="${basedir}"/>
@@ -786,6 +844,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}trimABLSession${proc.ext}"> <!-- Singular name, works on just one session. -->
             <propath>
                 <pathelement path="${basedir}"/>
@@ -821,6 +880,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}trimABLSessions${proc.ext}"> <!-- Plural name, works on multiple sessions. -->
             <propath>
                 <pathelement path="${basedir}"/>
@@ -857,6 +917,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}trimABLSessionsTest${proc.ext}"> <!-- Special test utility to trim random/select sessions. -->
             <propath>
                 <pathelement path="${basedir}"/>
@@ -891,6 +952,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}reset${proc.ext}">
             <propath>
                 <pathelement path="${basedir}"/>
@@ -924,6 +986,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}refreshAgents${proc.ext}">
             <propath>
                 <pathelement path="${basedir}"/>
@@ -956,6 +1019,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}addAgent${proc.ext}">
             <propath>
                 <pathelement path="${basedir}"/>
@@ -988,6 +1052,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}stopAgents${proc.ext}">
             <propath>
                 <pathelement path="${basedir}"/>
@@ -1039,6 +1104,7 @@
         <PCTRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
+               tempDir="${output.dir}"
                procedure="${proc.path}getLocks${proc.ext}"
                stackSize="4096"
                paramFile="${pf}">

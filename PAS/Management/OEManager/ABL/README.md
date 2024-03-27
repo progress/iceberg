@@ -7,9 +7,9 @@ This suite of tools utilizes the [RESTful API's](https://docs.progress.com/bundl
 ## Requirements ##
 
 1. Run a **PROENV** session which will set the necessary environment variables to execute the tools. This will provide access to the DLC and JAVA_HOME environment variables and any OpenEdge binaries such as "PROANT" which is useful for deployment.
-	- You should ideally the latest OpenEdge release version available to you, or at a minimum the same release version as used by the PAS for OpenEdge instances you wish to manage.
+    - You should ideally the latest OpenEdge release version available to you, or at a minimum the same release version as used by the PAS for OpenEdge instances you wish to manage.
 1. The OpenEdge Manager (oemanager.war) and Tomcat Manager (manager.war) webapps must be deployed to the PAS instance in order to make use of these tools. For ease of deployment, run the `proant deploy_oemanager` or `proant deploy_manager` as necessary to install the webapps into a PAS instance specified via the parameter `-Dinstance=[PATH_TO_INSTANCE]`.
-	- **WARNING:** It is strongly recommended to [secure the oemanager and manager WebApps](https://docs.progress.com/bundle/openedge-security-and-auditing/page/Secure-the-Tomcat-Manager-and-OpenEdge-Manager-web-applications.html) when deployed in a production environment. You will need to update the `oemanager.properties` after deployment with any updated credentials.
+    - **WARNING:** It is strongly recommended to [secure the oemanager and manager WebApps](https://docs.progress.com/bundle/openedge-security-and-auditing/page/Secure-the-Tomcat-Manager-and-OpenEdge-Manager-web-applications.html) when deployed in a production environment. You will need to update the `oemanager.properties` after deployment with any updated credentials.
 
 ## Deployment ##
 
@@ -28,8 +28,8 @@ Unzip the **utils.zip** file into a new "utils" folder anywhere on the target OS
 Once the **utils.zip** has been deployed there will be minor tailoring required. How the utilities were deployed and whether you are managing a local or remote PAS instance will affect which properties must be modified. But first, the following should be kept in mind regardless of these factors:
 
 - The `userid` and `passwd` for the OEManager webapp must always be specified in one of these two ways:
-	1. Supply the properties on the command line via `-Duserid=<username>` and `-Dpasswd=<password>`.
-	1. Or, modify the `oemanager.properties` file in the deployed location to use default values.
+    1. Supply the properties on the command line via `-Duserid=<username>` and `-Dpasswd=<password>`.
+    1. Or, modify the `oemanager.properties` file in the deployed location to use default values.
 - The `ablapp` (and `webapp` when necessary) should be checked and modified appropriately through either command line parameters (`-Dablapp` and `-Dwebapp`) or set with defaults in the `oemanager.properties` file as it is not possible to assume which app names are intended for tasks.
 
 **Deployed to a PAS Instance**
@@ -41,14 +41,14 @@ Once the **utils.zip** has been deployed there will be minor tailoring required.
 **Deployed Externally Usage**
 
 - If **not** placed directly within a PAS instance then you must either pass command-line parameters or edit the `oemanager.properties` file to supply the necessary defaults for the following properties:
-	- To control remote PAS instances: set the `scheme`, `hostname`, and `port` properties for the intended instance.
-		- eg. "-Dscheme=http -Dhostname=localhost -Dport=8810"
-	- To control local PAS instances: the `pas.root` and `instance` properties (these will form the CATALINA_BASE path).
-		- eg. "-Dpas.root=C:/OpenEdge/WRK -Dinstance=oepas1" for an instance at C:/OpenEdge/WRK/oepas1
+    - To control remote PAS instances: set the `scheme`, `hostname`, and `port` properties for the intended instance.
+        - eg. "-Dscheme=http -Dhostname=localhost -Dport=8810"
+    - To control local PAS instances: the `pas.root` and `instance` properties (these will form the CATALINA_BASE path).
+        - eg. "-Dpas.root=C:/OpenEdge/WRK -Dinstance=oepas1" for an instance at C:/OpenEdge/WRK/oepas1
 
 ## Usage ##
 
-# For a full explanation of available tasks and use-cases please see the [expanded usage guide in USAGE.md](USAGE.md). #
+# For a full explanation of available tasks and use-cases please see the [expanded usage guide in oemanager.README.md](oemanager.README.md). #
 
 ## Output ##
 
