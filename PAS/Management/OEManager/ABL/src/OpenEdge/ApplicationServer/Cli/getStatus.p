@@ -137,7 +137,7 @@ assign oAgentMap = new StringStringMap().
 oMgrConn:LogCommand("RUN", this-procedure:name).
 
 /* Begin output of status information to a dated file. */
-assign cOutFile = substitute("status_&1_&2.txt", cAblApp, cOutDate).
+assign cOutFile = substitute(session:temp-directory + "status_&1_&2.txt", cAblApp, cOutDate).
 message substitute("Starting output to file: &1 ...", cOutFile).
 output to value(cOutFile).
 
@@ -786,7 +786,7 @@ procedure GetSessions:
             catch err as Progress.Lang.Error:
                 message substitute("Encountered error displaying Client Session &1 of &2: &3", iLoop, iTotClSess, err:GetMessage(1)).
                 if valid-object(oConnInfo) then /* Output JSON data for investigation. */
-                    oClSess:WriteFile(substitute("ClientSession_&1.json", cOutDate), true).
+                    oClSess:WriteFile(substitute(session:temp-directory + "ClientSession_&1.json", cOutDate), true).
                 next SESSIONBLK.
             end catch.
         end. /* iLoop */

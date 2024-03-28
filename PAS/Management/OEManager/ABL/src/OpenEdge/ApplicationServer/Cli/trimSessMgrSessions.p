@@ -162,7 +162,7 @@ on stop undo, next SESSIONBLK:
             if oStacks:Length gt 0 then do:
                 message substitute("Saving stack information for MSAgent PID &1, Session &2...", integer(cPID), cSession).
                 assign cOutFile = substitute("agentSessionStacks_&1_&2_&3.json", integer(cPID), cSession, replace(iso-date(now), ":", "_")).
-                oStacks:WriteFile(cOutFile, true). /* Write entire response to disk. */
+                oStacks:WriteFile(session:temp-directory + cOutFile, true). /* Write entire response to disk. */
                 message substitute("~tStack data written to &1", cOutFile).
             end.
 

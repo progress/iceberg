@@ -197,9 +197,9 @@
                destDir="${basedir}/rcode"
                dlcHome="${dlcHome}">
             <propath>
-            	<pathelement path="${basedir}/src"/>
-            	<pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-            	<pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
+                <pathelement path="${basedir}/src"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.ServerAdmin.pl"/>
             </propath>
             <fileset dir="${basedir}/src">
                 <include name="**/*"/>
@@ -239,7 +239,7 @@
 
         <!-- Bundle only xcode versions of .p's and .cls's with source in a dedicated subdirectory. -->
         <zip destfile="${basedir}/utils.zip">
-            <zipfileset dir="${basedir}" includes="release.txt,USAGE.md"/>
+            <zipfileset dir="${basedir}" includes="release.txt,oemanager.README.md"/>
             <zipfileset dir="${basedir}/bin" includes="*"/>
             <zipfileset dir="${basedir}/conf" includes="*"/>
             <zipfileset dir="${basedir}/xbuild" includes="**/*"/>
@@ -267,8 +267,8 @@
         <mkdir dir="${path}/utils"/>
         <unzip src="${basedir}/utils.zip" dest="${path}/utils" overwrite="true"/>
 
-		<!-- Set execution privilege on shell scripts. -->
-		<chmod dir="${path}/utils" perm="ug+x" includes="*.sh"/>
+        <!-- Set execution privilege on shell scripts. -->
+        <chmod dir="${path}/utils" perm="ug+x" includes="*.sh"/>
     </target>
 
     <target name="deploy_manager">
