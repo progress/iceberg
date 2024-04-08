@@ -332,13 +332,13 @@
             <if>
                 <isset property="outdir.unset"/>
                 <then>
-                    <property name="outdir" value="PWD"/>
+                    <property name="outdir" value="BIN"/>
                 </then>
             </if>
 
             <!-- Set output based on a default or given value. -->
             <if>
-                <equals arg1="${outdir}" arg2="PWD"/>
+                <equals arg1="${outdir}" arg2="BIN"/>
                 <then>
                     <!-- Default to the current directory. -->
                     <property name="output.dir" value="${basedir}"/>
@@ -668,7 +668,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -685,7 +685,7 @@
             <Parameter name="PassWD" value="${passwd}"/>
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="BaseMem" value="${basemem}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="stacks">
@@ -702,7 +702,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -720,7 +720,7 @@
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="ProcID" value="${pid}"/>
             <Parameter name="SessionID" value="${sessid}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="flush">
@@ -737,7 +737,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -753,7 +753,7 @@
             <Parameter name="UserID" value="${userid}"/>
             <Parameter name="PassWD" value="${passwd}"/>
             <Parameter name="ABLApp" value="${ablapp}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="trimhttp">
@@ -770,7 +770,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -789,7 +789,7 @@
             <Parameter name="WebApp" value="${webapp}"/>
             <Parameter name="TerminateOpt" value="${terminateopt}"/>
             <Parameter name="SessionID" value="${sessid}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="trimidle">
@@ -806,7 +806,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -824,7 +824,7 @@
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="Idle" value="true"/>
             <Parameter name="TerminateOpt" value="${terminateopt}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="trimsingle">
@@ -841,7 +841,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -860,7 +860,7 @@
             <Parameter name="TerminateOpt" value="${terminateopt}"/>
             <Parameter name="ProcID" value="${pid}"/>
             <Parameter name="SessionID" value="${sessid}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="trimall">
@@ -877,7 +877,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -895,7 +895,7 @@
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="Idle" value="false"/>
             <Parameter name="TerminateOpt" value="${terminateopt}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="trimrand">
@@ -914,7 +914,7 @@
 
         <!-- THIS IS AN UNLISTED TARGET! -->
         <!-- This will psuedo-randomly terminate ABL Sessions and should NOT be used in any production environment. -->
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -932,7 +932,7 @@
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="TerminateOpt" value="${terminateopt}"/>
             <Parameter name="Pattern" value="${pattern}"/> <!-- Call with -Dpattern=# or -Dpattern=rand[om] -->
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="reset">
@@ -949,7 +949,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -966,7 +966,7 @@
             <Parameter name="PassWD" value="${passwd}"/>
             <Parameter name="ABLApp" value="${ablapp}"/>
             <Parameter name="Type" value="${resettype}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="refresh">
@@ -983,7 +983,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -999,7 +999,7 @@
             <Parameter name="UserID" value="${userid}"/>
             <Parameter name="PassWD" value="${passwd}"/>
             <Parameter name="ABLApp" value="${ablapp}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="add">
@@ -1016,7 +1016,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -1032,7 +1032,7 @@
             <Parameter name="UserID" value="${userid}"/>
             <Parameter name="PassWD" value="${passwd}"/>
             <Parameter name="ABLApp" value="${ablapp}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="stop">
@@ -1049,7 +1049,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -1068,7 +1068,7 @@
             <Parameter name="WaitFinish" value="${waitfinish}"/>
             <Parameter name="WaitAfter" value="${waitafter}"/>
             <Parameter name="ProcID" value="${pid}"/> <!-- Considered optional, default "" -->
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <target name="users">
@@ -1101,7 +1101,7 @@
            </condition>
         </fail>
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                tempDir="${output.dir}"
@@ -1119,7 +1119,7 @@
             <Parameter name="Port" value="${port}"/>
             <Parameter name="UserID" value="${userid}"/>
             <Parameter name="PassWD" value="${passwd}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
 </project>

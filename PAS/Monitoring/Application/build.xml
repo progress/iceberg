@@ -795,7 +795,7 @@
     <target name="metrics">
         <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                procedure="${deploy.dir}/build/metrics${proc.ext}">
@@ -812,7 +812,7 @@
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Monitor" value="${monitor}"/>
             <Parameter name="Port" value="${port}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <!-- PAS instance management -->

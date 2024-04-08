@@ -64,4 +64,5 @@ done
 
 # Uses the oemanager.xml as task instructions to Ant, passing all task arguments
 ANT_HOME=$DLC/ant ; export ANT_HOME
-exec $ANTSCRIPT -f oemanager.xml $TASKARGS
+SCRIPT_HOME=$(dirname "$0")
+exec $ANTSCRIPT -f $SCRIPT_HOME/oemanager.xml $TASKARGS
