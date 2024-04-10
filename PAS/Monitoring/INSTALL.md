@@ -19,17 +19,20 @@ Running `proant` from within each of the Application or Collection directories w
 	- Adjust the available parameters as necessary to change your path and target for the PAS instance to tailor.
 	- **Be certain to change the monitor instance's IP and port as necessary for data collection!**
 	- This will tailor the instance depending on the OpenEdge version, using either the **Spark Diagnostics** (11.7.8+) or **LiveDiag** (12.2.4+) pattern as applicable.
+1. **OPTIONAL:** If you wish to also collect metrics from the **HealthScanner** feature you may execute the `proant health` command to enable the HealthScanner feature for the PAS instance and enable collection of data.
+	- Please note that by default all PAS instances will use port 8899 for this feature. Each PAS instance must utilize a unique port for the HealthScanner which is configured via the `psc.as.healthcheck.port` property in the `CATALINA_BASE/conf/catalina.properties` file.
+	- If necessary, choose an available (read: unused) port which will represent your PAS instance's health information. Adjust this value before starting the PAS instance, and it will be found automatically by the supplied code.
 1. Start the target instance and confirm operation of the PAS instance at `http://HOSTNAME:PORT` as applicable.
 
 **Note 1:** For the **LiveDiag** solution in OpenEdge 12.2.4+ a set of R-code (.r files) will be deployed into the `CATALINA_BASE/openedge` location which is expected to be in the application PROPATH (to which a new sub-folder structure will be added: OpenEdge/ApplicationServer/). These files override some of the product-supplied ABL code which drives the Profiler and LiveDiag collection features and allows pushing that data to a customized, remote collection endpoint using the ABL HttpClient library. It is anticipated that a variation of this code may become part of the standard product installation in the future.
 
-**Note 2:** The R-code is compiled against the LTS release (12.2) by default, and may need to be recompiled for other versions of OpenEdge (read: later versions). To do so, there is an undocumented `compile` target for the proant utility which will recompile the code and place it into the correct deployment directory. From there the `deploy_metrics` will copy the R-code to the correct location. This step will of course require the "4GL Development" license, though once compiled the files can be deployed anywhere the same version of OpenEdge is installed.
+**Note 2:** The R-code is compiled against the LTS release (12.2) by default, and may need to be recompiled for later versions of OpenEdge. To do so, there is an undocumented `compile` target for the proant utility which will recompile the code and place it into the correct deployment directory. From there the `deploy_metrics` will copy the R-code to the correct location. This step will of course require the "4GL Development" license, though once compiled the files can be deployed anywhere the same version of OpenEdge is installed.
 
-**Note 3:** When specifying the ABL Application name for any utilities or command line options, it is necessary to use the exact same case as the openedge.properties file and reported by the PAS instance. Due to the use of JSON objects to pass many of the commands to the instance these values should be treated as case-sensitive.
+**Note 3:** When specifying the ABL Application name for any utilities or command line options, it is necessary to use the exact same case as the `openedge.properties` file and reported by the PAS instance. Due to the use of JSON objects to pass many of the commands to the instance these values should be treated as case-sensitive.
 
 ### Collector - Metrics Visualization ###
 
-**Notice:** This instance assumes availability of ports 8850, 8851, 8852, and 8853 for the PAS instance, with 8854 for the database by default.
+**Notice:** This instance assumes availability of ports 8850, 8851, 8852, and 8853 for the PAS instance, with 8854 for the database by default. Please change these values as necessary via properties when creating the new collection endpoint.
 
 1. Place the **Collector** folder on the host machine where you wish to have all metrics reported.
 	- This machine must be able to at least receive TCP connections on port 8850 (for HTTP) or 8851 (for HTTPS).
