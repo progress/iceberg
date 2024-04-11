@@ -6,9 +6,45 @@ The provided `build.xml` files are expected to be used with the `proant` utility
 
 **For all of the proceeding instructions, you should utilize a PROENV session to make DLC and all necessary utilities available in your system path.**
 
-Running `proant` from within each of the Application or Collection directories will provide a list of commands and options.
+Running `proant` without parameters from within each of the Application or Collection directories will provide a list of commands and options. These will be provided for reference in each section below.
+
+**Note:** Before proceeding, if you are using Ubuntu Linux as your OS image please be sure that your `/bin/sh` command links to `/bin/bash` as the default shell. If you encounter an error while executing certain PAS commands such as `OEJMX.sh` and receive an error such as "[[: not found" this will serve as a fix for that particular error.
 
 ### Application - PAS Integration ###
+
+     Usage Instructions:
+
+     proant create - [Optional] Create a standard oepas1 PAS instance
+         -Dhttp=8810 = Port for HTTP connections
+         -Dhttps=8811 = Port for HTTPS connections
+         -Dajp=8009 = Port for AJP13 connections
+         -Dshut=8812 = Tomcat shutdown port
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -Dalias=oepas1 = Alias for PAS instance
+
+     proant deploy_demos - [Optional] Recompile and update demo ABL code
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -Dablapp=oepas1 = Dedicated ABL App name
+         -Dwebapp=ROOT = Demo webapp name
+
+     proant deploy_metrics - Configure the PAS instance for metrics collection
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -Dablapp=oepas1 = Dedicated ABL App name
+         -Dwebapp=ROOT = Demo webapp name
+         -Dmonitor=127.0.0.1 = IP of the monitor endpoint
+         -Dport=8850 = Port of the monitor endpoint
+
+     proant revert - [Optional] Restore original PAS instance
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+
+     Instance Management:
+         proant startup - Uses TCMAN to start the oepas1 PAS instance
+         proant query - Uses TCMAN to query the oepas1 PAS instance
+         proant shutdown - Uses TCMAN to stop the oepas1 PAS instance
 
 1. Place the **Application** folder on the host machine where you wish to gather metrics from a PAS instance.
 1. From within a `PROENV` session, navigate to the **Application** folder.
@@ -31,6 +67,34 @@ Running `proant` from within each of the Application or Collection directories w
 **Note 3:** When specifying the ABL Application name for any utilities or command line options, it is necessary to use the exact same case as the `openedge.properties` file and reported by the PAS instance. Due to the use of JSON objects to pass many of the commands to the instance these values should be treated as case-sensitive.
 
 ### Collector - Metrics Visualization ###
+
+     Usage Instructions:
+
+     proant create - Create the monitor PAS instance and pasmon database
+         -Dhttp=8850 = Port for HTTP connections
+         -Dhttps=8851 = Port for HTTPS connections
+         -Dajp=8852 = Port for AJP13 connections
+         -Dshut=8853 = Tomcat shutdown port
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=monitor = Name of PAS instance
+         -Dalias=monitor = Alias for PAS instance
+         -Dablapp=monitor = Dedicated ABL App name
+         -Dwebapp=ROOT = WebApp name for UI deployment
+         -Dcodepage=UTF-8 = Codepage for DB/instance
+         -Dcollation=Basic = Collation for Codepage
+
+     proant update - [Optional] Re-deploy static content and ABL code
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=monitor = Name of PAS instance
+
+     proant rebuild_db - [Optional] Re-create the pasmon database from scratch
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=monitor = Name of PAS instance
+
+     Instance Management:
+         proant startup - Uses TCMAN to start the monitor PAS instance
+         proant query - Uses TCMAN to query the monitor PAS instance
+         proant shutdown - Uses TCMAN to stop the monitor PAS instance
 
 **Notice:** This instance assumes availability of ports 8850, 8851, 8852, and 8853 for the PAS instance, with 8854 for the database by default. Please change these values as necessary via properties when creating the new collection endpoint.
 

@@ -170,53 +170,57 @@
                     <!-- OpenEdge 11.7.x -->
                 </then>
                 <else>
-                    <!-- OpenEdge 12.x -->
-
                     <if>
-                        <equals arg1="${oeMinor}" arg2="0"/>
-                        <then>
-                            <!-- OpenEdge 12.0 -->
-                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                        </then>
-                    </if>
-
-                    <if>
-                        <equals arg1="${oeMinor}" arg2="1"/>
-                        <then>
-                            <!-- OpenEdge 12.1 -->
-                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                        </then>
-                    </if>
-
-                    <if>
-                        <equals arg1="${oeMinor}" arg2="2"/>
+                        <!-- OpenEdge 12.x -->
+                        <equals arg1="${oeMajor}" arg2="12"/>
                         <then>
                             <if>
-                                <equals arg1="${oeRev}" arg2="0"/>
+                                <equals arg1="${oeMinor}" arg2="0"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.0 -->
+                                    <!-- OpenEdge 12.0 -->
                                     <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
                                 </then>
                             </if>
+
                             <if>
-                                <equals arg1="${oeRev}" arg2="1"/>
+                                <equals arg1="${oeMinor}" arg2="1"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.1 -->
+                                    <!-- OpenEdge 12.1 -->
                                     <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
                                 </then>
                             </if>
+
                             <if>
-                                <equals arg1="${oeRev}" arg2="2"/>
+                                <equals arg1="${oeMinor}" arg2="2"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.2 -->
-                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                                </then>
-                            </if>
-                            <if>
-                                <equals arg1="${oeRev}" arg2="3"/>
-                                <then>
-                                    <!-- OpenEdge 12.2.3 -->
-                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="0"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.0 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="1"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.1 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="2"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.2 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="3"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.3 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
                                 </then>
                             </if>
                         </then>
