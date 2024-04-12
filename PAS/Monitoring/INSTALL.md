@@ -37,6 +37,25 @@ Running `proant` without parameters from within each of the Application or Colle
          -Dmonitor=127.0.0.1 = IP of the monitor endpoint
          -Dport=8850 = Port of the monitor endpoint
 
+     proant health - Enable the HealthScanner function for the instance
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -DhealthPort=8899 = Port for HealthCheck
+
+     proant metrics - Enable/Disable collection for the instance
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -Dablapp=oepas1 = ABL App for collection
+         -DlocalIP=10.0.2.15  = IP of this server
+         -Dtype=pulse [pulse|profiler]
+         -Dstate=on [on|off]
+         -Dopts=sessions,requests,calltrees,ablobjs [logmsgs,sessions[,requests[,calltrees,callstacks],ablobjs]]
+         -Dmonitor=127.0.0.1 = IP of the monitor endpoint (or 'file' for local output)
+         -Dport=8850 = Port of the monitor endpoint
+
+         Note: You cannot simultaneously use the 'calltrees' option in the pulse metrics and run profiler metrics.
+               The web UI will display whichever was reported, but an agent cannot collect both at the same time.
+
      proant revert - [Optional] Restore original PAS instance
          -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
          -Dinstance=oepas1 = Name of PAS instance

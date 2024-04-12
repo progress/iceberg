@@ -379,16 +379,23 @@
             <if>
                 <equals arg1="${oeMajor}" arg2="12"/>
                 <then>
-                    <!-- OpenEdge 12.x -->
-
-                    <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
-                    <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
-                    <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
-                    <replaceregexp
-                        file="${pas.path}/conf/logging-tomcat.properties"
-                        match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
-                        replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
-                        byline="true"/>
+                    <!-- Note that Request ID Logging is now enabled by default for OE 12.x so only minor adjustents are needed. -->
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="8"/>
+                        <then>
+                            <!-- Log pattern is already set correctly for OpenEdge 12.8 -->
+                        </then>
+                        <else>
+                            <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
+                            <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
+                            <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
+                            <replaceregexp
+                                file="${pas.path}/conf/logging-tomcat.properties"
+                                match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
+                                replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
+                                byline="true"/>
+                        </else>
+                    </if>
                 </then>
             </if>
         </sequential>

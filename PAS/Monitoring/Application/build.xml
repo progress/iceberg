@@ -44,8 +44,11 @@
         <echo message="    -Dmonitor=${monitor} = IP of the monitor endpoint"/>
         <echo message="    -Dport=${port} = Port of the monitor endpoint"/>
         <if>
-            <equals arg1="${oeMajor}" arg2="12"/>
+            <equals arg1="${oeMajor}" arg2="11"/>
             <then>
+                <!-- Features Not Available -->
+            </then>
+            <else>
                 <echo message="${line.separator}proant health - Enable the HealthScanner function for the instance"/>
                 <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
                 <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
@@ -62,7 +65,7 @@
                 <echo message="    -Dport=${port} = Port of the monitor endpoint"/>
                 <echo message="${line.separator}    Note: You cannot simultaneously use the 'calltrees' option in the pulse metrics and run profiler metrics."/>
                 <echo message="          The web UI will display whichever was reported, but an agent cannot collect both at the same time."/>
-            </then>
+            </else>
         </if>
         <echo message="${line.separator}proant revert - [Optional] Restore original PAS instance"/>
         <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
@@ -282,8 +285,17 @@
                                 </then>
                             </if>
 
-                            <!-- OpenEdge 12.2.4+ -->
-                            <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
+                            <if>
+                                <equals arg1="${oeMinor}" arg2="8"/>
+                                <then>
+                                    <!-- OpenEdge 12.8 -->
+                                    <property name="deploy.dir" value="${basedir}/deploy/oe128"/>
+                                </then>
+                                <else>
+                                    <!-- OpenEdge 12.2.4 through 12.7 -->
+                                    <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
+                                </else>
+                            </if>
                         </then>
                         <else>
                             <!-- OpenEdge 13.x -->
@@ -579,18 +591,29 @@
                     byline="true"/>
             </then>
             <else>
-                <!-- OpenEdge 12.x -->
-
-                <!-- Note that Request ID Logging is now enabled by default for OE 12.x so only minor adjustents are needed. -->
-
-                <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
-                <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
-                <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
-                <replaceregexp
-                    file="${pas.path}/conf/logging-tomcat.properties"
-                    match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
-                    replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
-                    byline="true"/>
+                <!-- OpenEdge 12.x and later -->
+                <if>
+                    <equals arg1="${oeMajor}" arg2="12"/>
+                    <then>
+                        <!-- Note that Request ID Logging is now enabled by default for OE 12.x so only minor adjustents are needed. -->
+                        <if>
+                            <equals arg1="${oeMinor}" arg2="8"/>
+                            <then>
+                                <!-- Log pattern is already set correctly for OpenEdge 12.8 -->
+                            </then>
+                            <else>
+                                <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
+                                <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
+                                <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
+                                <replaceregexp
+                                    file="${pas.path}/conf/logging-tomcat.properties"
+                                    match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
+                                    replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
+                                    byline="true"/>
+                            </else>
+                        </if>
+                    </then>
+                </if>
             </else>
         </if>
     </target>
