@@ -4,13 +4,13 @@
 
 The provided `build.xml` files are expected to be used with the `proant` utility from within a PROENV session. You should be aware of the location of your PAS instance to be monitored along with a location where your collector/monitor endpoint may reside--the latter may be on a separate server and in fact is strongly encouraged. The primary 2 folders contain the artifacts for tailoring the Application and Collector instances, respectively. For a comprehensive history and listing of all commands, see the file `Pulse_Metrics_Enablement.pdf` in this directory (which focuses more on the approach for OpenEdge 12.2+).
 
-**For all of the proceeding instructions, you should utilize a PROENV session to make DLC and all necessary utilities available in your system path.**
+**For all of the proceeding instructions and for best results, please utilize a PROENV session to make the DLC location and all necessary OpenEdge utilities available in your system path.**
 
-Running `proant` without parameters from within each of the Application or Collection directories will provide a list of commands and options. These will be provided for reference in each section below.
-
-**Note:** Before proceeding, if you are using Ubuntu Linux as your OS image please be sure that your `/bin/sh` command links to `/bin/bash` as the default shell. If you encounter an error while executing certain PAS commands such as `OEJMX.sh` and receive an error such as "[[: not found" this will serve as a fix for that particular error.
+**Linux Users:** Before proceeding, if you are using Ubuntu Linux as your OS image please be sure that your `/bin/sh` command links to `/bin/bash` as the default shell. If you encounter an error while executing certain PAS commands such as `OEJMX.sh` and receive an error such as "[[: not found" this will serve as a fix for that particular error.
 
 ### Application - PAS Integration ###
+
+Running `proant` without parameters from within each of the Application or Collection directories will provide a list of commands and options.
 
      Usage Instructions:
 
