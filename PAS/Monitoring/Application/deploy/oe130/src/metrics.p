@@ -60,6 +60,13 @@ if num-entries(session:parameter) ge 6 then
     assign
         cCatalinaBase = entry(1, session:parameter)
         cAblApp       = entry(2, session:parameter)
+		cHostIP       = entry(3, session:parameter)
+		cMetricsType  = entry(4, session:parameter)
+		cMetricsState = entry(5, session:parameter)
+		cMetricsOpts  = entry(6, session:parameter)
+		cMonScheme    = entry(7, session:parameter)
+		cMonHost      = entry(8, session:parameter)
+		cMonPort      = entry(9, session:parameter)
         .
 else
     assign
@@ -128,7 +135,7 @@ for each ttAgent no-lock
                     cQueryString = substitute(oQueryString:Get("PulseOn"), ttAgent.agentPID, cMetricsURL, iPulseTime, cMetricsOpts, cDescriptor)
                     cOutFileName = substitute("pulse_on_&1", ttAgent.agentPID)
                     .
-            else
+			else
                 assign
                     cQueryString = substitute(oQueryString:Get("PulseOff"), ttAgent.agentPID)
                     cOutFileName = substitute("pulse_off_&1", ttAgent.agentPID)
