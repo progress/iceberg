@@ -521,6 +521,26 @@
 
         <requireDir folder="${pas.path}"/>
 
+        <!-- Define a property to capture the output (returned as an error) from the command. -->
+        <echo message="Checking Database Status: ${db.path}/${db.name}"/>
+        <exec dir="${dlc.bin}" executable="_dbutil" failonerror="false" outputproperty="db.state">
+            <arg value="${db.path}/${db.name}"/>
+            <arg line="-C holder"/>
+        </exec>
+
+        <!-- Output message based on success (no output) or failure (message present). -->
+        <if>
+            <equals arg1="${db.state}" arg2=""/>
+            <then>
+                <echo message="Database is not running."/>
+            </then>
+            <else>
+                <echo message="${db.state}"/>
+            </else>
+        </if>
+
+        <echo message=""/> <!-- Empty line for readability -->
+
         <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="false">
             <arg line="pasoestart -v -query -json -array"/>
         </exec>

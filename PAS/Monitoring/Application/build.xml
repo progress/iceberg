@@ -77,6 +77,10 @@
         <echo message="${line.separator}Location Assumptions:"/>
         <echo message="    DLC Environment: ${dlcHome}"/>
         <echo message="      CATALINA_BASE: ${pas.path}"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator}At minimum, the 'proant deploy_metrics' command must be used to deploy the metrics tooling to the target instance."/>
+        <echo message="${line.separator}Optionally, use 'proant health' to enable the PASOE HealthScanner to collect broader instance health information."/>
+        <echo message="${line.separator}See the install guide (INSTALL.md) in the parent folder for more information."/>
     </target>
 
     <macrodef name="init_env">
@@ -229,6 +233,8 @@
                 <then>
                     <!-- OpenEdge 11.7.x -->
                     <property name="deploy.dir" value="${basedir}/deploy/oe117"/>
+                    <property name="isOE117" value="true"/>
+                    <echo message="Deployment Model: 11.7.x"/>
                 </then>
                 <else>
                     <if>
@@ -290,20 +296,34 @@
                                 <then>
                                     <!-- OpenEdge 12.8 -->
                                     <property name="deploy.dir" value="${basedir}/deploy/oe128"/>
+                                    <property name="isOE128" value="true"/>
+                                    <echo message="Deployment Model: 12.8.x"/>
                                 </then>
                                 <else>
                                     <!-- OpenEdge 12.2.4 through 12.7 -->
                                     <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
+                                    <property name="isOE122" value="true"/>
+                                    <echo message="Deployment Model: 12.2+"/>
                                 </else>
                             </if>
                         </then>
                         <else>
                             <!-- OpenEdge 13.x -->
                             <property name="deploy.dir" value="${basedir}/deploy/oe130"/>
+                            <property name="isOE130" value="true"/>
+                            <echo message="Deployment Model: 13.x"/>
                         </else>
                     </if>
                 </else>
             </if>
+
+            <!-- Indicates PAS instance should use a handlers file. -->
+            <condition property="supportsHandlers">
+                <or>
+                    <isset property="isOE128"/>
+                    <isset property="isOE130"/>
+                </or>
+            </condition>
         </sequential>
     </macrodef>
 
@@ -534,8 +554,12 @@
 
         <!-- Copy certain files depending on the OpenEdge version. -->
         <if>
-            <equals arg1="${oeMajor}" arg2="12"/>
+            <equals arg1="${oeMajor}" arg2="11"/>
             <then>
+                <!-- Copy the Spark Diagnostic library for OE 11.7.x. -->
+                <copySparkDiagnostics/>
+            </then>
+            <else>
                 <!-- OpenEdge 12.2+ -->
 
                 <!-- Copy special ABL files for this version. -->
@@ -545,10 +569,6 @@
                         <exclude name="metrics.r"/>
                     </fileset>
                 </copy>
-            </then>
-            <else>
-                <!-- Copy the Spark Diagnostic library for OE 11.7.x. -->
-                <copySparkDiagnostics/>
             </else>
         </if>
 
@@ -654,25 +674,69 @@
         </PCTCompile>
         <delete dir="${pas.webapp.dir}/WEB-INF/openedge/.pct" quiet="true"/>
 
-        <!-- Check if PAS properties file exists. -->
+        <!-- Check if PAS properties file exists for merging of properties. -->
         <require file="${pas.path}/conf/openedge.properties"/>
 
-        <!-- Check if MERGE properties file exists. -->
-        <require file="${deploy.dir}/merge_demo.openedge.properties"/>
+        <if>
+            <isset property="supportsHandlers"/>
+            <then>
+                <!-- Copy the web handlers to the proper location within the target WebApp. -->
+                <copy toDir="${pas.webapp.dir}/WEB-INF/adapters" overwrite="true" verbose="true">
+                    <fileset dir="${deploy.dir}/adapters">
+                        <include name="**/*.handlers"/>
+                    </fileset>
+                </copy>
 
-        <!-- Make a copy of the default merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
-        <copy file="${deploy.dir}/merge_demo.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_${ablapp}.openedge.properties">
-            <filterset>
-                <filter token="APPNAME" value="${ablapp}"/>
-                <filter token="WEBAPP" value="${webapp}"/>
-            </filterset>
-        </copy>
+                <!-- Directly modify properties for the demo code via the oeprop command. -->
 
-        <!-- Merge the demo code properties for the ABL Application. -->
-        <echo message="Merging initial properties from 'merge_demo_${ablapp}.openedge.properties'..."/>
-        <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
-            <arg line="-f '${basedir}/merge_demo_${ablapp}.openedge.properties'"/>
-        </exec>
+                <!-- Make a copy of the general merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
+                <copy file="${deploy.dir}/merge_demo_general.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_general_${ablapp}.openedge.properties">
+                    <filterset>
+                        <filter token="APPNAME" value="${ablapp}"/>
+                        <filter token="WEBAPP" value="${webapp}"/>
+                    </filterset>
+                </copy>
+
+                <!-- Merge the demo code properties for the ABL Application. -->
+                <echo message="Merging initial properties from 'merge_demo_general_${ablapp}.openedge.properties'..."/>
+                <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+                    <arg line="-f '${basedir}/merge_demo_general_${ablapp}.openedge.properties'"/>
+                </exec>
+            </then>
+            <else>
+                <!-- Check if MERGE properties file exists. -->
+                <require file="${deploy.dir}/merge_demo.openedge.properties"/>
+
+                <!-- Make a copy of the general merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
+                <copy file="${deploy.dir}/merge_demo_general.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_general_${ablapp}.openedge.properties">
+                    <filterset>
+                        <filter token="APPNAME" value="${ablapp}"/>
+                        <filter token="WEBAPP" value="${webapp}"/>
+                    </filterset>
+                </copy>
+
+                <!-- Merge the demo code properties for the ABL Application. -->
+                <echo message="Merging initial properties from 'merge_demo_general_${ablapp}.openedge.properties'..."/>
+                <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+                    <arg line="-f '${basedir}/merge_demo_general_${ablapp}.openedge.properties'"/>
+                </exec>
+
+                <!-- Make a copy of the handlers merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
+                <copy file="${deploy.dir}/merge_demo_handlers.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_handlers_${ablapp}.openedge.properties">
+                    <filterset>
+                        <filter token="APPNAME" value="${ablapp}"/>
+                        <filter token="WEBAPP" value="${webapp}"/>
+                    </filterset>
+                </copy>
+
+                <!-- Merge the demo code properties for the ABL Application. -->
+                <echo message="Merging initial properties from 'merge_demo_handlers_${ablapp}.openedge.properties'..."/>
+                <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+                    <arg line="-f '${basedir}/merge_demo_handlers_${ablapp}.openedge.properties'"/>
+                </exec>
+            </else>
+        </if>
+
     </target>
 
     <target name="revert">
