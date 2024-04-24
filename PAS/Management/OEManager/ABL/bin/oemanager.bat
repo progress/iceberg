@@ -34,7 +34,7 @@ if exist "%DLC%\bin\java_env.bat" (
 )
 
 REM Use the PowerShell utility to execute the Ant utility with all given parameters
-PowerShell.exe -executionpolicy bypass -File "oemanager.ps1" %*
+PowerShell.exe -executionpolicy bypass -File "%~dp0\oemanager.ps1" %*
 
 goto END
 

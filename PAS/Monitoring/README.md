@@ -23,9 +23,9 @@ Use of these tools in a production environment is not recommended **UNLESS** the
 
 Each of the available solutions are enabled through different means, though both are intended to collect similar data and deliver the information to a centralized location for further on-demand analysis. The choice of solution depends primarily on the OpenEdge version installed for PAS use:
 
-**OpenEdge 11.7.8+** - The **Spark Diagnostic** approach is intended for 11.7.x and requires the `Diagnostic.pl` from the [Spark-Toolkit](https://github.com/progress/Spark-Toolkit) be installed and utilized for a PAS instance, with the PL file added to the PROPATH. Additionally, the `session[Startup|Activate|Deactivate|Shutdown]Proc` settings must be updated in the instance to trigger the necessary ABL logic which communicates with the OEManager webapp. Naturally, this instrumentation must work in conjunction with the existing business application and requires more configuration before it can be enabled. This is the only solution for OpenEdge 11.7.x installations (ideally 11.7.4+), and for numerous reasons is not recommended for a production environment.
+**OpenEdge 11.7.8+** - The **Spark Diagnostic** approach is intended for 11.7.x and requires the `Diagnostic.pl` from the [Spark-Toolkit](https://github.com/progress/Spark-Toolkit) be installed and utilized for a PAS instance, with the PL file added to the PROPATH. Additionally, the `session[Startup|Activate|Deactivate|Shutdown]Proc` settings must be updated in the instance to trigger the necessary ABL logic which communicates with the OEManager webapp. Naturally, this instrumentation must work in conjunction with the existing business application and requires more configuration before it can be enabled. This is the only solution for OpenEdge 11.7.x installations (ideally 11.7.4+), and for numerous reasons is **not recommended for a production environment**.
 
-Per the disclaimer above, use of the **Spark-Diagnostic** solution will cause a more noticeable impact in performance of an application due to the need to request data at the end of a request boundary.
+In other words, using the **Spark-Diagnostic** solution will cause a more noticeable impact in performance of an application due to the need to request data at the end of a request boundary.
 
 ![Spark Diagnostic Architecture](Arch-Spark.png)
 
@@ -54,7 +54,7 @@ For reference, these solutions are not the same as the [OpenEdge HealthScanner](
 
 ## Installation & Usage ##
 
-Please view the [supplemental Install guide](INSTALL.md) for instructions.
+Please view the [supplemental Install guide](INSTALL.md) for detailed instructions.
 
 ## Feedback ##
 

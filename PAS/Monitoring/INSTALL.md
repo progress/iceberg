@@ -4,11 +4,66 @@
 
 The provided `build.xml` files are expected to be used with the `proant` utility from within a PROENV session. You should be aware of the location of your PAS instance to be monitored along with a location where your collector/monitor endpoint may reside--the latter may be on a separate server and in fact is strongly encouraged. The primary 2 folders contain the artifacts for tailoring the Application and Collector instances, respectively. For a comprehensive history and listing of all commands, see the file `Pulse_Metrics_Enablement.pdf` in this directory (which focuses more on the approach for OpenEdge 12.2+).
 
-**For all of the proceeding instructions, you should utilize a PROENV session to make DLC and all necessary utilities available in your system path.**
+**For all of the proceeding instructions and for best results, please utilize a PROENV session to make the DLC location and all necessary OpenEdge utilities available in your system path.**
 
-Running `proant` from within each of the Application or Collection directories will provide a list of commands and options.
+**Linux Users:** Before proceeding, if you are using Ubuntu Linux as your OS image please be sure that your `/bin/sh` command links to `/bin/bash` as the default shell. If you encounter an error while executing certain PAS commands such as `OEJMX.sh` and receive an error such as "[[: not found" this will serve as a fix for that particular error.
 
 ### Application - PAS Integration ###
+
+Running `proant` without parameters from within each of the Application or Collection directories will provide a list of commands and options.
+
+     Usage Instructions:
+
+     proant create - [Optional] Create a standard oepas1 PAS instance
+         -Dhttp=8810 = Port for HTTP connections
+         -Dhttps=8811 = Port for HTTPS connections
+         -Dajp=8009 = Port for AJP13 connections
+         -Dshut=8812 = Tomcat shutdown port
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -Dalias=oepas1 = Alias for PAS instance
+
+     proant deploy_demos - [Optional] Recompile and update demo ABL code
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -Dablapp=oepas1 = Dedicated ABL App name
+         -Dwebapp=ROOT = Demo webapp name
+
+     proant deploy_metrics - Configure the PAS instance for metrics collection
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -Dablapp=oepas1 = Dedicated ABL App name
+         -Dwebapp=ROOT = Demo webapp name
+         -Dmonitor=127.0.0.1 = IP of the monitor endpoint
+         -Dport=8850 = Port of the monitor endpoint
+
+     proant health - Enable the HealthScanner function for the instance
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -DhealthPort=8899 = Port for HealthCheck
+
+     proant metrics - Enable/Disable collection for the instance
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+         -Dablapp=oepas1 = ABL App for collection
+         -DlocalIP=10.0.2.15  = IP of this server
+         -Dtype=pulse [pulse|profiler]
+         -Dstate=on [on|off]
+         -Dopts=sessions,requests,calltrees,ablobjs [logmsgs,sessions[,requests[,calltrees,callstacks],ablobjs]]
+         -Dmonitor=127.0.0.1 = IP of the monitor endpoint (or 'file' for local output)
+         -Dport=8850 = Port of the monitor endpoint
+
+         Note: You cannot simultaneously use the 'calltrees' option in the pulse metrics and run profiler metrics.
+               The web UI will display whichever was reported, but an agent cannot collect both at the same time.
+
+     proant revert - [Optional] Restore original PAS instance
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=oepas1 = Name of PAS instance
+
+     Instance Management:
+         proant startup - Uses TCMAN to start the oepas1 PAS instance
+         proant query - Uses TCMAN to query the oepas1 PAS instance
+         proant shutdown - Uses TCMAN to stop the oepas1 PAS instance
 
 1. Place the **Application** folder on the host machine where you wish to gather metrics from a PAS instance.
 1. From within a `PROENV` session, navigate to the **Application** folder.
@@ -19,17 +74,48 @@ Running `proant` from within each of the Application or Collection directories w
 	- Adjust the available parameters as necessary to change your path and target for the PAS instance to tailor.
 	- **Be certain to change the monitor instance's IP and port as necessary for data collection!**
 	- This will tailor the instance depending on the OpenEdge version, using either the **Spark Diagnostics** (11.7.8+) or **LiveDiag** (12.2.4+) pattern as applicable.
+1. **OPTIONAL:** If you wish to also collect metrics from the **HealthScanner** feature you may execute the `proant health` command to enable the HealthScanner feature for the PAS instance and enable collection of data.
+	- Please note that by default all PAS instances will use port 8899 for this feature. Each PAS instance must utilize a unique port for the HealthScanner which is configured via the `psc.as.healthcheck.port` property in the `CATALINA_BASE/conf/catalina.properties` file.
+	- If necessary, choose an available (read: unused) port which will represent your PAS instance's health information. Adjust this value before starting the PAS instance, and it will be found automatically by the supplied code.
 1. Start the target instance and confirm operation of the PAS instance at `http://HOSTNAME:PORT` as applicable.
 
 **Note 1:** For the **LiveDiag** solution in OpenEdge 12.2.4+ a set of R-code (.r files) will be deployed into the `CATALINA_BASE/openedge` location which is expected to be in the application PROPATH (to which a new sub-folder structure will be added: OpenEdge/ApplicationServer/). These files override some of the product-supplied ABL code which drives the Profiler and LiveDiag collection features and allows pushing that data to a customized, remote collection endpoint using the ABL HttpClient library. It is anticipated that a variation of this code may become part of the standard product installation in the future.
 
-**Note 2:** The R-code is compiled against the LTS release (12.2) by default, and may need to be recompiled for other versions of OpenEdge (read: later versions). To do so, there is an undocumented `compile` target for the proant utility which will recompile the code and place it into the correct deployment directory. From there the `deploy_metrics` will copy the R-code to the correct location. This step will of course require the "4GL Development" license, though once compiled the files can be deployed anywhere the same version of OpenEdge is installed.
+**Note 2:** The R-code is compiled against the LTS release (12.2) by default, and may need to be recompiled for later versions of OpenEdge. To do so, there is an undocumented `compile` target for the proant utility which will recompile the code and place it into the correct deployment directory. From there the `deploy_metrics` will copy the R-code to the correct location. This step will of course require the "4GL Development" license, though once compiled the files can be deployed anywhere the same version of OpenEdge is installed.
 
-**Note 3:** When specifying the ABL Application name for any utilities or command line options, it is necessary to use the exact same case as the openedge.properties file and reported by the PAS instance. Due to the use of JSON objects to pass many of the commands to the instance these values should be treated as case-sensitive.
+**Note 3:** When specifying the ABL Application name for any utilities or command line options, it is necessary to use the exact same case as the `openedge.properties` file and reported by the PAS instance. Due to the use of JSON objects to pass many of the commands to the instance these values should be treated as case-sensitive.
 
 ### Collector - Metrics Visualization ###
 
-**Notice:** This instance assumes availability of ports 8850, 8851, 8852, and 8853 for the PAS instance, with 8854 for the database by default.
+     Usage Instructions:
+
+     proant create - Create the monitor PAS instance and pasmon database
+         -Dhttp=8850 = Port for HTTP connections
+         -Dhttps=8851 = Port for HTTPS connections
+         -Dajp=8852 = Port for AJP13 connections
+         -Dshut=8853 = Tomcat shutdown port
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=monitor = Name of PAS instance
+         -Dalias=monitor = Alias for PAS instance
+         -Dablapp=monitor = Dedicated ABL App name
+         -Dwebapp=ROOT = WebApp name for UI deployment
+         -Dcodepage=UTF-8 = Codepage for DB/instance
+         -Dcollation=Basic = Collation for Codepage
+
+     proant update - [Optional] Re-deploy static content and ABL code
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=monitor = Name of PAS instance
+
+     proant rebuild_db - [Optional] Re-create the pasmon database from scratch
+         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
+         -Dinstance=monitor = Name of PAS instance
+
+     Instance Management:
+         proant startup - Uses TCMAN to start the monitor PAS instance
+         proant query - Uses TCMAN to query the monitor PAS instance
+         proant shutdown - Uses TCMAN to stop the monitor PAS instance
+
+**Notice:** This instance assumes availability of ports 8850, 8851, 8852, and 8853 for the PAS instance, with 8854 for the database by default. Please change these values as necessary via properties when creating the new collection endpoint.
 
 1. Place the **Collector** folder on the host machine where you wish to have all metrics reported.
 	- This machine must be able to at least receive TCP connections on port 8850 (for HTTP) or 8851 (for HTTPS).

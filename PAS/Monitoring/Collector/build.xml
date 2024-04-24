@@ -170,53 +170,57 @@
                     <!-- OpenEdge 11.7.x -->
                 </then>
                 <else>
-                    <!-- OpenEdge 12.x -->
-
                     <if>
-                        <equals arg1="${oeMinor}" arg2="0"/>
-                        <then>
-                            <!-- OpenEdge 12.0 -->
-                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                        </then>
-                    </if>
-
-                    <if>
-                        <equals arg1="${oeMinor}" arg2="1"/>
-                        <then>
-                            <!-- OpenEdge 12.1 -->
-                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                        </then>
-                    </if>
-
-                    <if>
-                        <equals arg1="${oeMinor}" arg2="2"/>
+                        <!-- OpenEdge 12.x -->
+                        <equals arg1="${oeMajor}" arg2="12"/>
                         <then>
                             <if>
-                                <equals arg1="${oeRev}" arg2="0"/>
+                                <equals arg1="${oeMinor}" arg2="0"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.0 -->
+                                    <!-- OpenEdge 12.0 -->
                                     <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
                                 </then>
                             </if>
+
                             <if>
-                                <equals arg1="${oeRev}" arg2="1"/>
+                                <equals arg1="${oeMinor}" arg2="1"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.1 -->
+                                    <!-- OpenEdge 12.1 -->
                                     <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
                                 </then>
                             </if>
+
                             <if>
-                                <equals arg1="${oeRev}" arg2="2"/>
+                                <equals arg1="${oeMinor}" arg2="2"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.2 -->
-                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                                </then>
-                            </if>
-                            <if>
-                                <equals arg1="${oeRev}" arg2="3"/>
-                                <then>
-                                    <!-- OpenEdge 12.2.3 -->
-                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="0"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.0 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="1"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.1 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="2"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.2 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="3"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.3 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
                                 </then>
                             </if>
                         </then>
@@ -375,16 +379,23 @@
             <if>
                 <equals arg1="${oeMajor}" arg2="12"/>
                 <then>
-                    <!-- OpenEdge 12.x -->
-
-                    <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
-                    <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
-                    <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
-                    <replaceregexp
-                        file="${pas.path}/conf/logging-tomcat.properties"
-                        match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
-                        replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
-                        byline="true"/>
+                    <!-- Note that Request ID Logging is now enabled by default for OE 12.x so only minor adjustents are needed. -->
+                    <if>
+                        <equals arg1="${oeMinor}" arg2="8"/>
+                        <then>
+                            <!-- Log pattern is already set correctly for OpenEdge 12.8 -->
+                        </then>
+                        <else>
+                            <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
+                            <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
+                            <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
+                            <replaceregexp
+                                file="${pas.path}/conf/logging-tomcat.properties"
+                                match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
+                                replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
+                                byline="true"/>
+                        </else>
+                    </if>
                 </then>
             </if>
         </sequential>
@@ -509,6 +520,26 @@
         <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <requireDir folder="${pas.path}"/>
+
+        <!-- Define a property to capture the output (returned as an error) from the command. -->
+        <echo message="Checking Database Status: ${db.path}/${db.name}"/>
+        <exec dir="${dlc.bin}" executable="_dbutil" failonerror="false" outputproperty="db.state">
+            <arg value="${db.path}/${db.name}"/>
+            <arg line="-C holder"/>
+        </exec>
+
+        <!-- Output message based on success (no output) or failure (message present). -->
+        <if>
+            <equals arg1="${db.state}" arg2=""/>
+            <then>
+                <echo message="Database is not running."/>
+            </then>
+            <else>
+                <echo message="${db.state}"/>
+            </else>
+        </if>
+
+        <echo message=""/> <!-- Empty line for readability -->
 
         <exec executable="${pas.bin}/tcman${scriptSuffix}" failonerror="false">
             <arg line="pasoestart -v -query -json -array"/>

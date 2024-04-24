@@ -44,8 +44,11 @@
         <echo message="    -Dmonitor=${monitor} = IP of the monitor endpoint"/>
         <echo message="    -Dport=${port} = Port of the monitor endpoint"/>
         <if>
-            <equals arg1="${oeMajor}" arg2="12"/>
+            <equals arg1="${oeMajor}" arg2="11"/>
             <then>
+                <!-- Features Not Available -->
+            </then>
+            <else>
                 <echo message="${line.separator}proant health - Enable the HealthScanner function for the instance"/>
                 <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
                 <echo message="    -Dinstance=${instance} = Name of PAS instance"/>
@@ -62,7 +65,7 @@
                 <echo message="    -Dport=${port} = Port of the monitor endpoint"/>
                 <echo message="${line.separator}    Note: You cannot simultaneously use the 'calltrees' option in the pulse metrics and run profiler metrics."/>
                 <echo message="          The web UI will display whichever was reported, but an agent cannot collect both at the same time."/>
-            </then>
+            </else>
         </if>
         <echo message="${line.separator}proant revert - [Optional] Restore original PAS instance"/>
         <echo message="    -Dwrk=${wrk} = Parent directory for PAS instance"/>
@@ -74,6 +77,10 @@
         <echo message="${line.separator}Location Assumptions:"/>
         <echo message="    DLC Environment: ${dlcHome}"/>
         <echo message="      CATALINA_BASE: ${pas.path}"/>
+        <echo message="${line.separator}"/>
+        <echo message="${line.separator}At minimum, the 'proant deploy_metrics' command must be used to deploy the metrics tooling to the target instance."/>
+        <echo message="${line.separator}Optionally, use 'proant health' to enable the PASOE HealthScanner to collect broader instance health information."/>
+        <echo message="${line.separator}See the install guide (INSTALL.md) in the parent folder for more information."/>
     </target>
 
     <macrodef name="init_env">
@@ -226,64 +233,97 @@
                 <then>
                     <!-- OpenEdge 11.7.x -->
                     <property name="deploy.dir" value="${basedir}/deploy/oe117"/>
+                    <property name="isOE117" value="true"/>
+                    <echo message="Deployment Model: 11.7.x"/>
                 </then>
                 <else>
-                    <!-- OpenEdge 12.x -->
-
                     <if>
-                        <equals arg1="${oeMinor}" arg2="0"/>
-                        <then>
-                            <!-- OpenEdge 12.0 -->
-                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                        </then>
-                    </if>
-
-                    <if>
-                        <equals arg1="${oeMinor}" arg2="1"/>
-                        <then>
-                            <!-- OpenEdge 12.1 -->
-                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                        </then>
-                    </if>
-
-                    <if>
-                        <equals arg1="${oeMinor}" arg2="2"/>
+                        <!-- OpenEdge 12.x -->
+                        <equals arg1="${oeMajor}" arg2="12"/>
                         <then>
                             <if>
-                                <equals arg1="${oeRev}" arg2="0"/>
+                                <equals arg1="${oeMinor}" arg2="0"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.0 -->
+                                    <!-- OpenEdge 12.0 -->
                                     <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
                                 </then>
                             </if>
+
                             <if>
-                                <equals arg1="${oeRev}" arg2="1"/>
+                                <equals arg1="${oeMinor}" arg2="1"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.1 -->
+                                    <!-- OpenEdge 12.1 -->
                                     <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
                                 </then>
                             </if>
+
                             <if>
-                                <equals arg1="${oeRev}" arg2="2"/>
+                                <equals arg1="${oeMinor}" arg2="2"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.2 -->
-                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="0"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.0 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="1"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.1 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="2"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.2 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
+                                    <if>
+                                        <equals arg1="${oeRev}" arg2="3"/>
+                                        <then>
+                                            <!-- OpenEdge 12.2.3 -->
+                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                        </then>
+                                    </if>
                                 </then>
                             </if>
+
                             <if>
-                                <equals arg1="${oeRev}" arg2="3"/>
+                                <equals arg1="${oeMinor}" arg2="8"/>
                                 <then>
-                                    <!-- OpenEdge 12.2.3 -->
-                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
+                                    <!-- OpenEdge 12.8 -->
+                                    <property name="deploy.dir" value="${basedir}/deploy/oe128"/>
+                                    <property name="isOE128" value="true"/>
+                                    <echo message="Deployment Model: 12.8.x"/>
                                 </then>
+                                <else>
+                                    <!-- OpenEdge 12.2.4 through 12.7 -->
+                                    <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
+                                    <property name="isOE122" value="true"/>
+                                    <echo message="Deployment Model: 12.2+"/>
+                                </else>
                             </if>
                         </then>
+                        <else>
+                            <!-- OpenEdge 13.x -->
+                            <property name="deploy.dir" value="${basedir}/deploy/oe130"/>
+                            <property name="isOE130" value="true"/>
+                            <echo message="Deployment Model: 13.x"/>
+                        </else>
                     </if>
-
-                    <!-- OpenEdge 12.2.4+ -->
-                    <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
                 </else>
             </if>
+
+            <!-- Indicates PAS instance should use a handlers file. -->
+            <condition property="supportsHandlers">
+                <or>
+                    <isset property="isOE128"/>
+                    <isset property="isOE130"/>
+                </or>
+            </condition>
         </sequential>
     </macrodef>
 
@@ -386,38 +426,72 @@
         <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
         <if>
-            <equals arg1="${oeMajor}" arg2="12"/>
+            <equals arg1="${oeMajor}" arg2="11"/>
             <then>
-                <!-- OpenEdge 12.x -->
-
-                <mkdir dir="${deploy.dir}/xbuild"/>
-                <mkdir dir="${deploy.dir}/build"/>
-
-                <!-- Create xcode from source, placing in a temporary directory. -->
-                <PCTXCode destDir="${deploy.dir}/xbuild" dlcHome="${dlcHome}">
-                    <fileset dir="${deploy.dir}/src">
-                        <include name="**/*.cls"/>
-                        <include name="**/*.p"/>
-                    </fileset>
-                </PCTXCode>
-
-                <!-- Compile from xcode source, placing in a build directory. -->
-                <PCTCompile destDir="${deploy.dir}/build" dlcHome="${dlcHome}">
-                    <propath>
-                        <pathelement path="${deploy.dir}/xbuild"/>
-                        <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
-                    </propath>
-                    <fileset dir="${deploy.dir}/xbuild">
-                        <include name="**/*.cls"/>
-                        <include name="**/*.p"/>
-                    </fileset>
-                </PCTCompile>
-
-                <delete dir="${deploy.dir}/build/.pct" quiet="true"/>
-                <delete dir="${deploy.dir}/xbuild" quiet="true"/>
+                <echo message="Compilation is not necessary for OpenEdge 11.7"/>
             </then>
             <else>
-                <echo message="Compilation is not necessary for OpenEdge 11.7"/>
+                <if>
+                    <equals arg1="${oeMajor}" arg2="12"/>
+                    <then>
+                        <!-- OpenEdge 12.x -->
+
+                        <mkdir dir="${deploy.dir}/xbuild"/>
+                        <mkdir dir="${deploy.dir}/build"/>
+
+                        <!-- Create xcode from source, placing in a temporary directory. -->
+                        <PCTXCode destDir="${deploy.dir}/xbuild" dlcHome="${dlcHome}">
+                            <fileset dir="${deploy.dir}/src">
+                                <include name="**/*.cls"/>
+                                <include name="**/*.p"/>
+                            </fileset>
+                        </PCTXCode>
+
+                        <!-- Compile from xcode source, placing in a build directory. -->
+                        <PCTCompile destDir="${deploy.dir}/build" dlcHome="${dlcHome}">
+                            <propath>
+                                <pathelement path="${deploy.dir}/xbuild"/>
+                                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                            </propath>
+                            <fileset dir="${deploy.dir}/xbuild">
+                                <include name="**/*.cls"/>
+                                <include name="**/*.p"/>
+                            </fileset>
+                        </PCTCompile>
+
+                        <delete dir="${deploy.dir}/build/.pct" quiet="true"/>
+                        <delete dir="${deploy.dir}/xbuild" quiet="true"/>
+                    </then>
+                    <else>
+                        <!-- OpenEdge 13.x -->
+
+                        <mkdir dir="${deploy.dir}/xbuild"/>
+                        <mkdir dir="${deploy.dir}/build"/>
+
+                        <!-- Create xcode from source, placing in a temporary directory. -->
+                        <PCTXCode destDir="${deploy.dir}/xbuild" dlcHome="${dlcHome}">
+                            <fileset dir="${deploy.dir}/src">
+                                <include name="**/*.cls"/>
+                                <include name="**/*.p"/>
+                            </fileset>
+                        </PCTXCode>
+
+                        <!-- Compile from xcode source, placing in a build directory. -->
+                        <PCTCompile destDir="${deploy.dir}/build" dlcHome="${dlcHome}">
+                            <propath>
+                                <pathelement path="${deploy.dir}/xbuild"/>
+                                <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.apl"/>
+                            </propath>
+                            <fileset dir="${deploy.dir}/xbuild">
+                                <include name="**/*.cls"/>
+                                <include name="**/*.p"/>
+                            </fileset>
+                        </PCTCompile>
+
+                        <delete dir="${deploy.dir}/build/.pct" quiet="true"/>
+                        <delete dir="${deploy.dir}/xbuild" quiet="true"/>
+                    </else>
+                </if>
             </else>
         </if>
     </target>
@@ -480,8 +554,12 @@
 
         <!-- Copy certain files depending on the OpenEdge version. -->
         <if>
-            <equals arg1="${oeMajor}" arg2="12"/>
+            <equals arg1="${oeMajor}" arg2="11"/>
             <then>
+                <!-- Copy the Spark Diagnostic library for OE 11.7.x. -->
+                <copySparkDiagnostics/>
+            </then>
+            <else>
                 <!-- OpenEdge 12.2+ -->
 
                 <!-- Copy special ABL files for this version. -->
@@ -491,10 +569,6 @@
                         <exclude name="metrics.r"/>
                     </fileset>
                 </copy>
-            </then>
-            <else>
-                <!-- Copy the Spark Diagnostic library for OE 11.7.x. -->
-                <copySparkDiagnostics/>
             </else>
         </if>
 
@@ -537,18 +611,29 @@
                     byline="true"/>
             </then>
             <else>
-                <!-- OpenEdge 12.x -->
-
-                <!-- Note that Request ID Logging is now enabled by default for OE 12.x so only minor adjustents are needed. -->
-
-                <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
-                <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
-                <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
-                <replaceregexp
-                    file="${pas.path}/conf/logging-tomcat.properties"
-                    match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
-                    replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
-                    byline="true"/>
+                <!-- OpenEdge 12.x and later -->
+                <if>
+                    <equals arg1="${oeMajor}" arg2="12"/>
+                    <then>
+                        <!-- Note that Request ID Logging is now enabled by default for OE 12.x so only minor adjustents are needed. -->
+                        <if>
+                            <equals arg1="${oeMinor}" arg2="8"/>
+                            <then>
+                                <!-- Log pattern is already set correctly for OpenEdge 12.8 -->
+                            </then>
+                            <else>
+                                <!-- Overwrite an existing property within the logging-tomcat.properties file (after backing up the original). -->
+                                <echo message="Adjusting logging-tomcat.properties to add %D token (elapsed time in ms)..."/>
+                                <copy file="${pas.path}/conf/logging-tomcat.properties" tofile="${pas.path}/conf/logging-tomcat.properties.bak" verbose="true"/>
+                                <replaceregexp
+                                    file="${pas.path}/conf/logging-tomcat.properties"
+                                    match="psc.as.logging.access.pattern=(.*) \%b \%req(.*) \%n"
+                                    replace="psc.as.logging.access.pattern=\1 \%b \%req\2 \%D \%n"
+                                    byline="true"/>
+                            </else>
+                        </if>
+                    </then>
+                </if>
             </else>
         </if>
     </target>
@@ -589,25 +674,69 @@
         </PCTCompile>
         <delete dir="${pas.webapp.dir}/WEB-INF/openedge/.pct" quiet="true"/>
 
-        <!-- Check if PAS properties file exists. -->
+        <!-- Check if PAS properties file exists for merging of properties. -->
         <require file="${pas.path}/conf/openedge.properties"/>
 
-        <!-- Check if MERGE properties file exists. -->
-        <require file="${deploy.dir}/merge_demo.openedge.properties"/>
+        <if>
+            <isset property="supportsHandlers"/>
+            <then>
+                <!-- Copy the web handlers to the proper location within the target WebApp. -->
+                <copy toDir="${pas.webapp.dir}/WEB-INF/adapters" overwrite="true" verbose="true">
+                    <fileset dir="${deploy.dir}/adapters">
+                        <include name="**/*.handlers"/>
+                    </fileset>
+                </copy>
 
-        <!-- Make a copy of the default merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
-        <copy file="${deploy.dir}/merge_demo.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_${ablapp}.openedge.properties">
-            <filterset>
-                <filter token="APPNAME" value="${ablapp}"/>
-                <filter token="WEBAPP" value="${webapp}"/>
-            </filterset>
-        </copy>
+                <!-- Directly modify properties for the demo code via the oeprop command. -->
 
-        <!-- Merge the demo code properties for the ABL Application. -->
-        <echo message="Merging initial properties from 'merge_demo_${ablapp}.openedge.properties'..."/>
-        <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
-            <arg line="-f '${basedir}/merge_demo_${ablapp}.openedge.properties'"/>
-        </exec>
+                <!-- Make a copy of the general merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
+                <copy file="${deploy.dir}/merge_demo_general.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_general_${ablapp}.openedge.properties">
+                    <filterset>
+                        <filter token="APPNAME" value="${ablapp}"/>
+                        <filter token="WEBAPP" value="${webapp}"/>
+                    </filterset>
+                </copy>
+
+                <!-- Merge the demo code properties for the ABL Application. -->
+                <echo message="Merging initial properties from 'merge_demo_general_${ablapp}.openedge.properties'..."/>
+                <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+                    <arg line="-f '${basedir}/merge_demo_general_${ablapp}.openedge.properties'"/>
+                </exec>
+            </then>
+            <else>
+                <!-- Check if MERGE properties file exists. -->
+                <require file="${deploy.dir}/merge_demo.openedge.properties"/>
+
+                <!-- Make a copy of the general merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
+                <copy file="${deploy.dir}/merge_demo_general.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_general_${ablapp}.openedge.properties">
+                    <filterset>
+                        <filter token="APPNAME" value="${ablapp}"/>
+                        <filter token="WEBAPP" value="${webapp}"/>
+                    </filterset>
+                </copy>
+
+                <!-- Merge the demo code properties for the ABL Application. -->
+                <echo message="Merging initial properties from 'merge_demo_general_${ablapp}.openedge.properties'..."/>
+                <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+                    <arg line="-f '${basedir}/merge_demo_general_${ablapp}.openedge.properties'"/>
+                </exec>
+
+                <!-- Make a copy of the handlers merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
+                <copy file="${deploy.dir}/merge_demo_handlers.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_handlers_${ablapp}.openedge.properties">
+                    <filterset>
+                        <filter token="APPNAME" value="${ablapp}"/>
+                        <filter token="WEBAPP" value="${webapp}"/>
+                    </filterset>
+                </copy>
+
+                <!-- Merge the demo code properties for the ABL Application. -->
+                <echo message="Merging initial properties from 'merge_demo_handlers_${ablapp}.openedge.properties'..."/>
+                <exec executable="${pas.bin}/oeprop${scriptSuffix}" failonerror="true">
+                    <arg line="-f '${basedir}/merge_demo_handlers_${ablapp}.openedge.properties'"/>
+                </exec>
+            </else>
+        </if>
+
     </target>
 
     <target name="revert">
@@ -795,7 +924,7 @@
     <target name="metrics">
         <init_oe/> <!-- Initialize all OpenEdge properties. -->
 
-        <PCTRun
+        <PCTDynRun
                dlcHome="${dlcHome}"
                graphicalMode="false"
                procedure="${deploy.dir}/build/metrics${proc.ext}">
@@ -812,7 +941,7 @@
             <Parameter name="Scheme" value="${scheme}"/>
             <Parameter name="Monitor" value="${monitor}"/>
             <Parameter name="Port" value="${port}"/>
-        </PCTRun>
+        </PCTDynRun>
     </target>
 
     <!-- PAS instance management -->

@@ -1,6 +1,6 @@
 # OEManager CLI Tools - Usage Guide #
 
-Execute the `oemanager.[bat|sh]` command from within the utils folder to run the desired tasks from the command line. Where possible, default values will be determined automatically for HTTP/S ports, server paths, the instance's name, and the default ABL Application name. Any required or optional parameters may be overridden via the command line or by editing the `oemanager.properties` file in advance.
+Execute the `oemanager.[bat|sh]` command to run the desired tasks from the command line. Default values will be inherited automatically for HTTP/S ports, server paths, the instance's name, and the default ABL Application name. Any required or optional parameters may be overridden via the command line or by editing the `oemanager.properties` file in advance, with modified values being honored in that order.
 
 Note that each request to an OEM-API endpoint will be automatically logged to an `oemanager.log` file. No sensitive data will be included in these logged messages, only PID's and operationally-relevant information will be included in the URL or as query parameters to the API endpoint.
 
@@ -112,7 +112,7 @@ The following represents the default usage for all tasks which can be executed u
 
 Some tasks denote optional or required parameters, while all will use a set of common parameters either derived from the local PAS instance or specified via the command line or `oemanager.properties` file. When necessary to override any property values, simply pass as `name=value` on the command line or uncomment the property name and set a default value within the `oemanager.properties`.
 
-The output for any generated files from available tasks will be placed in the location referred to by the `-Doutdir` value. This may be one of 2 built-in options, `PWD` or `TMP` for the current directory (`CATALINA_BASE/bin`) or temp folder (`CATALINA_BASE/temp`), respectively. Alternately, you may specify a full path to use for all output.
+The output for any generated files from available tasks will be placed in the location referred to by the `-Doutdir` value. This may be one of 2 built-in options, `BIN` or `TMP` for the deployed utils directory (`CATALINA_BASE/utils`) or temp folder (`CATALINA_BASE/temp`), respectively. Alternately, you may specify a full path to use for all output.
 
 **Examples:**
 

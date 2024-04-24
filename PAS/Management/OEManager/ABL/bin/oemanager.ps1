@@ -17,8 +17,7 @@ to a PAS instance to manage and monitor that instance.
 #>
 
 #---- Local Variables ----#
-[string]$script:_dlcPath=(Get-ChildItem -Path Env:DLC).Value
-[string]$script:_antPath="$script:_dlcPath\ant\bin\ant.bat"
+[string]$script:_antPath="$env:DLC\ant\bin\ant.bat"
 [string]$script:_taskFilePath="$PSScriptRoot\oemanager.xml"
 [string]$script:_taskArgs=""
 
