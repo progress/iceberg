@@ -1,7 +1,7 @@
 <project name="CollectorCreation" basedir="." default="usage">
 
     <!--
-        Copyright 2020-2022 Progress Software Corporation
+        Copyright 2020-2024 Progress Software Corporation
 
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -150,8 +150,72 @@
             <property name="oe.version" value="${oeMajor}.${oeMinor}.${oeRev}"/>
             <echo message="OpenEdge Version: ${oe.version}"/>
 
-            <!-- Add the ANT-Contrib library to this environment (present in 11.7.4+ and 12.0+). -->
-            <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${dlcHome}/ant/lib/ant-contrib-0.6.jar"/>
+            <!-- Define the property to set if the file exists -->
+            <property name="antContrib06" value="true"/>
+
+            <!-- Add the appropriate ANT-Contrib library to this environment (v0.6 present in 11.7.4+ and 12.0+ and updated to v1.0b3 in 12.8+). -->
+            <loadtask resource="net/sf/antcontrib/antcontrib.properties" classfile="${dlcHome}/ant/lib/ant-contrib-0.6.jar"/>
+            <loadtask resource="net/sf/antcontrib/antcontrib.properties" classfile="${dlcHome}/ant/lib/ant-contrib-1.0b3.jar"/>
+
+            <!-- Use the ProgressVersion output to determine what release is running in the dlcHome. -->
+
+            <!-- Support for only the 11.7 LTS release. -->
+            <if>
+                <equals arg1="${oeMajor}" arg2="11"/>
+                <then>
+                    <property name="isOE11" value="true"/>
+                    <condition property="isOE117">
+                        <and>
+                            <isset property="isOE11"/>
+                            <equals arg1="${oeMinor}" arg2="7"/>
+                        </and>
+                    </condition>
+                </then>
+            </if>
+
+            <!-- Support for 12.x LTS and feature releases. -->
+            <if>
+                <equals arg1="${oeMajor}" arg2="12"/>
+                <then>
+                    <property name="isOE12" value="true"/>
+                    <switch value="${oeMinor}">
+                        <case value="2">
+                            <property name="isOE122" value="true"/>
+                        </case>
+                        <case value="3">
+                            <property name="isOE122" value="true"/>
+                            <property name="isOE123" value="true"/>
+                        </case>
+                        <case value="4">
+                            <property name="isOE122" value="true"/>
+                            <property name="isOE124" value="true"/>
+                        </case>
+                        <case value="5">
+                            <property name="isOE122" value="true"/>
+                            <property name="isOE125" value="true"/>
+                        </case>
+                        <case value="6">
+                            <property name="isOE122" value="true"/>
+                            <property name="isOE126" value="true"/>
+                        </case>
+                        <case value="7">
+                            <property name="isOE122" value="true"/>
+                            <property name="isOE127" value="true"/>
+                        </case>
+                        <case value="8">
+                            <property name="isOE128" value="true"/>
+                        </case>
+                    </switch>
+                </then>
+            </if>
+
+            <!-- Support for 13.x LTS and feature releases. -->
+            <if>
+                <equals arg1="${oeMajor}" arg2="13"/>
+                <then>
+                    <property name="isOE13" value="true"/>
+                </then>
+            </if>
 
             <!-- Set OpenEdge properties for this build file. -->
             <property name="dlc.bin" value="${dlcHome}${delim}bin"/>
@@ -163,70 +227,20 @@
             <property name="pas.bin" value="${pas.path}${delim}bin"/>
             <property name="pas.webapp.dir" value="${pas.path}${delim}webapps${delim}${webapp}"/>
             <property name="db.path" value="${pas.path}${delim}db"/>
+        </sequential>
+    </macrodef>
 
-            <if>
-                <equals arg1="${oeMajor}" arg2="11"/>
-                <then>
-                    <!-- OpenEdge 11.7.x -->
-                </then>
-                <else>
-                    <if>
-                        <!-- OpenEdge 12.x -->
-                        <equals arg1="${oeMajor}" arg2="12"/>
-                        <then>
-                            <if>
-                                <equals arg1="${oeMinor}" arg2="0"/>
-                                <then>
-                                    <!-- OpenEdge 12.0 -->
-                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                                </then>
-                            </if>
+    <macrodef name="loadtask">
+        <!-- Usage <loadtask resource="_resource_string_" classfile="_path_to_file_"/> -->
+        <attribute name="resource"/>
+		<attribute name="classfile"/>
 
-                            <if>
-                                <equals arg1="${oeMinor}" arg2="1"/>
-                                <then>
-                                    <!-- OpenEdge 12.1 -->
-                                    <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                                </then>
-                            </if>
+        <sequential>
+            <condition property="file.exists">
+                <available file="@{classfile}" type="file"/>
+            </condition>
 
-                            <if>
-                                <equals arg1="${oeMinor}" arg2="2"/>
-                                <then>
-                                    <if>
-                                        <equals arg1="${oeRev}" arg2="0"/>
-                                        <then>
-                                            <!-- OpenEdge 12.2.0 -->
-                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                                        </then>
-                                    </if>
-                                    <if>
-                                        <equals arg1="${oeRev}" arg2="1"/>
-                                        <then>
-                                            <!-- OpenEdge 12.2.1 -->
-                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                                        </then>
-                                    </if>
-                                    <if>
-                                        <equals arg1="${oeRev}" arg2="2"/>
-                                        <then>
-                                            <!-- OpenEdge 12.2.2 -->
-                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                                        </then>
-                                    </if>
-                                    <if>
-                                        <equals arg1="${oeRev}" arg2="3"/>
-                                        <then>
-                                            <!-- OpenEdge 12.2.3 -->
-                                            <fail message="OpenEdge versions prior to 12.2.4 are not supported."/>
-                                        </then>
-                                    </if>
-                                </then>
-                            </if>
-                        </then>
-                    </if>
-                </else>
-            </if>
+            <taskdef resource="@{resource}" classpath="@{classfile}"/>
         </sequential>
     </macrodef>
 

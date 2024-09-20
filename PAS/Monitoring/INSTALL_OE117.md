@@ -1,8 +1,8 @@
-# Continuous PAS Monitoring #
+# Continuous PAS Monitoring - OpenEdge 11.7 #
 
 ## Installation & Usage ##
 
-The provided `build.xml` files are expected to be used with the `proant` utility from within a PROENV session. You should be aware of the location of your PAS instance to be monitored along with a location where your collector/monitor endpoint may reside--the latter may be on a separate server and in fact is strongly encouraged. The primary 2 folders contain the artifacts for tailoring the Application and Collector instances, respectively. For a comprehensive history and listing of all commands, see the file `Pulse_Metrics_Enablement.pdf` in this directory.
+The provided `build.xml` files are expected to be used with the `proant` utility from within a PROENV session. You should be aware of the location of your PAS instance to be monitored along with a location where your collector/monitor endpoint may reside--the latter may be on a separate server and in fact is strongly encouraged. The primary 2 folders contain the artifacts for tailoring the Application and Collector instances, respectively. For a comprehensive history and listing of all commands, see the file `Pulse_Metrics_Enablement.pdf` in this directory (which focuses more on the approach for OpenEdge 12.2+).
 
 **For all of the proceeding instructions and for best results, please utilize a PROENV session to make the DLC location and all necessary OpenEdge utilities available in your system path.**
 
@@ -36,11 +36,6 @@ Running `proant` without parameters from within each of the Application or Colle
          -Dwebapp=ROOT = Demo webapp name
          -Dmonitor=127.0.0.1 = IP of the monitor endpoint
          -Dport=8850 = Port of the monitor endpoint
-
-     proant health - Enable the HealthScanner function for the instance
-         -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
-         -Dinstance=oepas1 = Name of PAS instance
-         -DhealthPort=8899 = Port for HealthCheck
 
      proant metrics - Enable/Disable collection for the instance
          -Dwrk=C:\OpenEdge\WRK = Parent directory for PAS instance
@@ -79,11 +74,9 @@ Running `proant` without parameters from within each of the Application or Colle
 	- If necessary, choose an available (read: unused) port which will represent your PAS instance's health information. Adjust this value before starting the PAS instance, and it will be found automatically by the supplied code.
 1. Start the target instance and confirm operation of the PAS instance at `http://HOSTNAME:PORT` as applicable.
 
-**Note 1:** For the **LiveDiag** solution in OpenEdge 12.2.4+ a set of R-code (.r files) will be deployed into the `CATALINA_BASE/openedge` location which is expected to be in the application PROPATH (to which a new sub-folder structure will be added: OpenEdge/ApplicationServer/). These files override some of the product-supplied ABL code which drives the Profiler and LiveDiag collection features and allows pushing that data to a customized, remote collection endpoint using the ABL HttpClient library. It is anticipated that a variation of this code may become part of the standard product installation in the future.
+**Note 1:** The R-code is compiled against OpenEdge 12 by default, and may need to be recompiled for other versions of OpenEdge. To do so, there is an undocumented `compile` target for the proant utility which will recompile the code and place it into the correct deployment directory. From there the `deploy_metrics` will copy the R-code to the correct location. This step will of course require the "4GL Development" license, though once compiled the files can be deployed anywhere the same version of OpenEdge is installed.
 
-**Note 2:** The R-code is compiled against OpenEdge 12 by default, and may need to be recompiled for other versions of OpenEdge. To do so, there is an undocumented `compile` target for the proant utility which will recompile the code and place it into the correct deployment directory. From there the `deploy_metrics` will copy the R-code to the correct location. This step will of course require the "4GL Development" license, though once compiled the files can be deployed anywhere the same version of OpenEdge is installed.
-
-**Note 3:** When specifying the ABL Application name for any utilities or command line options, it is necessary to use the exact same case as the `openedge.properties` file and reported by the PAS instance. Due to the use of JSON objects to pass many of the commands to the instance these values should be treated as case-sensitive.
+**Note 2:** When specifying the ABL Application name for any utilities or command line options, it is necessary to use the exact same case as the `openedge.properties` file and reported by the PAS instance. Due to the use of JSON objects to pass many of the commands to the instance these values should be treated as case-sensitive.
 
 ### Collector - Metrics Visualization ###
 
@@ -147,28 +140,10 @@ The following instructions assumes testing against a PAS instance **with the dem
 
 ### Enabling Collection: ###
 
-For reference, the location of the collection "monitor" instance should have been factored into the enablement scripts during the preceding deployment to the target PAS instance. Though some minor work is needed to enable the **LiveDiag** collection on the monitored PAS instance on a per-process basis...
+For reference, the location of the collection "monitor" instance should have been factored into the enablement scripts during the preceding deployment to the target PAS instance. This is configured via the `metrics_config.json` file...
 
-**Option 1: ABL Procedure**
-
-1. From within the Collection folder, execute the `proant metrics` command to begin collecting the default metrics using either default or supplied options from the command.
-	- This executes a .p which may require a 4GLDev license.
-	- If necessary, adjust the instance, ablapp, and monitor values.
-	- This will first query the PAS instance for MSAgents running for the ablapp.
-	- Metrics will be enabled for each agent and sent to the configured monitor IP and port.
-1. Use the `-Dstate=off` property to disable the metrics collection.
-
-**Option 2: Batch/Shell Commands**
-
-1. Navigate to the **CATALINA_BASE/bin** location of your monitored instance.
-1. Execute the `agents.[bat|sh]` utility to generate a list of PID's for the configured ABL Application.
-	- By default "oepas1" will be used (unless previously overridden by the -Dabpapp property while tailoring).
-	- If needed, adjust the script's "ABL\_APP\_NAME" variable to search for agents belonging to another ABL Application.
-1. Feed each PID into the pulse enablement script via `pulse_on.[bat|sh] #` where \# is the PID. The utility will report that it is setting up the script for each PID.
-	- You may check the output in a `pulse_on_#.out` file for each PID you enable.
-1. Collection will start immediately and continue every 20 seconds (by default).
-1. To disable the LiveDiag metrics, run the `pulse_off.[bat|sh]` passing the PID to disable.
-	- You may check the output in a `pulse_off_#.out` file for each PID you disable.
+- Collection should start automatically on each MSAgent-session after the initial timeout period, once the ABL Application of the instance being monitored begins receiving requests.
+- By default the memory, ABLObjects, and requests will be tracked per-session and reported every 2 minutes.
 
 At this point you may execute any tests against the monitored PAS instance and begin checking for results in the UI of the monitor instance at `http:MONITOR_IP:PORT` (eg. [http://localhost:8850](http://localhost:8850)).
 
@@ -188,6 +163,7 @@ With the tests executed and results gathered, it should be possible to see an in
 		- Session Memory: Use over time for the agent, including overhead memory when available (OpenEdge 12.2+).
 		- Agent Lifetime: Total sessions started over the life of the session, including session and overhead memory totals.
 	- ABL Requests - Sequential list of requests for ABL code execution.
+	- Tomcat Access Logs - Provided after the shut-down of the monitored PAS instance (Spark-Diagnostics only).
 	- Profiler Data - ABL Profiler output, if enabled for collection (not covered here).
 	- Health Trends - Reserved for displaying trends from the HealthScanner (not covered here).
 
@@ -216,7 +192,7 @@ Is something not working as expected? Are you running tests but not getting data
 ### Application ###
 
 1. Open the `logging.config` file which should exist in your PROPATH (default: CATALINA_BASE/openedge).
-2. Look for the **"PushLiveDiag"** and **"OpenEdge.ApplicationServer.Service"** properties in the JSON file.
+2. Look for the **"Spark.Diagnostic.Util.RemoteMetrics"**, **"Spark.Diagnostic.Util.OEMetrics"**, and **"AgentMetrics"** properties in the JSON file.
 3. Set the **logLevel** property in these objects to DEBUG or TRACE. Note that TRACE may output many additional files into your PAS instance's session temporary directory location.
 4. Stop your PAS instance if possible, remove all existing log files, and restart the instance for a clean slate.
 5. Inspect the PAS instance's `/temp/` directory for any .log files produced from the logger output.
