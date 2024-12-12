@@ -39,22 +39,25 @@
         <echo message="${line.separator} ${util.name} inventory - Bundle useful PAS instance files (as .zip) for support tickets"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Status/Info:"/>
-        <echo message="${line.separator} ${util.name} status - [RO] Obtain MSAgent/connection status information for an ABL App"/>
-        <echo message="                    [REQUIRED]  -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
-        <echo message="                    [OPTIONAL] -Dbasemem=${basemem} - Minimum memory threshold (bytes) to consider as 'unused' agent sessions"/>
-        <echo message="${line.separator} ${util.name} stacks - [RO] Obtain stack information for all MSAgents for an ABL App"/>
-        <echo message="                    [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
-        <echo message="                    [OPTIONAL]    -Dpid=[AGENT_PID]  - Limit stack information to a specific MSAgent process ID"/>
-        <echo message="                    [OPTIONAL] -Dsessid=[SESSION_ID] - Limit stack information to a specific ABL Session ID"/>
-        <echo message="                                                       Requires specifying an MSAgent via -Dpid=[AGENT_PID]"/>
-        <echo message="${line.separator} ${util.name} flush  - [RO] Flush the available deferred log buffer to agent log file"/>
-        <echo message="                     [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
-        <echo message="${line.separator} ${util.name} locks  - [RO] Display database users and their table locks related to an MSAgent-Session"/>
-        <echo message="                    This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary"/>
-        <echo message="                    Note: Only provides session data if using self-service DB connections for OE versions under 12.5"/>
-        <echo message="                    [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
-        <echo message="                    [REQUIRED]     -Dpf=[PF_NAME] - PF file to use for database connection(s)"/>
-        <echo message="${line.separator} ${util.name} users  - [RO] Alias for 'locks' task"/>
+        <echo message="${line.separator} ${util.name} status   - [RO] Obtain MSAgent/connection status information for an ABL App"/>
+        <echo message="                      [REQUIRED]  -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="                      [OPTIONAL] -Dbasemem=${basemem} - Minimum memory threshold (bytes) to consider as 'unused' agent sessions"/>
+        <echo message="${line.separator} ${util.name} stacks   - [RO] Obtain stack information for all MSAgents for an ABL App"/>
+        <echo message="                      [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="                      [OPTIONAL]    -Dpid=[AGENT_PID]  - Limit stack information to a specific MSAgent process ID"/>
+        <echo message="                      [OPTIONAL] -Dsessid=[SESSION_ID] - Limit stack information to a specific ABL Session ID"/>
+        <echo message="                                                         Requires specifying an MSAgent via -Dpid=[AGENT_PID]"/>
+        <echo message="${line.separator} ${util.name} flush    - [RO] Flush the available deferred log buffer to agent log file"/>
+        <echo message="                      [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="${line.separator} ${util.name} locks    - [RO] Display database users and their table locks related to an MSAgent-Session"/>
+        <echo message="                      This utilizes a single DBConnection; edit the 'locks' task in build.xml to add more as necessary"/>
+        <echo message="                      Note: Only provides session data if using self-service DB connections for OE versions under 12.5"/>
+        <echo message="                      [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="                      [REQUIRED]     -Dpf=[PF_NAME] - PF file to use for database connection(s)"/>
+        <echo message="${line.separator} ${util.name} requests - [RO] Display a summary of the last 1,000 requests related to an MSAgent"/>
+        <echo message="                      [REQUIRED] -Dablapp=${ablapp} - ABL Application name, defaulting to the instance name if not changed"/>
+        <echo message="                      [OPTIONAL]    -Dpid=[AGENT_PID] - Obtain request information for a specific MSAgent process ID"/>
+        <echo message="${line.separator} ${util.name} users    - [RO] Alias for 'locks' task"/>
         <echo message="${line.separator}"/>
         <echo message="${line.separator} Agent Management:"/>
         <echo message="${line.separator} ${util.name} add     - Add (read: start) one new MSAgent for an ABL App"/>
@@ -712,7 +715,8 @@
 
         <!-- Runs all the targets in a particular order (least to most termination) -->
         <antcall target="status"/>
-        <antcall target="stacks"/>
+        <antcall target="requests"/>
+		<antcall target="stacks"/>
         <antcall target="flush"/>
         <antcall target="trimhttp"/>
         <antcall target="trimidle"/>
@@ -777,6 +781,66 @@
                     <Parameter name="PassWD" value="${passwd}"/>
                     <Parameter name="ABLApp" value="${ablapp}"/>
                     <Parameter name="BaseMem" value="${basemem}"/>
+                </PCTDynRun>
+            </else>
+        </if>
+    </target>
+
+    <target name="requests">
+        <init_oe/> <!-- Initialize all OpenEdge properties. -->
+
+        <fail message="PAS instance port (-Dport) was not provided.">
+            <condition>
+                <or>
+                    <equals arg1="${port}" arg2=""/>
+                    <not>
+                        <isset property="port"/>
+                    </not>
+               </or>
+           </condition>
+        </fail>
+
+        <if>
+            <isset property="isOE11"/>
+            <then>
+                <!-- OpenEdge 11.7 does not properly handle passing parameters via PCTDynRun. -->
+                <PCTRun
+                       dlcHome="${dlcHome}"
+                       graphicalMode="false"
+                       tempDir="${output.dir}"
+                       procedure="${proc.path}getRequests${proc.ext}">
+                    <propath>
+                        <pathelement path="${basedir}"/>
+                        <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                        <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
+                    </propath>
+                    <Parameter name="Scheme" value="${scheme}"/>
+                    <Parameter name="Host" value="${host}"/>
+                    <Parameter name="Port" value="${port}"/>
+                    <Parameter name="UserID" value="${userid}"/>
+                    <Parameter name="PassWD" value="${passwd}"/>
+                    <Parameter name="ABLApp" value="${ablapp}"/>
+                    <Parameter name="ProcID" value="${pid}"/>
+                </PCTRun>
+            </then>
+            <else>
+                <PCTDynRun
+                       dlcHome="${dlcHome}"
+                       graphicalMode="false"
+                       tempDir="${output.dir}"
+                       procedure="${proc.path}getRequests${proc.ext}">
+                    <propath>
+                        <pathelement path="${basedir}"/>
+                        <pathelement path="${dlcHome}/tty/netlib/OpenEdge.Net.pl"/>
+                        <pathelement path="${dlcHome}/tty/OpenEdge.ServerAdmin.pl"/>
+                    </propath>
+                    <Parameter name="Scheme" value="${scheme}"/>
+                    <Parameter name="Host" value="${host}"/>
+                    <Parameter name="Port" value="${port}"/>
+                    <Parameter name="UserID" value="${userid}"/>
+                    <Parameter name="PassWD" value="${passwd}"/>
+                    <Parameter name="ABLApp" value="${ablapp}"/>
+                    <Parameter name="ProcID" value="${pid}"/>
                 </PCTDynRun>
             </else>
         </if>

@@ -1,5 +1,5 @@
 /*
-    Copyright 2022-2023 Progress Software Corporation
+    Copyright 2022-2024 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License" get. private set;
     you may not use this file except in compliance with the License.
@@ -41,6 +41,9 @@ class OpenEdge.ApplicationServer.Util.OEManagerEndpoint:
         private set.
 
     define public static property AgentMetrics as character no-undo init "oemanager/applications/&1/agents/&2/metrics" get.
+        private set.
+
+    define public static property AgentRequests as character no-undo init "oemanager/applications/&1/agents/&2/requests" get.
         private set.
 
     define public static property AgentSessions as character no-undo init "oemanager/applications/&1/agents/&2/sessions" get.

@@ -301,29 +301,22 @@
             </if>
 
             <if>
-                <isset property="isOE122"/>
+                <isset property="isOE12"/>
                 <then>
-                    <!-- OpenEdge 12.8 -->
-                    <property name="deploy.dir" value="${basedir}/deploy/oe128"/>
-                    <echo message="Deployment Model: 12.8.x"/>
-                </then>
-                <else>
-                    <if>
-                        <isset property="isOE122"/>
-                        <then>
-                            <!-- OpenEdge 12.2.4 through 12.7 -->
-                            <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
-                            <echo message="Deployment Model: 12.2+"/>
-                        </then>
-                    </if>
-                </else>
-            </if>
-            <if>
-                <isset property="isOE128"/>
-                <then>
-                    <!-- OpenEdge 12.8 -->
-                    <property name="deploy.dir" value="${basedir}/deploy/oe128"/>
-                    <echo message="Deployment Model: 12.8.x"/>
+					<!-- OpenEdge 12 -->
+					<if>
+						<isset property="isOE128"/>
+						<then>
+							<!-- OpenEdge 12.8 -->
+							<property name="deploy.dir" value="${basedir}/deploy/oe128"/>
+							<echo message="Deployment Model: 12.8.x"/>
+						</then>
+						<else>
+							<!-- OpenEdge 12.2.4 through 12.7.0 -->
+							<property name="deploy.dir" value="${basedir}/deploy/oe122"/>
+							<echo message="Deployment Model: 12.2+"/>
+						</else>
+					</if>
                 </then>
             </if>
 
