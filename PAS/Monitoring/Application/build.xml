@@ -749,7 +749,7 @@
             </then>
             <else>
                 <!-- Check if MERGE properties file exists. -->
-                <require file="${deploy.dir}/merge_demo.openedge.properties"/>
+                <require file="${deploy.dir}/merge_demo_general.openedge.properties"/>
 
                 <!-- Make a copy of the general merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
                 <copy file="${deploy.dir}/merge_demo_general.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_general_${ablapp}.openedge.properties">
