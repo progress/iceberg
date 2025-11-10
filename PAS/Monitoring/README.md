@@ -4,16 +4,16 @@
 
 PAS for OpenEdge supplies the means of collecting runtime metrics via OEJMX queries or the OEManager REST API endpoints. However, the resulting data from these endpoints represent only a single moment in time and by themselves to not provide trending data which could be useful for analysis over time. For that, we need to provide a mechanism to automatically and repeatedly collect data in a manner which is ideally both transparent to the end-user or an administrator, and does not degrade application performance.
 
-To offer such a solution there are 2 options in this directory meant as internal, unsupported features and their deployment is dependent on the OpenEdge version in which a PAS instance runs:
+For the OpenEdge 12 LTS releases there are 2 possible options:
 
-- **11.7.8+** - Via the **Spark Diagnostic** library and its supporting code. *DEPRECATED*
 - **12.2.4+** - Via the **LiveDiag[nostics]** debug feature in PASOE.
+- **12.8.9+** - Via the [**OpenEdge Memory Profiler**](https://docs.progress.com/bundle/openedge-whats-new/page/Whats-New-in-OpenEdge-12.8.html#ariaid-title12)
 
-Due to the retirement of OpenEdge 11.7 scheduled for April 2025 the contents of this guide will focus on the 12.2 LTS and later releases. For information related to the OpenEdge 11.7 release please [view the dedicated README_OE117 document](README_OE117.md).
+The solution covered here is explicitly for the **LiveDiag** debug feature available in OpenEdge 12.2 and later releases.
 
 ## Requirements ##
 
-In order to utilize the included tooling you must have installed OpenEdge 12.2.4 at a minimum (12.2.16 is the latest as of June 2024). Please note that OpenEdge versions 12.0, 12.1, and 12.3 are not supported and it is highly recommended to upgrade to the latest OpenEdge 12.2.x LTS or OpenEdge 12.8.x LTS release if currently using those noted or earlier versions.
+In order to utilize the included tooling you must have installed OpenEdge 12.2.4 at a minimum (12.2.18 is the latest as of August 2025). Please note that OpenEdge versions 12.0, 12.1, and 12.3 are not supported and it is highly recommended to upgrade to the latest OpenEdge 12.2.x LTS or OpenEdge 12.8.x LTS release if currently using those earlier versions.
 
 ## Disclaimer ##
 

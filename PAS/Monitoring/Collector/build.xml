@@ -362,10 +362,12 @@
                 </fileset>
                 <filterset>
                     <filter token="DLCHOME" value="${dlcHome}"/>
+                    <filter token="DBPATH" value="${db.path}"/>
                     <filter token="DBNAME" value="${db.name}"/>
                     <filter token="DBPORT" value="${db.port}"/>
                     <filter token="CODEPAGE" value="${codepage}"/>
                     <filter token="COLLATION" value="${collation}"/>
+                    <filter token="PASPATH" value="${pas.path}"/>
                 </filterset>
             </copy>
 
@@ -375,12 +377,13 @@
             <!-- Make a copy of the startup file, copied into the CATALINA_BASE/openedge folder. -->
             <copy file="${basedir}/openedge/startup.pf" overwrite="true" tofile="${pas.path}/openedge/startup.pf">
                 <filterset>
-                    <filter token="PASPATH" value="${pas.path}"/>
+                    <filter token="DLCHOME" value="${dlcHome}"/>
                     <filter token="DBPATH" value="${db.path}"/>
                     <filter token="DBNAME" value="${db.name}"/>
                     <filter token="DBPORT" value="${db.port}"/>
                     <filter token="CODEPAGE" value="${codepage}"/>
                     <filter token="COLLATION" value="${collation}"/>
+                    <filter token="PASPATH" value="${pas.path}"/>
                 </filterset>
             </copy>
 

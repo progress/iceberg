@@ -1,7 +1,7 @@
 <project name="MetricsDeployment" basedir="." default="usage">
 
     <!--
-        Copyright 2020-2024 Progress Software Corporation
+        Copyright 2020-2025 Progress Software Corporation
 
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@
         <if>
             <isset property="isOE11"/>
             <then>
-                <!-- Features Not Available -->
+                <fail message="OpenEdge 11.7 is no longer supported for this solution."/>
             </then>
             <else>
                 <echo message="${line.separator}proant health - Enable the HealthScanner function for the instance"/>
@@ -82,7 +82,7 @@
         <if>
             <isset property="isOE11"/>
             <then>
-                <!-- Features Not Available -->
+                <fail message="OpenEdge 11.7 is no longer supported for this solution."/>
             </then>
             <else>
                 <echo message="${line.separator}Optionally, use 'proant health' to enable the PASOE HealthScanner to collect broader instance health information."/>
@@ -295,35 +295,27 @@
                 <isset property="isOE117"/>
                 <then>
                     <!-- OpenEdge 11.7.x -->
-                    <property name="deploy.dir" value="${basedir}/deploy/oe117"/>
-                    <echo message="Deployment Model: 11.7.x"/>
+                    <fail message="OpenEdge 11.7 is no longer supported for this solution."/>
                 </then>
             </if>
 
             <if>
-                <isset property="isOE122"/>
+                <isset property="isOE12"/>
                 <then>
-                    <!-- OpenEdge 12.8 -->
-                    <property name="deploy.dir" value="${basedir}/deploy/oe128"/>
-                    <echo message="Deployment Model: 12.8.x"/>
-                </then>
-                <else>
+                    <!-- OpenEdge 12 -->
                     <if>
-                        <isset property="isOE122"/>
+                        <isset property="isOE128"/>
                         <then>
-                            <!-- OpenEdge 12.2.4 through 12.7 -->
+                            <!-- OpenEdge 12.8 -->
+                            <property name="deploy.dir" value="${basedir}/deploy/oe128"/>
+                            <echo message="Deployment Model: 12.8.x"/>
+                        </then>
+                        <else>
+                            <!-- OpenEdge 12.2.4 through 12.7.0 -->
                             <property name="deploy.dir" value="${basedir}/deploy/oe122"/>
                             <echo message="Deployment Model: 12.2+"/>
-                        </then>
+                        </else>
                     </if>
-                </else>
-            </if>
-            <if>
-                <isset property="isOE128"/>
-                <then>
-                    <!-- OpenEdge 12.8 -->
-                    <property name="deploy.dir" value="${basedir}/deploy/oe128"/>
-                    <echo message="Deployment Model: 12.8.x"/>
                 </then>
             </if>
 
@@ -367,7 +359,7 @@
     <macrodef name="loadtask">
         <!-- Usage <loadtask resource="_resource_string_" classfile="_path_to_file_"/> -->
         <attribute name="resource"/>
-		<attribute name="classfile"/>
+        <attribute name="classfile"/>
 
         <sequential>
             <condition property="file.exists">
@@ -479,7 +471,7 @@
         <if>
             <equals arg1="${oeMajor}" arg2="11"/>
             <then>
-                <echo message="Compilation is not necessary for OpenEdge 11.7"/>
+                <fail message="OpenEdge 11.7 is no longer supported for this solution."/>
             </then>
             <else>
                 <if>
@@ -607,8 +599,7 @@
         <if>
             <equals arg1="${oeMajor}" arg2="11"/>
             <then>
-                <!-- Copy the Spark Diagnostic library for OE 11.7.x. -->
-                <copySparkDiagnostics/>
+                <fail message="OpenEdge 11.7 is no longer supported for this solution."/>
             </then>
             <else>
                 <!-- OpenEdge 12.2+ -->
@@ -627,39 +618,7 @@
         <if>
             <equals arg1="${oeMajor}" arg2="11"/>
             <then>
-                <!-- OpenEdge 11.x -->
-
-                <echo message="Adding enhanced MDC logging capabilities..."/>
-
-                <!-- Modify the existing setenv to enable Request ID Logging. -->
-                <copy file="${pas.bin}/openedge_setenv.bat" tofile="${pas.bin}/openedge_setenv.bat.bak" verbose="true"/>
-                <replaceregexp
-                    file="${pas.bin}/openedge_setenv.bat"
-                    match="rem set REQIDLOGGING=y"
-                    replace="set REQIDLOGGING=y"
-                    byline="true"/>
-
-                <!-- Modify the existing setenv to enable Request ID Logging. -->
-                <copy file="${pas.bin}/openedge_setenv.sh" tofile="${pas.bin}/openedge_setenv.sh.bak" verbose="true"/>
-                <replaceregexp
-                    file="${pas.bin}/openedge_setenv.sh"
-                    match="#REQIDLOGGING=y ; export REQIDLOGGING"
-                    replace="REQIDLOGGING=y ; export REQIDLOGGING"
-                    byline="true"/>
-
-                <!-- Merge a new property into the existing catalina.properties (after backing up the original). -->
-                <copy file="${pas.path}/conf/catalina.properties" tofile="${pas.path}/conf/catalina.properties.bak" verbose="true"/>
-                <concat destfile="${pas.path}/conf/catalina.properties" append="true">
-                    <filelist dir="${deploy.dir}" files="merge.catalina.properties"/>
-                </concat>
-
-                <!-- Utilize the new access log property above within server.xml (after backing up the original). -->
-                <copy file="${pas.path}/conf/server.xml" tofile="${pas.path}/conf/server.xml.bak" verbose="true"/>
-                <replaceregexp
-                    file="${pas.path}/conf/server.xml"
-                    match="\{psc.as.accesslog.pattern\}"
-                    replace="\{psc.as.accesslog.pattern.advanced\}"
-                    byline="true"/>
+                <fail message="OpenEdge 11.7 is no longer supported for this solution."/>
             </then>
             <else>
                 <!-- OpenEdge 12.x and later -->
@@ -756,7 +715,7 @@
             </then>
             <else>
                 <!-- Check if MERGE properties file exists. -->
-                <require file="${deploy.dir}/merge_demo.openedge.properties"/>
+                <require file="${deploy.dir}/merge_demo_general.openedge.properties"/>
 
                 <!-- Make a copy of the general merge file (for LiveDiagnostics via true API), named for the ABL Application. -->
                 <copy file="${deploy.dir}/merge_demo_general.openedge.properties" overwrite="true" tofile="${basedir}/merge_demo_general_${ablapp}.openedge.properties">

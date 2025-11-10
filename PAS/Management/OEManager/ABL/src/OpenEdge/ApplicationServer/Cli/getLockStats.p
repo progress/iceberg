@@ -1,5 +1,5 @@
 /*
-    Copyright 2020-2023 Progress Software Corporation
+    Copyright 2020-2024 Progress Software Corporation
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ repeat:
         assign cConnDetail = hConnDetFld:buffer-value().
         if num-entries(cConnDetail, ":") ge 4 then
             assign
-                iConnectPID = integer(entry(3, cConnDetail, ":"))
+                iConnectPID = int64(entry(3, cConnDetail, ":"))
                 iSessionID = if entry(4, cConnDetail, ":") begins "AS-" and num-entries(entry(4, cConnDetail, ":"), "-") gt 1
                              then integer(entry(2, entry(4, cConnDetail, ":"), "-")) else ?
                 .
